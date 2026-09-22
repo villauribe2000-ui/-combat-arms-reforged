@@ -1,0 +1,593 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Panel de Control - Combat Arms Reforged</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #0d1525 0%, #0a0e17 50%, #120d1a 100%);
+            color: #e0e0e0;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 40px;
+            border-bottom: 2px solid rgba(138, 43, 226, 0.3);
+            padding-bottom: 20px;
+        }
+
+        h1 {
+            font-size: 2.5em;
+            background: linear-gradient(135deg, #8a2be2 0%, #00bfff 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 10px;
+        }
+
+        .subtitle {
+            color: #888;
+            font-size: 0.9em;
+        }
+
+        .main-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .card {
+            background: rgba(20, 30, 48, 0.8);
+            border: 1px solid rgba(138, 43, 226, 0.3);
+            border-radius: 12px;
+            padding: 20px;
+            backdrop-filter: blur(10px);
+            transition: all 0.3s ease;
+        }
+
+        .card:hover {
+            border-color: rgba(138, 43, 226, 0.6);
+            background: rgba(20, 30, 48, 1);
+        }
+
+        .service-card {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .service-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .service-name {
+            font-size: 1.3em;
+            font-weight: bold;
+            color: #00bfff;
+        }
+
+        .status-badge {
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 0.85em;
+            font-weight: bold;
+            text-transform: uppercase;
+        }
+
+        .status-running {
+            background: rgba(34, 197, 94, 0.3);
+            color: #22c55e;
+            border: 1px solid #22c55e;
+        }
+
+        .status-stopped {
+            background: rgba(239, 68, 68, 0.3);
+            color: #ef4444;
+            border: 1px solid #ef4444;
+        }
+
+        .status-error {
+            background: rgba(234, 179, 8, 0.3);
+            color: #eab308;
+            border: 1px solid #eab308;
+        }
+
+        .service-info {
+            font-size: 0.9em;
+            color: #aaa;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+
+        .info-item {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .info-label {
+            font-size: 0.8em;
+            color: #666;
+            text-transform: uppercase;
+            margin-bottom: 3px;
+        }
+
+        .info-value {
+            color: #00bfff;
+            font-weight: bold;
+        }
+
+        .buttons {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+        }
+
+        button {
+            padding: 10px 15px;
+            border: none;
+            border-radius: 8px;
+            font-weight: bold;
+            cursor: pointer;
+            font-size: 0.9em;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+        }
+
+        .btn-start {
+            background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);
+            color: white;
+        }
+
+        .btn-start:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(34, 197, 94, 0.4);
+        }
+
+        .btn-stop {
+            background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+            color: white;
+        }
+
+        .btn-stop:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(239, 68, 68, 0.4);
+        }
+
+        .btn-restart {
+            background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+            color: white;
+        }
+
+        .btn-restart:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(245, 158, 11, 0.4);
+        }
+
+        .btn-all {
+            background: linear-gradient(135deg, #8a2be2 0%, #00bfff 100%);
+            color: white;
+            padding: 12px 20px;
+            font-size: 1em;
+        }
+
+        .btn-all:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(138, 43, 226, 0.4);
+        }
+
+        .system-stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .stat-item {
+            background: rgba(20, 30, 48, 0.8);
+            border: 1px solid rgba(138, 43, 226, 0.3);
+            border-radius: 8px;
+            padding: 15px;
+            text-align: center;
+        }
+
+        .stat-label {
+            font-size: 0.8em;
+            color: #666;
+            text-transform: uppercase;
+            margin-bottom: 8px;
+        }
+
+        .stat-value {
+            font-size: 1.8em;
+            font-weight: bold;
+            color: #00bfff;
+        }
+
+        .stat-unit {
+            font-size: 0.8em;
+            color: #888;
+            margin-top: 5px;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 6px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 3px;
+            margin-top: 8px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #8a2be2 0%, #00bfff 100%);
+            border-radius: 3px;
+            transition: width 0.3s ease;
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+            justify-content: center;
+        }
+
+        .logs-section {
+            background: rgba(20, 30, 48, 0.8);
+            border: 1px solid rgba(138, 43, 226, 0.3);
+            border-radius: 12px;
+            padding: 20px;
+            margin-top: 30px;
+        }
+
+        .logs-title {
+            font-size: 1.2em;
+            color: #00bfff;
+            margin-bottom: 15px;
+            font-weight: bold;
+        }
+
+        .logs-content {
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(138, 43, 226, 0.2);
+            border-radius: 8px;
+            padding: 15px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.85em;
+            color: #22c55e;
+            max-height: 300px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+
+        .loading {
+            display: inline-block;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .message {
+            padding: 12px 15px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            animation: slideIn 0.3s ease;
+        }
+
+        .message-success {
+            background: rgba(34, 197, 94, 0.2);
+            border: 1px solid #22c55e;
+            color: #22c55e;
+        }
+
+        .message-error {
+            background: rgba(239, 68, 68, 0.2);
+            border: 1px solid #ef4444;
+            color: #ef4444;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .button-group {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        @media (max-width: 768px) {
+            .main-grid {
+                grid-template-columns: 1fr;
+            }
+
+            h1 {
+                font-size: 1.8em;
+            }
+
+            .buttons {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>⚙️ Panel de Control</h1>
+            <p class="subtitle">Combat Arms Reforged - VPS Manager</p>
+        </header>
+
+        <div id="messages"></div>
+
+        <div class="system-stats" id="systemStats">
+            <div class="stat-item">
+                <div class="stat-label">CPU</div>
+                <div class="stat-value" id="cpuValue">0%</div>
+                <div class="progress-bar">
+                    <div class="progress-fill" id="cpuBar" style="width: 0%"></div>
+                </div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-label">Memoria</div>
+                <div class="stat-value" id="memoryValue">0 GB</div>
+                <div class="progress-bar">
+                    <div class="progress-fill" id="memoryBar" style="width: 0%"></div>
+                </div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-label">Disco</div>
+                <div class="stat-value" id="diskValue">0%</div>
+                <div class="progress-bar">
+                    <div class="progress-fill" id="diskBar" style="width: 0%"></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="action-buttons">
+            <button class="btn-all" onclick="startAll()">▶️ Iniciar Todo</button>
+            <button class="btn-all" onclick="stopAll()" style="background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%); ">⏹️ Detener Todo</button>
+        </div>
+
+        <div class="main-grid">
+            <div class="card service-card">
+                <div class="service-header">
+                    <span class="service-name">🌐 Frontend</span>
+                    <span class="status-badge status-stopped" id="frontendStatus">Detenido</span>
+                </div>
+                
+                <div class="service-info">
+                    <div class="info-item">
+                        <span class="info-label">Estado</span>
+                        <span class="info-value" id="frontendState">Detenido</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">PID</span>
+                        <span class="info-value" id="frontendPid">-</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">Iniciado</span>
+                        <span class="info-value" id="frontendTime">-</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">Puerto</span>
+                        <span class="info-value">80</span>
+                    </div>
+                </div>
+
+                <div class="buttons">
+                    <button class="btn-start" onclick="startService('frontend')">Iniciar</button>
+                    <button class="btn-restart" onclick="restartService('frontend')">Reiniciar</button>
+                    <button class="btn-stop" onclick="stopService('frontend')">Detener</button>
+                </div>
+            </div>
+
+            <div class="card service-card">
+                <div class="service-header">
+                    <span class="service-name">⚡ Backend</span>
+                    <span class="status-badge status-stopped" id="backendStatus">Detenido</span>
+                </div>
+                
+                <div class="service-info">
+                    <div class="info-item">
+                        <span class="info-label">Estado</span>
+                        <span class="info-value" id="backendState">Detenido</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">PID</span>
+                        <span class="info-value" id="backendPid">-</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">Iniciado</span>
+                        <span class="info-value" id="backendTime">-</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">Puerto</span>
+                        <span class="info-value">5000</span>
+                    </div>
+                </div>
+
+                <div class="buttons">
+                    <button class="btn-start" onclick="startService('backend')">Iniciar</button>
+                    <button class="btn-restart" onclick="restartService('backend')">Reiniciar</button>
+                    <button class="btn-stop" onclick="stopService('backend')">Detener</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="logs-section">
+            <div class="logs-title">📋 Registros (últimas acciones)</div>
+            <div class="logs-content" id="logsContent">Cargando logs...</div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = '/api';
+
+        async function fetchStatus() {
+            try {
+                const response = await fetch(`${API_BASE}/status`);
+                const data = await response.json();
+                updateUI(data);
+            } catch (error) {
+                console.error('Error fetching status:', error);
+            }
+        }
+
+        function updateUI(data) {
+            // Frontend
+            const frontendStatus = data.services.frontend;
+            updateServiceUI('frontend', frontendStatus);
+
+            // Backend
+            const backendStatus = data.services.backend;
+            updateServiceUI('backend', backendStatus);
+
+            // System stats
+            updateSystemStats(data.system);
+        }
+
+        function updateServiceUI(service, status) {
+            const statusEl = document.getElementById(`${service}Status`);
+            const stateEl = document.getElementById(`${service}State`);
+            const pidEl = document.getElementById(`${service}Pid`);
+            const timeEl = document.getElementById(`${service}Time`);
+
+            const statusClass = status.status === 'running' ? 'status-running' : 
+                               status.status === 'error' ? 'status-error' : 'status-stopped';
+            const statusText = status.status === 'running' ? '▶️ Ejecutando' :
+                              status.status === 'error' ? '⚠️ Error' : '⏹️ Detenido';
+
+            statusEl.className = `status-badge ${statusClass}`;
+            statusEl.textContent = statusText;
+            stateEl.textContent = status.status;
+            pidEl.textContent = status.pid || '-';
+            
+            if (status.started_at) {
+                const date = new Date(status.started_at);
+                timeEl.textContent = date.toLocaleTimeString('es-ES');
+            } else {
+                timeEl.textContent = '-';
+            }
+        }
+
+        function updateSystemStats(stats) {
+            document.getElementById('cpuValue').textContent = stats.cpu + '%';
+            document.getElementById('cpuBar').style.width = stats.cpu + '%';
+            
+            document.getElementById('memoryValue').textContent = stats.memory_gb + ' GB';
+            document.getElementById('memoryBar').style.width = stats.memory + '%';
+            
+            document.getElementById('diskValue').textContent = stats.disk + '%';
+            document.getElementById('diskBar').style.width = stats.disk + '%';
+        }
+
+        async function startService(service) {
+            await apiCall(`/start/${service}`, `${service.capitalize()} iniciado`);
+        }
+
+        async function stopService(service) {
+            await apiCall(`/stop/${service}`, `${service.capitalize()} detenido`);
+        }
+
+        async function restartService(service) {
+            await apiCall(`/restart/${service}`, `${service.capitalize()} reiniciado`);
+        }
+
+        async function startAll() {
+            await apiCall('/start-all', 'Todos los servicios iniciados');
+        }
+
+        async function stopAll() {
+            await apiCall('/stop-all', 'Todos los servicios detenidos');
+        }
+
+        async function apiCall(endpoint, successMsg) {
+            try {
+                const response = await fetch(`${API_BASE}${endpoint}`, { method: 'POST' });
+                const data = await response.json();
+                
+                if (data.success !== false) {
+                    showMessage(successMsg, 'success');
+                } else {
+                    showMessage(data.message, 'error');
+                }
+                
+                setTimeout(fetchStatus, 1000);
+            } catch (error) {
+                showMessage('Error: ' + error.message, 'error');
+            }
+        }
+
+        function showMessage(text, type) {
+            const messagesDiv = document.getElementById('messages');
+            const messageEl = document.createElement('div');
+            messageEl.className = `message message-${type}`;
+            messageEl.textContent = text;
+            messagesDiv.appendChild(messageEl);
+            
+            setTimeout(() => messageEl.remove(), 4000);
+        }
+
+        async function updateLogs() {
+            try {
+                const response = await fetch(`${API_BASE}/logs`);
+                const data = await response.json();
+                document.getElementById('logsContent').textContent = data.logs;
+                // Scroll al final
+                const logsDiv = document.getElementById('logsContent');
+                logsDiv.scrollTop = logsDiv.scrollHeight;
+            } catch (error) {
+                console.error('Error fetching logs:', error);
+            }
+        }
+
+        // Actualizar cada 2 segundos
+        setInterval(fetchStatus, 2000);
+        setInterval(updateLogs, 3000);
+
+        // Carga inicial
+        fetchStatus();
+        updateLogs();
+
+        String.prototype.capitalize = function() {
+            return this.charAt(0).toUpperCase() + this.slice(1);
+        };
+    </script>
+</body>
+</html>
