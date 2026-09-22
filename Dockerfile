@@ -1,14 +1,19 @@
-FROM node:22-alpine
+FROM node:22
 
 WORKDIR /app
+
+# Instalar build essentials para robotjs
+RUN apt-get update && apt-get install -y python3 make g++ && rm -rf /var/lib/apt/lists/*
 
 # Copiar package.json y package-lock.json
 COPY package*.json ./
 COPY server/package*.json ./server/
 
-# Instalar dependencias
-RUN npm install
-RUN cd server && npm install && cd ..
+# Instalar dependencias frontend
+RUN npm ci
+
+# Instalar dependencias backend
+RUN cd server && npm ci && cd ..
 
 # Copiar código fuente
 COPY . .
