@@ -2,18 +2,18 @@ FROM node:22
 
 WORKDIR /app
 
-# Instalar build essentials para robotjs
+# Instalar build essentials
 RUN apt-get update && apt-get install -y python3 make g++ && rm -rf /var/lib/apt/lists/*
 
 # Copiar package.json y package-lock.json
 COPY package*.json ./
 COPY server/package*.json ./server/
 
-# Instalar dependencias frontend
-RUN npm ci
+# Instalar todas las dependencias
+RUN npm ci --legacy-peer-deps
 
 # Instalar dependencias backend
-RUN cd server && npm ci && cd ..
+RUN cd server && npm ci --legacy-peer-deps && cd ..
 
 # Copiar código fuente
 COPY . .
