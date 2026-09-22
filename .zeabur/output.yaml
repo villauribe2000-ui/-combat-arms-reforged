@@ -1,0 +1,6 @@
+frontend:
+  root: dist
+  
+backend:
+  root: .
+  command: node server/server.js
