@@ -9,11 +9,11 @@ RUN apt-get update && apt-get install -y python3 make g++ && rm -rf /var/lib/apt
 COPY package*.json ./
 COPY server/package*.json ./server/
 
-# Instalar todas las dependencias
-RUN npm ci --legacy-peer-deps
+# Instalar todas las dependencias (incluyendo devDependencies)
+RUN npm install
 
 # Instalar dependencias backend
-RUN cd server && npm ci --legacy-peer-deps && cd ..
+RUN cd server && npm install && cd ..
 
 # Copiar código fuente
 COPY . .
