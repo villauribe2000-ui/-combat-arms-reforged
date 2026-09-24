@@ -3,17 +3,6 @@ import { useAuth } from '@/context/AuthContext';
 import { api } from '@/lib/api';
 import { Gamepad2, Trophy, Users, Store, Wallet, TrendingUp, Zap, ChevronRight, Crown, Activity, ChevronLeft } from 'lucide-react';
 import type { PageId } from '@/components/Layout';
-import system1 from '@/assets/system-1.png';
-import system2 from '@/assets/system-2.png';
-import system3 from '@/assets/system-3.png';
-import carousel2_1 from '@/assets/carousel2-1.png';
-import carousel2_2 from '@/assets/carousel2-2.png';
-import carousel3_1 from '@/assets/carousel3-1.png';
-import carousel3_2 from '@/assets/carousel3-2.png';
-import carousel3_3 from '@/assets/carousel3-3.png';
-import carousel3_4 from '@/assets/carousel3-4.png';
-import carousel3_5 from '@/assets/carousel3-5.png';
-import carousel3_6 from '@/assets/carousel3-6.png';
 import trailerVideo from '@/assets/combat-arms-trailer.mp4';
 
 const RANK_INFO: Record<string, { label: string; color: string }> = {
@@ -38,23 +27,23 @@ export default function HomePage({ onNavigate }: { onNavigate: (page: PageId) =>
   const [currentCarousel3Image, setCurrentCarousel3Image] = useState(0);
 
   const systemImages = [
-    system1,
-    system2,
-    system3,
+    'system-1.png',
+    'system-2.png',
+    'system-3.png',
   ];
 
   const carousel2Images = [
-    carousel2_1,
-    carousel2_2,
+    'carousel2-1.png',
+    'carousel2-2.png',
   ];
 
   const carousel3Images = [
-    carousel3_1,
-    carousel3_2,
-    carousel3_3,
-    carousel3_4,
-    carousel3_5,
-    carousel3_6,
+    'carousel3-1.png',
+    'carousel3-2.png',
+    'carousel3-3.png',
+    'carousel3-4.png',
+    'carousel3-5.png',
+    'carousel3-6.png',
   ];
 
   useEffect(() => {
@@ -174,7 +163,7 @@ export default function HomePage({ onNavigate }: { onNavigate: (page: PageId) =>
               
               <div className="relative w-40 h-48 rounded-lg border border-amber-500/30 overflow-hidden bg-[#0a0e17]">
                 <img 
-                  src={systemImages[currentSystemImage]} 
+                  src={`/assets/${systemImages[currentSystemImage]}`} 
                   alt={`Item ${currentSystemImage + 1}`} 
                   className="h-full w-full object-cover"
                 />
@@ -213,7 +202,7 @@ export default function HomePage({ onNavigate }: { onNavigate: (page: PageId) =>
               
               <div className="relative w-40 h-48 rounded-lg border border-amber-500/30 overflow-hidden bg-[#0a0e17]">
                 <img 
-                  src={carousel2Images[currentCarousel2Image]} 
+                  src={`/assets/${carousel2Images[currentCarousel2Image]}`} 
                   alt={`Item ${currentCarousel2Image + 1}`} 
                   className="h-full w-full object-cover"
                 />
@@ -252,7 +241,7 @@ export default function HomePage({ onNavigate }: { onNavigate: (page: PageId) =>
               
               <div className="relative w-40 h-48 rounded-lg border border-amber-500/30 overflow-hidden bg-[#0a0e17]">
                 <img 
-                  src={carousel3Images[currentCarousel3Image]} 
+                  src={`/assets/${carousel3Images[currentCarousel3Image]}`} 
                   alt={`Item ${currentCarousel3Image + 1}`} 
                   className="h-full w-full object-cover"
                 />
