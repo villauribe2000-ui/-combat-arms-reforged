@@ -3,6 +3,7 @@
     "builder": "railpack"
   },
   "deploy": {
-    "startCommand": "npm run build && node server/server.js"
+    "startCommand": "node server/server.js"
   }
 }
+
