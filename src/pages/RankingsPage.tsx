@@ -31,6 +31,7 @@ import PYFlag from '@/assets/flags/PY.png';
 import UYFlag from '@/assets/flags/UY.png';
 import CUFlag from '@/assets/flags/CU.png';
 import HTFlag from '@/assets/flags/HT.png';
+import COFlag from '@/assets/flags/CO.png';
 
 const RANK_IMAGES: Record<number | string, string> = {
   'GM': rankGM,
@@ -52,6 +53,8 @@ const getRankImage = (rank: number | string | boolean | null | undefined) => {
   const rankNum = Number(rank) || 0;
   return RANK_IMAGES[rankNum] || rank0;
 };
+
+const COUNTRIES = [
   { code: 'CO', name: 'Colombia', flag: COFlag },
   { code: 'MX', name: 'México', flag: MXFlag },
   { code: 'AR', name: 'Argentina', flag: ARFlag },
