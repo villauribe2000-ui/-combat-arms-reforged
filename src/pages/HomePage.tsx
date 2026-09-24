@@ -3,6 +3,15 @@ import { useAuth } from '@/context/AuthContext';
 import { api } from '@/lib/api';
 import { Gamepad2, Trophy, Users, Store, Wallet, TrendingUp, Zap, ChevronRight, Crown, Activity, ChevronLeft } from 'lucide-react';
 import type { PageId } from '@/components/Layout';
+import carousel2_1 from '@/assets/carousel2-1.png';
+import carousel2_2 from '@/assets/carousel2-2.png';
+import carousel3_1 from '@/assets/carousel3-1.png';
+import carousel3_2 from '@/assets/carousel3-2.png';
+import carousel3_3 from '@/assets/carousel3-3.png';
+import carousel3_4 from '@/assets/carousel3-4.png';
+import carousel3_5 from '@/assets/carousel3-5.png';
+import carousel3_6 from '@/assets/carousel3-6.png';
+import trailerVideo from '@/assets/combat-arms-trailer.mp4';
 
 const RANK_INFO: Record<string, { label: string; color: string }> = {
   unranked: { label: 'Unranked', color: 'text-slate-400' },
@@ -32,17 +41,17 @@ export default function HomePage({ onNavigate }: { onNavigate: (page: PageId) =>
   ];
 
   const carousel2Images = [
-    '/assets/carousel2-1.png',
-    '/assets/carousel2-2.png',
+    carousel2_1,
+    carousel2_2,
   ];
 
   const carousel3Images = [
-    '/assets/carousel3-1.png',
-    '/assets/carousel3-2.png',
-    '/assets/carousel3-3.png',
-    '/assets/carousel3-4.png',
-    '/assets/carousel3-5.png',
-    '/assets/carousel3-6.png',
+    carousel3_1,
+    carousel3_2,
+    carousel3_3,
+    carousel3_4,
+    carousel3_5,
+    carousel3_6,
   ];
 
   useEffect(() => {
@@ -78,7 +87,7 @@ export default function HomePage({ onNavigate }: { onNavigate: (page: PageId) =>
             playsInline
             className="absolute inset-0 h-full w-full object-cover"
           >
-            <source src="/assets/combat-arms-trailer.mp4" type="video/mp4" />
+            <source src={trailerVideo} type="video/mp4" />
           </video>
           {/* Overlay oscuro sobre el video */}
           <div className="absolute inset-0 bg-black/55" />
