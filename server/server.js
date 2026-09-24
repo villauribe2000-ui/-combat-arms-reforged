@@ -28,6 +28,9 @@ app.use(express.urlencoded({ limit: '50mb', extended: true }));
 // Servir archivos estáticos del frontend compilado
 app.use(express.static(path.join(__dirname, '../dist')));
 
+// Servir archivos estáticos públicos
+app.use(express.static(path.join(__dirname, '../public')));
+
 // Routes
 app.use('/api/auth', authRoutes);
 app.use('/api', dataRoutes);
