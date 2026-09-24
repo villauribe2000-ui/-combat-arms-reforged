@@ -179,7 +179,7 @@ export default function RankingsPage() {
         ) : (
           filtered.map((player, i) => {
             const kdRatio = player.deaths > 0 ? (player.kills / player.deaths).toFixed(2) : player.kills.toFixed(2);
-            const rankImage = getRankImage(player.isGM ? 'GM' : player.rank);
+            const rankImage = '/ranks/RANK_0.png';
             return (
               <div 
                 key={player.id} 
@@ -195,7 +195,7 @@ export default function RankingsPage() {
                 </div>
                 <div className="col-span-5 sm:col-span-4 flex items-center gap-3">
                   <img 
-                    src={getRankImage(player.isGM ? 'GM' : player.rank)}
+                    src={'/ranks/RANK_0.png'}
                     alt="rank"
                     className="h-9 w-9 object-contain flex-shrink-0"
                     onError={(e) => {
@@ -243,7 +243,7 @@ export default function RankingsPage() {
               <div className="flex flex-col items-center justify-center">
                 <div className="mb-4 h-40 w-40 flex items-center justify-center">
                   <img 
-                    src={getRankImage(selectedPlayer.isGM ? 'GM' : selectedPlayer.rank)} 
+                    src={'/ranks/RANK_0.png'} 
                     alt={selectedPlayer.isGM ? "GM" : "rank"} 
                     className="h-32 w-32 object-contain"
                     onError={(e) => {
