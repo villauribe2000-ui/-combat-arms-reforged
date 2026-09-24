@@ -1,11 +1,19 @@
 const getAPIUrl = () => {
   if (typeof window !== 'undefined') {
     // En producción, usa rutas relativas (mismo dominio)
-    // En desarrollo, usa localhost:5000
+    // En desarrollo local, usa localhost:5000
+    // En VPS, detecta la IP automáticamente
     if (import.meta.env.PROD) {
       return '/api';
     }
-    return import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+    // En desarrollo: si está en localhost o 127.0.0.1, usa localhost:5000
+    // Si está en otra IP (VPS), usa esa IP con puerto 5000
+    const hostname = window.location.hostname;
+    if (hostname === 'localhost' || hostname === '127.0.0.1') {
+      return 'http://localhost:5000/api';
+    }
+    // Para VPS, usa la misma IP con puerto 5000
+    return `http://${hostname}:5000/api`;
   }
   return '/api';
 };

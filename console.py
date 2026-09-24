@@ -105,7 +105,8 @@ class Console:
             self.print_out("─" * 80 + "\n")
             
             proc = subprocess.Popen(
-                ['npm', 'install'],
+                'npm install',
+                shell=True,
                 cwd=self.PROJECT,
                 stdout=subprocess.PIPE,
                 stderr=subprocess.STDOUT,
@@ -130,7 +131,8 @@ class Console:
             self.print_out("─" * 80 + "\n")
             
             proc = subprocess.Popen(
-                ['npm', 'run', 'dev'],
+                'npm run dev',
+                shell=True,
                 cwd=self.PROJECT,
                 stdout=subprocess.PIPE,
                 stderr=subprocess.STDOUT,
@@ -174,7 +176,8 @@ class Console:
             self.print_out("─" * 80 + "\n")
             
             proc = subprocess.Popen(
-                ['npm', 'install'],
+                'npm install',
+                shell=True,
                 cwd=self.BACKEND,
                 stdout=subprocess.PIPE,
                 stderr=subprocess.STDOUT,
@@ -199,7 +202,8 @@ class Console:
             self.print_out("─" * 80 + "\n")
             
             proc = subprocess.Popen(
-                ['node', 'server.js'],
+                'node server.js',
+                shell=True,
                 cwd=self.BACKEND,
                 stdout=subprocess.PIPE,
                 stderr=subprocess.STDOUT,

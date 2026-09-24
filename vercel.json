@@ -1,18 +1,24 @@
 {
-  "buildCommand": "npm install && npm run build && cd server && npm install",
+  "buildCommand": "npm install && npm run build",
   "outputDirectory": "dist",
   "env": {
-    "NODE_ENV": "production"
+    "NODE_ENV": "production",
+    "DB_SERVER": "@db_server",
+    "DB_NAME": "@db_name",
+    "DB_USER": "@db_user",
+    "DB_PASSWORD": "@db_password",
+    "JWT_SECRET": "@jwt_secret",
+    "JWT_EXPIRES_IN": "7d"
   },
   "functions": {
-    "server/server.js": {
+    "api/index.js": {
       "runtime": "nodejs18.x"
     }
   },
   "rewrites": [
     {
       "source": "/api/(.*)",
-      "destination": "/server/server.js"
+      "destination": "/api"
     },
     {
       "source": "/(.*)",
