@@ -25,14 +25,14 @@ app.use(cors());
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
 
+// Servir archivos estáticos públicos PRIMERO (para que tenga prioridad)
+app.use(express.static(path.join(__dirname, '../public')));
+
 // Servir archivos estáticos del frontend compilado
 app.use(express.static(path.join(__dirname, '../dist')));
 
-// También servir assets directamente
+// También servir assets directamente desde dist
 app.use('/assets', express.static(path.join(__dirname, '../dist/assets')));
-
-// Servir archivos estáticos públicos
-app.use(express.static(path.join(__dirname, '../public')));
 
 // Routes
 app.use('/api/auth', authRoutes);
