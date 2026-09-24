@@ -26,23 +26,23 @@ export default function HomePage({ onNavigate }: { onNavigate: (page: PageId) =>
   const [currentCarousel3Image, setCurrentCarousel3Image] = useState(0);
 
   const systemImages = [
-    '/src/assets/system-1.png',
-    '/src/assets/system-2.png',
-    '/src/assets/system-3.png',
+    '/assets/system-1.png',
+    '/assets/system-2.png',
+    '/assets/system-3.png',
   ];
 
   const carousel2Images = [
-    '/src/assets/carousel2-1.png',
-    '/src/assets/carousel2-2.png',
+    '/assets/carousel2-1.png',
+    '/assets/carousel2-2.png',
   ];
 
   const carousel3Images = [
-    '/src/assets/carousel3-1.png',
-    '/src/assets/carousel3-2.png',
-    '/src/assets/carousel3-3.png',
-    '/src/assets/carousel3-4.png',
-    '/src/assets/carousel3-5.png',
-    '/src/assets/carousel3-6.png',
+    '/assets/carousel3-1.png',
+    '/assets/carousel3-2.png',
+    '/assets/carousel3-3.png',
+    '/assets/carousel3-4.png',
+    '/assets/carousel3-5.png',
+    '/assets/carousel3-6.png',
   ];
 
   useEffect(() => {
@@ -78,7 +78,7 @@ export default function HomePage({ onNavigate }: { onNavigate: (page: PageId) =>
             playsInline
             className="absolute inset-0 h-full w-full object-cover"
           >
-            <source src="/src/assets/combat-arms-trailer.mp4" type="video/mp4" />
+            <source src="/assets/combat-arms-trailer.mp4" type="video/mp4" />
           </video>
           {/* Overlay oscuro sobre el video */}
           <div className="absolute inset-0 bg-black/55" />

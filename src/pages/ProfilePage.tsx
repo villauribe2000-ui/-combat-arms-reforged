@@ -310,7 +310,7 @@ export default function ProfilePage() {
       <div className="relative overflow-hidden rounded-3xl border border-white/5">
         <div 
           className="h-40 bg-cover bg-center lg:h-52"
-          style={{ backgroundImage: "url('/src/assets/profile-banner.png')" }}
+          style={{ backgroundImage: "url('/assets/profile-banner.png')" }}
         >
           <div className="absolute inset-0 bg-black/30" />
         </div>
@@ -319,11 +319,11 @@ export default function ProfilePage() {
             <div className="flex items-center gap-4 mt-8">
               <div className="relative flex items-center justify-center rounded-2xl border-0 shadow-2xl h-24 w-24 flex-shrink-0 overflow-hidden">
                 <img 
-                  src={profileData?.UserType === 1 ? '/src/assets/ranks/RANK_GM.png' : `/src/assets/ranks/RANK_${profileData?.level || 0}.png`}
+                  src={profileData?.UserType === 1 ? '/assets/ranks/RANK_GM.png' : `/assets/ranks/RANK_${profileData?.level || 0}.png`}
                   alt={profileData?.UserType === 1 ? 'GM' : `Level ${profileData?.level}`}
                   className="h-32 w-32 object-contain"
                   onError={(e) => {
-                    e.currentTarget.src = '/src/assets/ranks/RANK_0.png';
+                    e.currentTarget.src = '/assets/ranks/RANK_0.png';
                   }}
                 />
               </div>

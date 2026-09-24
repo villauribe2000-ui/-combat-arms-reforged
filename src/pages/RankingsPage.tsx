@@ -149,7 +149,7 @@ export default function RankingsPage() {
         ) : (
           filtered.map((player, i) => {
             const kdRatio = player.deaths > 0 ? (player.kills / player.deaths).toFixed(2) : player.kills.toFixed(2);
-            const rankImage = player.isGM ? '/src/assets/ranks/RANK_GM.png' : `/src/assets/ranks/RANK_${player.rank || 0}.png`;
+            const rankImage = player.isGM ? '/assets/ranks/RANK_GM.png' : `/assets/ranks/RANK_${player.rank || 0}.png`;
             return (
               <div 
                 key={player.id} 
@@ -165,11 +165,11 @@ export default function RankingsPage() {
                 </div>
                 <div className="col-span-5 sm:col-span-4 flex items-center gap-3">
                   <img 
-                    src={player.isGM ? '/src/assets/ranks/RANK_GM.png' : `/src/assets/ranks/RANK_${player.rank || 0}.png`}
+                    src={player.isGM ? '/assets/ranks/RANK_GM.png' : `/assets/ranks/RANK_${player.rank || 0}.png`}
                     alt="rank"
                     className="h-9 w-9 object-contain flex-shrink-0"
                     onError={(e) => {
-                      e.currentTarget.src = '/src/assets/ranks/RANK_0.png';
+                      e.currentTarget.src = '/assets/ranks/RANK_0.png';
                     }}
                   />
                   <div className="min-w-0 flex items-center gap-2 -mt-1">
@@ -213,11 +213,11 @@ export default function RankingsPage() {
               <div className="flex flex-col items-center justify-center">
                 <div className="mb-4 h-40 w-40 flex items-center justify-center">
                   <img 
-                    src={selectedPlayer.isGM ? '/src/assets/ranks/RANK_GM.png' : `/src/assets/ranks/RANK_${selectedPlayer.rank || 0}.png`} 
+                    src={selectedPlayer.isGM ? '/assets/ranks/RANK_GM.png' : `/assets/ranks/RANK_${selectedPlayer.rank || 0}.png`} 
                     alt={selectedPlayer.isGM ? "GM" : "rank"} 
                     className="h-32 w-32 object-contain"
                     onError={(e) => {
-                      e.currentTarget.src = '/src/assets/ranks/RANK_0.png';
+                      e.currentTarget.src = '/assets/ranks/RANK_0.png';
                     }}
                   />
                 </div>
@@ -271,7 +271,7 @@ function PodiumCard({ player, place, className = '', onClick, countryFlag = '' }
   const iconColors = { 1: 'text-amber-400', 2: 'text-slate-300', 3: 'text-amber-600' };
   const heights = { 1: 'h-40', 2: 'h-32', 3: 'h-28' };
 
-  const rankImage = player.isGM ? '/src/assets/ranks/RANK_GM.png' : `/src/assets/ranks/RANK_${player.rank || 0}.png`;
+  const rankImage = player.isGM ? '/assets/ranks/RANK_GM.png' : `/assets/ranks/RANK_${player.rank || 0}.png`;
 
   return (
     <div className={`flex flex-col items-center cursor-pointer ${className}`} onClick={onClick}>
@@ -282,7 +282,7 @@ function PodiumCard({ player, place, className = '', onClick, countryFlag = '' }
             alt="rank" 
             className="h-full w-full object-contain"
             onError={(e) => {
-              e.currentTarget.src = '/src/assets/ranks/RANK_0.png';
+              e.currentTarget.src = '/assets/ranks/RANK_0.png';
             }}
           />
           {place === 1 && <Crown className={`absolute top-0 left-1/2 h-7 w-7 -translate-x-1/2 -translate-y-2 ${iconColors[1]}`} fill="currentColor" />}
