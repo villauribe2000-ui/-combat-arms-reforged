@@ -1,6 +1,6 @@
 {
   "build": {
-    "builder": "nixpacks"
+    "builder": "railpack"
   },
   "deploy": {
     "startCommand": "npm run build && node server/server.js"
