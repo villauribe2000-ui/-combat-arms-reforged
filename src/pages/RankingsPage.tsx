@@ -1,7 +1,18 @@
 import { useEffect, useState } from 'react';
 import { api } from '@/lib/api';
 import { Crown, Search, Trophy, X, TrendingUp, Target, Wallet } from 'lucide-react';
-import COFlag from '@/assets/flags/CO.png';
+import rankGM from '@/assets/ranks/RANK_GM.png';
+import rank0 from '@/assets/ranks/RANK_0.png';
+import rank1 from '@/assets/ranks/RANK_1.png';
+import rank2 from '@/assets/ranks/RANK_2.png';
+import rank3 from '@/assets/ranks/RANK_3.png';
+import rank4 from '@/assets/ranks/RANK_4.png';
+import rank5 from '@/assets/ranks/RANK_5.png';
+import rank6 from '@/assets/ranks/RANK_6.png';
+import rank7 from '@/assets/ranks/RANK_7.png';
+import rank8 from '@/assets/ranks/RANK_8.png';
+import rank9 from '@/assets/ranks/RANK_9.png';
+import rank10 from '@/assets/ranks/RANK_10.png';
 import MXFlag from '@/assets/flags/MX.png';
 import ARFlag from '@/assets/flags/AR.png';
 import BRFlag from '@/assets/flags/BR.png';
@@ -21,7 +32,26 @@ import UYFlag from '@/assets/flags/UY.png';
 import CUFlag from '@/assets/flags/CU.png';
 import HTFlag from '@/assets/flags/HT.png';
 
-const COUNTRIES = [
+const RANK_IMAGES: Record<number | string, string> = {
+  'GM': rankGM,
+  0: rank0,
+  1: rank1,
+  2: rank2,
+  3: rank3,
+  4: rank4,
+  5: rank5,
+  6: rank6,
+  7: rank7,
+  8: rank8,
+  9: rank9,
+  10: rank10,
+};
+
+const getRankImage = (rank: number | string | boolean | null | undefined) => {
+  if (rank === 'GM' || rank === true) return rankGM;
+  const rankNum = Number(rank) || 0;
+  return RANK_IMAGES[rankNum] || rank0;
+};
   { code: 'CO', name: 'Colombia', flag: COFlag },
   { code: 'MX', name: 'México', flag: MXFlag },
   { code: 'AR', name: 'Argentina', flag: ARFlag },
@@ -149,7 +179,7 @@ export default function RankingsPage() {
         ) : (
           filtered.map((player, i) => {
             const kdRatio = player.deaths > 0 ? (player.kills / player.deaths).toFixed(2) : player.kills.toFixed(2);
-            const rankImage = player.isGM ? '/assets/ranks/RANK_GM.png' : `/assets/ranks/RANK_${player.rank || 0}.png`;
+            const rankImage = getRankImage(player.isGM ? 'GM' : player.rank);
             return (
               <div 
                 key={player.id} 
@@ -165,7 +195,7 @@ export default function RankingsPage() {
                 </div>
                 <div className="col-span-5 sm:col-span-4 flex items-center gap-3">
                   <img 
-                    src={player.isGM ? '/assets/ranks/RANK_GM.png' : `/assets/ranks/RANK_${player.rank || 0}.png`}
+                    src={getRankImage(player.isGM ? 'GM' : player.rank)}
                     alt="rank"
                     className="h-9 w-9 object-contain flex-shrink-0"
                     onError={(e) => {
@@ -213,7 +243,7 @@ export default function RankingsPage() {
               <div className="flex flex-col items-center justify-center">
                 <div className="mb-4 h-40 w-40 flex items-center justify-center">
                   <img 
-                    src={selectedPlayer.isGM ? '/assets/ranks/RANK_GM.png' : `/assets/ranks/RANK_${selectedPlayer.rank || 0}.png`} 
+                    src={getRankImage(selectedPlayer.isGM ? 'GM' : selectedPlayer.rank)} 
                     alt={selectedPlayer.isGM ? "GM" : "rank"} 
                     className="h-32 w-32 object-contain"
                     onError={(e) => {
