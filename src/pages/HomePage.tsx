@@ -3,6 +3,9 @@ import { useAuth } from '@/context/AuthContext';
 import { api } from '@/lib/api';
 import { Gamepad2, Trophy, Users, Store, Wallet, TrendingUp, Zap, ChevronRight, Crown, Activity, ChevronLeft } from 'lucide-react';
 import type { PageId } from '@/components/Layout';
+import system1 from '@/assets/system-1.png';
+import system2 from '@/assets/system-2.png';
+import system3 from '@/assets/system-3.png';
 import carousel2_1 from '@/assets/carousel2-1.png';
 import carousel2_2 from '@/assets/carousel2-2.png';
 import carousel3_1 from '@/assets/carousel3-1.png';
@@ -35,9 +38,9 @@ export default function HomePage({ onNavigate }: { onNavigate: (page: PageId) =>
   const [currentCarousel3Image, setCurrentCarousel3Image] = useState(0);
 
   const systemImages = [
-    '/assets/system-1.png',
-    '/assets/system-2.png',
-    '/assets/system-3.png',
+    system1,
+    system2,
+    system3,
   ];
 
   const carousel2Images = [
