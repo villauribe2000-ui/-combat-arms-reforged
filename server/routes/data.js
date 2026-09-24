@@ -39,24 +39,32 @@ router.get('/players/top', async (req, res) => {
         if (player.UserType === 1) {
           isGM = true;
           rankName = 'Game Master';
+          rank = 'GM';
         } else {
-          const gradeResult = await query(
-            `SELECT GradeLevel as rank, GradeName as rankName 
-             FROM CBT_GradeInfo 
-             WHERE @userExp >= MinExp AND @userExp <= MaxExp`,
-            { userExp: player.userExp }
-          );
-          if (gradeResult.recordset.length > 0) {
-            rank = gradeResult.recordset[0].rank;
-            rankName = gradeResult.recordset[0].rankName;
+          try {
+            const gradeResult = await query(
+              `SELECT TOP 1 GradeLevel as rank, GradeName as rankName 
+               FROM CBT_GradeInfo 
+               WHERE @userExp >= MinExp AND @userExp <= MaxExp`,
+              { userExp: player.userExp || 0 }
+            );
+            if (gradeResult.recordset.length > 0) {
+              rank = gradeResult.recordset[0].rank || 0;
+              rankName = gradeResult.recordset[0].rankName || 'TRAINEE';
+            }
+          } catch (e) {
+            console.warn(`Error getting rank for player ${player.username}:`, e.message);
+            // Default values si falla
+            rank = 0;
+            rankName = 'TRAINEE';
           }
         }
 
         return {
           ...player,
-          rank,
-          rankName,
-          isGM
+          rank: rank,
+          rankName: rankName,
+          isGM: isGM
         };
       })
     );

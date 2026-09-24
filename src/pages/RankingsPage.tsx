@@ -51,7 +51,9 @@ const RANK_IMAGES: Record<number | string, string> = {
 const getRankImage = (rank: number | string | boolean | null | undefined) => {
   if (rank === 'GM' || rank === true) return rankGM;
   const rankNum = Number(rank) || 0;
-  return RANK_IMAGES[rankNum] || rank0;
+  // Limitar a los rangos que tenemos (0-10)
+  const limitedRank = Math.min(Math.max(rankNum, 0), 10);
+  return RANK_IMAGES[limitedRank] || rank0;
 };
 
 const COUNTRIES = [
