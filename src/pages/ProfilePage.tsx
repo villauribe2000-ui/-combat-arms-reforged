@@ -309,12 +309,12 @@ export default function ProfilePage() {
       {/* Header banner */}
       <div className="relative overflow-hidden rounded-3xl border border-white/5">
         <div 
-          className="h-[30rem] bg-cover bg-center lg:h-96"
+          className="h-[36rem] bg-cover bg-center lg:h-[28rem]"
           style={{ backgroundImage: "url('/src/assets/profile-banner.png')" }}
         >
           <div className="absolute inset-0 bg-black/10" />
         </div>
-        <div className="relative -mt-32 px-6 pb-6 lg:-mt-40 lg:px-8">
+        <div className="relative -mt-40 px-6 pb-6 lg:-mt-48 lg:px-8">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
             <div className="flex items-end gap-4">
               <div className="relative flex items-center justify-center rounded-2xl shadow-2xl h-40 w-40 flex-shrink-0 overflow-hidden">
