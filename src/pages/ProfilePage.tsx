@@ -319,11 +319,11 @@ export default function ProfilePage() {
             <div className="flex items-center gap-4 mt-8">
               <div className="relative flex items-center justify-center rounded-2xl border-0 shadow-2xl h-24 w-24 flex-shrink-0 overflow-hidden">
                 <img 
-                  src={profileData?.UserType === 1 ? '/assets/ranks/RANK_GM.png' : `/assets/ranks/RANK_${profileData?.level || 0}.png`}
+                  src={profileData?.UserType === 1 ? '/src/assets/ranks/RANK_GM.png' : `/src/assets/ranks/RANK_${profileData?.level || 0}.png`}
                   alt={profileData?.UserType === 1 ? 'GM' : `Level ${profileData?.level}`}
                   className="h-32 w-32 object-contain"
                   onError={(e) => {
-                    e.currentTarget.src = '/assets/ranks/RANK_0.png';
+                    e.currentTarget.src = '/src/assets/ranks/RANK_0.png';
                   }}
                 />
               </div>
