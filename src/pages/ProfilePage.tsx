@@ -309,19 +309,19 @@ export default function ProfilePage() {
       {/* Header banner */}
       <div className="relative overflow-hidden rounded-3xl border border-white/5">
         <div 
-          className="h-64 bg-cover bg-center lg:h-80"
+          className="h-96 bg-cover bg-center lg:h-[28rem]"
           style={{ backgroundImage: "url('/src/assets/profile-banner.png')" }}
         >
-          <div className="absolute inset-0 bg-black/20" />
+          <div className="absolute inset-0 bg-black/15" />
         </div>
-        <div className="relative -mt-20 px-6 pb-6 lg:-mt-24 lg:px-8">
+        <div className="relative -mt-24 px-6 pb-6 lg:-mt-32 lg:px-8">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
             <div className="flex items-end gap-4">
-              <div className="relative flex items-center justify-center rounded-2xl border-4 border-[#0d1320] shadow-2xl h-32 w-32 flex-shrink-0 overflow-hidden bg-[#0d1320]">
+              <div className="relative flex items-center justify-center rounded-2xl shadow-2xl h-40 w-40 flex-shrink-0 overflow-hidden">
                 <img 
                   src={profileData?.UserType === 1 ? '/src/assets/ranks/RANK_GM.png' : `/src/assets/ranks/RANK_${profileData?.level || 0}.png`}
                   alt={profileData?.UserType === 1 ? 'GM' : `Level ${profileData?.level}`}
-                  className="h-40 w-40 object-contain"
+                  className="h-48 w-48 object-contain"
                   onError={(e) => {
                     e.currentTarget.src = '/src/assets/ranks/RANK_0.png';
                   }}
@@ -329,7 +329,7 @@ export default function ProfilePage() {
               </div>
               <div className="pb-2">
                 <div className="flex items-center gap-3">
-                  <h1 className="text-3xl font-bold">{profileData.NickName}</h1>
+                  <h1 className="text-4xl font-bold">{profileData.NickName}</h1>
                   {selectedCountryData && (
                     <img src={selectedCountryData.flag} alt={selectedCountryData.name} className="h-10 w-14 rounded-md object-cover shadow-lg" />
                   )}
