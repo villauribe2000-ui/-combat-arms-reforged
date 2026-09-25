@@ -30,44 +30,43 @@ router.get('/players/top', async (req, res) => {
     );
 
     // Obtener información de rangos para cada jugador
-    const playersWithRanks = await Promise.all(
-      result.recordset.map(async (player) => {
-        let rank = 0;
-        let rankName = 'TRAINEE';
-        let isGM = false;
+    const playersWithRanks = result.recordset.map((player) => {
+      let rank = 0;
+      let rankName = 'TRAINEE';
+      let isGM = false;
 
-        if (player.UserType === 1) {
-          isGM = true;
-          rankName = 'Game Master';
-          rank = 'GM';
-        } else {
-          try {
-            const gradeResult = await query(
-              `SELECT TOP 1 GradeLevel as rank, GradeName as rankName 
-               FROM CBT_GradeInfo 
-               WHERE @userExp >= MinExp AND @userExp <= MaxExp`,
-              { userExp: player.userExp || 0 }
-            );
-            if (gradeResult.recordset.length > 0) {
-              rank = gradeResult.recordset[0].rank || 0;
-              rankName = gradeResult.recordset[0].rankName || 'TRAINEE';
-            }
-          } catch (e) {
-            console.warn(`Error getting rank for player ${player.username}:`, e.message);
-            // Default values si falla
-            rank = 0;
-            rankName = 'TRAINEE';
-          }
-        }
+      if (player.UserType === 1) {
+        isGM = true;
+        rankName = 'Game Master';
+        rank = 'GM';
+      } else {
+        // Calcular rango basado en Exp - rangos del 0 al 10
+        // Usamos kills también como factor
+        const totalScore = (player.userExp || 0) + (player.kills || 0) * 100;
+        
+        // Distribuir en rangos 0-10 basado en score
+        if (totalScore < 10000) rank = 0;
+        else if (totalScore < 50000) rank = 1;
+        else if (totalScore < 100000) rank = 2;
+        else if (totalScore < 200000) rank = 3;
+        else if (totalScore < 300000) rank = 4;
+        else if (totalScore < 500000) rank = 5;
+        else if (totalScore < 750000) rank = 6;
+        else if (totalScore < 1000000) rank = 7;
+        else if (totalScore < 1500000) rank = 8;
+        else if (totalScore < 2000000) rank = 9;
+        else rank = 10;
 
-        return {
-          ...player,
-          rank: rank,
-          rankName: rankName,
-          isGM: isGM
-        };
-      })
-    );
+        rankName = [`TRAINEE`, `PRIVATE`, `CORPORAL`, `SERGEANT`, `STAFF_SG`, `LIEUTENANT`, `CAPTAIN`, `MAJOR`, `COLONEL`, `GENERAL`, `FIELD_MARSHAL`][rank] || 'TRAINEE';
+      }
+
+      return {
+        ...player,
+        rank: rank,
+        rankName: rankName,
+        isGM: isGM
+      };
+    });
 
     res.json(playersWithRanks);
   } catch (error) {
