@@ -309,29 +309,29 @@ export default function ProfilePage() {
       {/* Header banner */}
       <div className="relative overflow-hidden rounded-3xl border border-white/5">
         <div 
-          className="h-40 bg-cover bg-center lg:h-52"
+          className="h-64 bg-cover bg-center lg:h-80"
           style={{ backgroundImage: "url('/src/assets/profile-banner.png')" }}
         >
-          <div className="absolute inset-0 bg-black/30" />
+          <div className="absolute inset-0 bg-black/20" />
         </div>
-        <div className="relative -mt-12 px-6 pb-6 lg:-mt-16 lg:px-8">
-          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-            <div className="flex items-center gap-4 mt-8">
-              <div className="relative flex items-center justify-center rounded-2xl border-0 shadow-2xl h-24 w-24 flex-shrink-0 overflow-hidden">
+        <div className="relative -mt-20 px-6 pb-6 lg:-mt-24 lg:px-8">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+            <div className="flex items-end gap-4">
+              <div className="relative flex items-center justify-center rounded-2xl border-4 border-[#0d1320] shadow-2xl h-32 w-32 flex-shrink-0 overflow-hidden bg-[#0d1320]">
                 <img 
                   src={profileData?.UserType === 1 ? '/src/assets/ranks/RANK_GM.png' : `/src/assets/ranks/RANK_${profileData?.level || 0}.png`}
                   alt={profileData?.UserType === 1 ? 'GM' : `Level ${profileData?.level}`}
-                  className="h-32 w-32 object-contain"
+                  className="h-40 w-40 object-contain"
                   onError={(e) => {
                     e.currentTarget.src = '/src/assets/ranks/RANK_0.png';
                   }}
                 />
               </div>
-              <div className="mt-4">
+              <div className="pb-2">
                 <div className="flex items-center gap-3">
-                  <h1 className="text-2xl font-bold">{profileData.NickName}</h1>
+                  <h1 className="text-3xl font-bold">{profileData.NickName}</h1>
                   {selectedCountryData && (
-                    <img src={selectedCountryData.flag} alt={selectedCountryData.name} className="h-8 w-12 rounded-md object-cover shadow-lg" />
+                    <img src={selectedCountryData.flag} alt={selectedCountryData.name} className="h-10 w-14 rounded-md object-cover shadow-lg" />
                   )}
                 </div>
               </div>
