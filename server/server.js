@@ -34,6 +34,9 @@ app.use(express.static(path.join(__dirname, '../dist')));
 // También servir assets directamente desde dist
 app.use('/assets', express.static(path.join(__dirname, '../dist/assets')));
 
+// Servir src/assets como /src/assets (para imágenes que se referencian directamente en JSX)
+app.use('/src/assets', express.static(path.join(__dirname, '../src/assets')));
+
 // Routes
 app.use('/api/auth', authRoutes);
 app.use('/api', dataRoutes);
