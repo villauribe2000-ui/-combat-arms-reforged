@@ -29,7 +29,24 @@ router.get('/players/top', async (req, res) => {
       { limit: parseInt(limit) }
     );
 
+    console.log('Raw players from DB:', result.recordset.map(p => ({
+      username: p.username,
+      userExp: p.userExp,
+      kills: p.kills,
+      UserType: p.UserType
+    })));
+
     // Obtener información de rangos para cada jugador
+    // Primero traemos todos los rangos disponibles
+    let gradeInfo = [];
+    try {
+      const gradeResult = await query(`SELECT GradeLevel, GradeName, MinExp, MaxExp FROM CBT_GradeInfo ORDER BY GradeLevel`);
+      gradeInfo = gradeResult.recordset;
+      console.log('Available grades:', gradeInfo);
+    } catch (e) {
+      console.warn('Could not fetch grade info:', e.message);
+    }
+
     const playersWithRanks = result.recordset.map((player) => {
       let rank = 0;
       let rankName = 'TRAINEE';
@@ -40,25 +57,27 @@ router.get('/players/top', async (req, res) => {
         rankName = 'Game Master';
         rank = 'GM';
       } else {
-        // Calcular rango basado en Exp - rangos del 0 al 10
-        // Usamos kills también como factor
-        const totalScore = (player.userExp || 0) + (player.kills || 0) * 100;
-        
-        // Distribuir en rangos 0-10 basado en score
-        if (totalScore < 10000) rank = 0;
-        else if (totalScore < 50000) rank = 1;
-        else if (totalScore < 100000) rank = 2;
-        else if (totalScore < 200000) rank = 3;
-        else if (totalScore < 300000) rank = 4;
-        else if (totalScore < 500000) rank = 5;
-        else if (totalScore < 750000) rank = 6;
-        else if (totalScore < 1000000) rank = 7;
-        else if (totalScore < 1500000) rank = 8;
-        else if (totalScore < 2000000) rank = 9;
-        else rank = 10;
-
-        rankName = [`TRAINEE`, `PRIVATE`, `CORPORAL`, `SERGEANT`, `STAFF_SG`, `LIEUTENANT`, `CAPTAIN`, `MAJOR`, `COLONEL`, `GENERAL`, `FIELD_MARSHAL`][rank] || 'TRAINEE';
+        // Si tenemos info de grades, usarla
+        if (gradeInfo.length > 0) {
+          const matchingGrade = gradeInfo.find(g => 
+            player.userExp >= (g.MinExp || 0) && player.userExp <= (g.MaxExp || 999999999)
+          );
+          if (matchingGrade) {
+            rank = matchingGrade.GradeLevel || 0;
+            rankName = matchingGrade.GradeName || 'TRAINEE';
+          } else {
+            // Si no encaja en ninguno, asignar basado en XP relativo
+            rank = Math.min(Math.floor(player.userExp / 500000), 10) || 0;
+            rankName = 'UNKNOWN';
+          }
+        } else {
+          // Fallback si no hay grades
+          rank = Math.min(Math.floor((player.userExp || 0) / 500000), 10) || 0;
+          rankName = 'TRAINEE';
+        }
       }
+
+      console.log(`Player ${player.username}: exp=${player.userExp}, rank=${rank}, rankName=${rankName}`);
 
       return {
         ...player,
@@ -67,6 +86,12 @@ router.get('/players/top', async (req, res) => {
         isGM: isGM
       };
     });
+
+    console.log('Players with ranks:', playersWithRanks.map(p => ({
+      username: p.username,
+      rank: p.rank,
+      rankName: p.rankName
+    })));
 
     res.json(playersWithRanks);
   } catch (error) {
