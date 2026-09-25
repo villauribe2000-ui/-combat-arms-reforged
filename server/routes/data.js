@@ -29,69 +29,43 @@ router.get('/players/top', async (req, res) => {
       { limit: parseInt(limit) }
     );
 
-    console.log('Raw players from DB:', result.recordset.map(p => ({
-      username: p.username,
-      userExp: p.userExp,
-      kills: p.kills,
-      UserType: p.UserType
-    })));
-
     // Obtener información de rangos para cada jugador
-    // Primero traemos todos los rangos disponibles
-    let gradeInfo = [];
-    try {
-      const gradeResult = await query(`SELECT GradeLevel, GradeName, MinExp, MaxExp FROM CBT_GradeInfo ORDER BY GradeLevel`);
-      gradeInfo = gradeResult.recordset;
-      console.log('Available grades:', gradeInfo);
-    } catch (e) {
-      console.warn('Could not fetch grade info:', e.message);
-    }
+    const playersWithRanks = await Promise.all(
+      result.recordset.map(async (player) => {
+        let rank = 0;
+        let rankName = 'TRAINEE';
+        let isGM = false;
 
-    const playersWithRanks = result.recordset.map((player) => {
-      let rank = 0;
-      let rankName = 'TRAINEE';
-      let isGM = false;
-
-      if (player.UserType === 1) {
-        isGM = true;
-        rankName = 'Game Master';
-        rank = 'GM';
-      } else {
-        // Si tenemos info de grades, usarla
-        if (gradeInfo.length > 0) {
-          const matchingGrade = gradeInfo.find(g => 
-            player.userExp >= (g.MinExp || 0) && player.userExp <= (g.MaxExp || 999999999)
-          );
-          if (matchingGrade) {
-            rank = matchingGrade.GradeLevel || 0;
-            rankName = matchingGrade.GradeName || 'TRAINEE';
-          } else {
-            // Si no encaja en ninguno, asignar basado en XP relativo
-            rank = Math.min(Math.floor(player.userExp / 500000), 10) || 0;
-            rankName = 'UNKNOWN';
-          }
+        if (player.UserType === 1) {
+          isGM = true;
+          rankName = 'Game Master';
         } else {
-          // Fallback si no hay grades
-          rank = Math.min(Math.floor((player.userExp || 0) / 500000), 10) || 0;
-          rankName = 'TRAINEE';
+          try {
+            const gradeResult = await query(
+              `SELECT TOP 1 GradeLevel as rank, GradeName as rankName 
+               FROM CBT_GradeInfo 
+               WHERE @userExp >= MinExp AND @userExp <= MaxExp`,
+              { userExp: player.userExp || 0 }
+            );
+            if (gradeResult.recordset.length > 0) {
+              rank = gradeResult.recordset[0].rank || 0;
+              rankName = gradeResult.recordset[0].rankName || 'TRAINEE';
+            }
+          } catch (e) {
+            console.warn(`Error getting rank for player ${player.username}:`, e.message);
+            rank = 0;
+            rankName = 'TRAINEE';
+          }
         }
-      }
 
-      console.log(`Player ${player.username}: exp=${player.userExp}, rank=${rank}, rankName=${rankName}`);
-
-      return {
-        ...player,
-        rank: rank,
-        rankName: rankName,
-        isGM: isGM
-      };
-    });
-
-    console.log('Players with ranks:', playersWithRanks.map(p => ({
-      username: p.username,
-      rank: p.rank,
-      rankName: p.rankName
-    })));
+        return {
+          ...player,
+          rank,
+          rankName,
+          isGM
+        };
+      })
+    );
 
     res.json(playersWithRanks);
   } catch (error) {
