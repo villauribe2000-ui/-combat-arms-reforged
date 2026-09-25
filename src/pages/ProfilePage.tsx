@@ -309,29 +309,29 @@ export default function ProfilePage() {
       {/* Header banner */}
       <div className="relative overflow-hidden rounded-3xl border border-white/5">
         <div 
-          className="h-[36rem] bg-cover bg-center lg:h-[28rem]"
+          className="h-52 bg-cover bg-center lg:h-64"
           style={{ backgroundImage: "url('/src/assets/profile-banner.png')" }}
         >
           <div className="absolute inset-0 bg-black/10" />
         </div>
-        <div className="relative -mt-40 px-6 pb-6 lg:-mt-48 lg:px-8">
-          <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-            <div className="flex items-end gap-4">
-              <div className="relative flex items-center justify-center rounded-2xl shadow-2xl h-40 w-40 flex-shrink-0 overflow-hidden">
+        <div className="relative -mt-16 px-6 pb-6 lg:-mt-20 lg:px-8">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex items-center gap-3">
+              <div className="relative flex items-center justify-center rounded-lg shadow-lg h-24 w-24 flex-shrink-0 overflow-hidden">
                 <img 
                   src={profileData?.UserType === 1 ? '/src/assets/ranks/RANK_GM.png' : `/src/assets/ranks/RANK_${profileData?.level || 0}.png`}
                   alt={profileData?.UserType === 1 ? 'GM' : `Level ${profileData?.level}`}
-                  className="h-48 w-48 object-contain"
+                  className="h-28 w-28 object-contain"
                   onError={(e) => {
                     e.currentTarget.src = '/src/assets/ranks/RANK_0.png';
                   }}
                 />
               </div>
-              <div className="pb-2">
-                <div className="flex items-center gap-3">
-                  <h1 className="text-4xl font-bold">{profileData.NickName}</h1>
+              <div>
+                <div className="flex items-center gap-2">
+                  <h1 className="text-3xl font-bold">{profileData.NickName}</h1>
                   {selectedCountryData && (
-                    <img src={selectedCountryData.flag} alt={selectedCountryData.name} className="h-10 w-14 rounded-md object-cover shadow-lg" />
+                    <img src={selectedCountryData.flag} alt={selectedCountryData.name} className="h-8 w-12 rounded-sm object-cover shadow-lg" />
                   )}
                 </div>
               </div>
