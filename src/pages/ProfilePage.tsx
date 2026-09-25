@@ -310,7 +310,7 @@ export default function ProfilePage() {
       <div className="relative overflow-hidden rounded-3xl border border-white/5">
         <div 
           className="h-40 bg-cover bg-center lg:h-52"
-          style={{ backgroundImage: "url('/assets/profile-banner.png')" }}
+          style={{ backgroundImage: "url('/src/assets/profile-banner.png')" }}
         >
           <div className="absolute inset-0 bg-black/30" />
         </div>
