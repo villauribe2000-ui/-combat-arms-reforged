@@ -98,9 +98,8 @@ export default function Layout({ currentPage, onNavigate, children }: Props) {
 
   const Sidebar = (
     <div className="flex h-full flex-col">
-      <div className="flex flex-col items-center justify-center px-6 py-4 border-b border-white/5">
-        <img src="/src/assets/combat-icon.png" alt="Combat Arms Icon" className="h-24 w-24 object-contain mb-3" />
-        <img src="/src/assets/logo-sidebar.png" alt="Combat Arms" className="h-24 w-auto object-contain" />
+      <div className="flex items-center justify-center px-6 py-6 border-b border-white/5">
+        <img src="/src/assets/logo-sidebar.png" alt="Combat Arms" className="h-32 w-auto object-contain" />
       </div>
 
       <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
