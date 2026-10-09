@@ -345,7 +345,7 @@ export default function ProfilePage() {
         <StatBox icon={Trophy} label="Kills" value={profileData.kills.toLocaleString()} color="text-emerald-400" />
         <StatBox icon={Target} label="Muertes" value={profileData.deaths.toLocaleString()} color="text-rose-400" />
         <StatBox icon={TrendingUp} label="K/D Ratio" value={kdRatio} color="text-cyan-400" />
-        <StatBox icon={Wallet} label="NX" value={(profile?.nx || 0).toLocaleString()} color="text-blue-400" />
+        <StatBox icon={Wallet} label="NX" value={(profile?.gameCoins || 0).toLocaleString()} color="text-blue-400" />
       </div>
 
       {/* GP Balance Card */}
@@ -353,7 +353,7 @@ export default function ProfilePage() {
         <div className="flex items-center justify-between">
           <div>
             <p className="text-sm text-slate-400 mb-1">GP BALANCE</p>
-            <p className="text-4xl lg:text-5xl font-black text-amber-400">{(profile?.gp || 0).toLocaleString()}</p>
+            <p className="text-4xl lg:text-5xl font-black text-amber-400">{(profile?.totalBalance || 0).toLocaleString()}</p>
             <p className="text-xs text-slate-500 mt-2">Moneda del juego</p>
           </div>
           <div className="text-right">
