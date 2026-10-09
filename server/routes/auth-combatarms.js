@@ -119,6 +119,7 @@ router.post('/login', async (req, res) => {
       token,
       user: {
         userId: user.oidUser,
+        id: user.oidUser,
         username: user.strNexonID,
         email: user.strEmail,
         nickname: profile?.NickName,
@@ -260,6 +261,7 @@ router.post('/register', async (req, res) => {
       message: 'Cuenta creada exitosamente',
       user: {
         userId: oidUser,
+        id: oidUser,
         username,
         email,
         nickname: null,
@@ -347,6 +349,7 @@ router.get('/verify', async (req, res) => {
       success: true,
       user: {
         userId: user.oidUser,
+        id: user.oidUser,
         username: user.strNexonID,
         email: user.strEmail,
         nickname: profile?.NickName,
@@ -427,6 +430,7 @@ router.get('/profile/:userId', async (req, res) => {
       success: true,
       profile: {
         userId: user.oidUser,
+        id: user.oidUser,
         username: user.strNexonID,
         email: user.strEmail,
         nickname: character?.NickName || 'Sin crear',

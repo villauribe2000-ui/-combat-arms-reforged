@@ -2,10 +2,11 @@ import { createContext, useContext, useEffect, useState, type ReactNode } from '
 
 export interface Profile {
   userId: number;
+  id?: number; // Alias para userId
   username: string;
   email: string;
   nickname: string | null;
-  level: number;
+  level?: number;
   experience: number;
   gameCoins: number;
   bonusCoins: number;
