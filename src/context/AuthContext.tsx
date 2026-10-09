@@ -1,126 +1,147 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from 'react';
-import { api } from '@/lib/api';
 
 export interface Profile {
-  id: string;
+  userId: number;
   username: string;
-  NickName?: string;
   email: string;
-  avatar_url: string | null;
-  bio: string;
-  rank: string;
-  points: number;
-  wins: number;
-  losses: number;
-  kd_ratio: number;
-  cash_balance: number;
-  nx: number;
-  gp: number;
-  is_admin: boolean;
-  country: string;
-  main_game: string;
-  created_at: string;
-  updated_at: string;
-  level?: number;
-  UserType?: number;
+  nickname: string | null;
+  level: number;
+  experience: number;
+  gameCoins: number;
+  bonusCoins: number;
+  totalBalance: number;
+  characterClass?: number;
+  gender?: number;
+  joinDate?: string;
 }
 
 type AuthContextType = {
   profile: Profile | null;
   loading: boolean;
+  token: string | null;
   signIn: (username: string, password: string) => Promise<{ error: any }>;
-  signUp: (username: string, password: string) => Promise<{ error: any }>;
+  signUp: (username: string, password: string, confirmPassword: string, email: string) => Promise<{ error: any }>;
   signOut: () => Promise<void>;
   refreshProfile: () => Promise<void>;
-  updateWallet: (amount: number) => void;
 };
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
+  const [token, setToken] = useState<string | null>(null);
 
-  const fetchProfile = async () => {
+  const fetchProfile = async (authToken?: string) => {
     try {
-      if (typeof window !== 'undefined') {
-        const token = localStorage.getItem('token');
-        if (!token) {
-          setProfile(null);
-          return;
-        }
+      const tkn = authToken || localStorage.getItem('token');
+      if (!tkn) {
+        setProfile(null);
+        setToken(null);
+        return;
       }
-      const data = await api.getCurrentUser();
-      setProfile(data);
+
+      const response = await fetch(`${API_URL}/api/auth-combatarms/verify`, {
+        headers: {
+          'Authorization': `Bearer ${tkn}`
+        }
+      });
+
+      if (!response.ok) {
+        throw new Error('Token inválido');
+      }
+
+      const data = await response.json();
+      if (data.success) {
+        setProfile(data.user);
+        setToken(tkn);
+      }
     } catch (error) {
       console.error('Failed to fetch profile:', error);
       setProfile(null);
+      setToken(null);
+      localStorage.removeItem('token');
     }
   };
 
   useEffect(() => {
     // Verificar si hay token guardado
-    if (typeof window !== 'undefined') {
-      const token = localStorage.getItem('token');
-      if (token) {
-        // Obtener perfil inicial
-        fetchProfile();
-        setLoading(false);
-        
-        // Actualizar perfil cada 30 segundos para reflejar cambios de nivel, exp, etc.
-        const interval = setInterval(() => {
-          fetchProfile();
-        }, 30000);
-
-        return () => clearInterval(interval);
-      }
+    const tkn = localStorage.getItem('token');
+    if (tkn) {
+      fetchProfile(tkn);
     }
     setLoading(false);
   }, []);
 
   const signIn = async (username: string, password: string) => {
     try {
-      const result = await api.login(username, password);
-      // Obtener perfil después de login
-      setTimeout(() => {
-        fetchProfile();
-      }, 100);
+      const response = await fetch(`${API_URL}/api/auth-combatarms/login`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ username, password })
+      });
+
+      const data = await response.json();
+
+      if (!data.success) {
+        return { error: new Error(data.error) };
+      }
+
+      localStorage.setItem('token', data.token);
+      await fetchProfile(data.token);
       return { error: null };
     } catch (error: any) {
-      return { error: error.message };
+      return { error };
     }
   };
 
   const signUp = async (username: string, password: string, confirmPassword: string, email: string) => {
     try {
-      const result = await api.signup(username, password, confirmPassword, email);
-      await fetchProfile();
+      if (password !== confirmPassword) {
+        return { error: new Error('Las contraseñas no coinciden') };
+      }
+
+      const response = await fetch(`${API_URL}/api/auth-combatarms/register`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ username, password, email })
+      });
+
+      const data = await response.json();
+
+      if (!data.success) {
+        return { error: new Error(data.error) };
+      }
+
+      localStorage.setItem('token', data.token);
+      await fetchProfile(data.token);
       return { error: null };
     } catch (error: any) {
-      return { error: error.message };
+      return { error };
     }
   };
 
   const signOut = async () => {
-    api.logout();
+    localStorage.removeItem('token');
     setProfile(null);
+    setToken(null);
   };
 
   const refreshProfile = async () => {
-    await fetchProfile();
-  };
-
-  const updateWallet = (amount: number) => {
-    if (profile) {
-      setProfile({
-        ...profile,
-        nx: (profile.nx || 0) + amount,
-      });
+    const tkn = localStorage.getItem('token');
+    if (tkn) {
+      await fetchProfile(tkn);
     }
   };
 
   return (
-    <AuthContext.Provider value={{ profile, loading, signIn, signUp, signOut, refreshProfile, updateWallet }}>
+    <AuthContext.Provider value={{ profile, loading, token, signIn, signUp, signOut, refreshProfile }}>
       {children}
     </AuthContext.Provider>
   );

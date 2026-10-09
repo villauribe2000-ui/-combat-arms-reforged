@@ -137,7 +137,7 @@ export default function LoginForm({ onSuccess }: LoginFormProps) {
           </button>
         </form>
 
-        <div className="mt-6 text-center">
+        <div className="mt-6 text-center space-y-3">
           {isLogin ? (
             <p className="text-gray-400 text-sm">
               ¿No tienes cuenta?{' '}
@@ -147,21 +147,10 @@ export default function LoginForm({ onSuccess }: LoginFormProps) {
                 rel="noopener noreferrer"
                 className="text-cyan-400 hover:text-cyan-300 font-medium transition-colors"
               >
-                Crea una
+                Crea una aquí
               </a>
             </p>
-          ) : (
-            <button
-              type="button"
-              onClick={() => {
-                setIsLogin(!isLogin);
-                setError(null);
-              }}
-              className="text-gray-400 hover:text-cyan-400 text-sm transition-colors"
-            >
-              ¿Ya tienes cuenta? Inicia sesión
-            </button>
-          )}
+          ) : null}
         </div>
       </div>
     </div>

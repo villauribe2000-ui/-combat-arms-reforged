@@ -6,12 +6,14 @@ import { fileURLToPath } from 'url';
 import { getPoolConnection, disconnect, query, queryVisms } from './db.js';
 import { authMiddleware } from './auth.js';
 import authRoutes from './routes/auth.js';
+import authCombatarmsRoutes from './routes/auth-combatarms.js';
 import dataRoutes from './routes/data.js';
 import walletRoutes from './routes/wallet.js';
 import paymentsRoutes from './routes/payments.js';
 import refundRoutes from './routes/refund.js';
 import supportRoutes from './routes/support.js';
 import marketplaceRoutes from './routes/marketplace.js';
+import combatarmsWebRoutes from './routes/combatarms-web.js';
 // import birthdayRoutes from './routes/birthdays.js';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -39,12 +41,14 @@ app.use('/src/assets', express.static(path.join(__dirname, '../src/assets')));
 
 // Routes
 app.use('/api/auth', authRoutes);
+app.use('/api/auth-combatarms', authCombatarmsRoutes);
 app.use('/api', dataRoutes);
 app.use('/api/wallet', walletRoutes);
 app.use('/api/payments', paymentsRoutes);
 app.use('/api/refund', refundRoutes);
 app.use('/api/support', supportRoutes);
 app.use('/api/marketplace', marketplaceRoutes);
+app.use('/api/combatarms-web', combatarmsWebRoutes);
 app.use('/api/protected', authMiddleware, dataRoutes);
 
 // Health check

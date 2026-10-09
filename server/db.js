@@ -1,10 +1,11 @@
 import sql from 'mssql';
 
 const config = {
-  server: process.env.DB_SERVER,
-  database: process.env.DB_NAME,
-  user: process.env.DB_USER,
-  password: process.env.DB_PASSWORD,
+  server: (process.env.DB_SERVER || '94.72.114.174').split(',')[0], // Separar IP del puerto si viene junto
+  database: process.env.DB_NAME || 'COMBATARMS',
+  user: process.env.DB_USER || 'combatadmin',
+  password: process.env.DB_PASSWORD || 'Admin123456',
+  port: parseInt(process.env.DB_PORT) || 1433,
   pool: {
     max: 10,
     min: 0,
@@ -13,15 +14,16 @@ const config = {
   options: {
     trustServerCertificate: true,
     encrypt: false,
-    requestTimeout: 30000, // Aumentar timeout a 30 segundos
+    requestTimeout: 30000,
   },
 };
 
 const configLog = {
-  server: process.env.DB_LOG_SERVER,
-  database: process.env.DB_LOG_NAME,
-  user: process.env.DB_LOG_USER,
-  password: process.env.DB_LOG_PASSWORD,
+  server: (process.env.DB_LOG_SERVER || '94.72.114.174').split(',')[0],
+  database: process.env.DB_LOG_NAME || 'COMBATARMS_LOG',
+  user: process.env.DB_LOG_USER || 'combatadmin',
+  password: process.env.DB_LOG_PASSWORD || 'Admin123456',
+  port: parseInt(process.env.DB_PORT) || 1433,
   pool: {
     max: 10,
     min: 0,
@@ -35,10 +37,11 @@ const configLog = {
 };
 
 const configGuild = {
-  server: process.env.DB_SERVER,
+  server: (process.env.DB_SERVER || '94.72.114.174').split(',')[0],
   database: 'NX_GuildMaster',
-  user: process.env.DB_USER,
-  password: process.env.DB_PASSWORD,
+  user: process.env.DB_USER || 'combatadmin',
+  password: process.env.DB_PASSWORD || 'Admin123456',
+  port: parseInt(process.env.DB_PORT) || 1433,
   pool: {
     max: 10,
     min: 0,
@@ -58,9 +61,16 @@ let poolVisms = null;
 
 export async function getPoolConnection() {
   if (!pool) {
+    console.log(`[DB] Conectando a ${config.server}/${config.database} con usuario ${config.user}...`);
     pool = new sql.ConnectionPool(config);
-    await pool.connect();
-    console.log('✓ Conectado a COMBATARMS');
+    try {
+      await pool.connect();
+      console.log('✓ Conectado a COMBATARMS');
+    } catch (error) {
+      console.error(`❌ Error conectando a COMBATARMS:`, error.message);
+      pool = null;
+      throw error;
+    }
   }
   return pool;
 }
@@ -86,10 +96,11 @@ export async function getPoolConnectionGuild() {
 export async function getPoolConnectionVisms() {
   if (!poolVisms) {
     const configVisms = {
-      server: process.env.DB_SERVER,
+      server: (process.env.DB_SERVER || '94.72.114.174').split(',')[0],
       database: 'VISMS',
-      user: process.env.DB_USER,
-      password: process.env.DB_PASSWORD,
+      user: process.env.DB_USER || 'combatadmin',
+      password: process.env.DB_PASSWORD || 'Admin123456',
+      port: parseInt(process.env.DB_PORT) || 1433,
       pool: {
         max: 10,
         min: 0,
