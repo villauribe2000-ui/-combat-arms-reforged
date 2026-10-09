@@ -21,3 +21,15 @@ dist-ssr
 *.sln
 *.sw?
 .env
+
+# Backend (solo para Vercel frontend)
+server/
+api/
+*.py
+Procfile
+railway.json
+.zeabur/
+.bolt/
+supabase/
+templates/
+*.bat
