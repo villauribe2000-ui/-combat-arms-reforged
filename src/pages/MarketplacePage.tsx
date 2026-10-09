@@ -207,12 +207,12 @@ export default function MarketplacePage() {
     if (!profile?.id) return;
 
     // Verificar NX disponible
-    if (profile.nx === undefined || profile.nx < listing.sellingPrice) {
-      const needed = listing.sellingPrice - (profile.nx || 0);
+    if (profile.gameCoins === undefined || profile.gameCoins < listing.sellingPrice) {
+      const needed = listing.sellingPrice - (profile.gameCoins || 0);
       showToast(
         'error',
         'NX Insuficiente',
-        `Necesitas ${listing.sellingPrice} NX pero solo tienes ${profile.nx || 0} NX. Te faltan ${needed} NX.`
+        `Necesitas ${listing.sellingPrice} NX pero solo tienes ${profile.gameCoins || 0} NX. Te faltan ${needed} NX.`
       );
       return;
     }
@@ -718,26 +718,26 @@ export default function MarketplacePage() {
                   <div className="flex items-center justify-between">
                     <span className="text-slate-400">Tu Balance:</span>
                     <span className={`text-lg font-black ${
-                      profile.nx !== undefined && profile.nx < selectedListing.sellingPrice
+                      profile.gameCoins !== undefined && profile.gameCoins < selectedListing.sellingPrice
                         ? 'text-red-400'
                         : 'text-blue-400'
                     }`}>
-                      {profile.nx || 0} NX
+                      {profile.gameCoins || 0} NX
                     </span>
                   </div>
 
-                  {profile.nx !== undefined && profile.nx < selectedListing.sellingPrice ? (
+                  {profile.gameCoins !== undefined && profile.gameCoins < selectedListing.sellingPrice ? (
                     <div className="space-y-2">
                       <div className="flex items-center justify-between">
                         <span className="text-slate-400">Te Falta:</span>
                         <span className="text-lg font-black text-red-400">
-                          {selectedListing.sellingPrice - profile.nx} NX
+                          {selectedListing.sellingPrice - profile.gameCoins} NX
                         </span>
                       </div>
                       <div className="bg-red-500/20 border border-red-500/30 rounded-lg p-3">
                         <p className="text-sm text-red-400 font-semibold">ADVERTENCIA: NX Insuficiente</p>
                         <p className="text-xs text-red-300 mt-1">
-                          Necesitas {selectedListing.sellingPrice} NX pero tienes {profile.nx} NX
+                          Necesitas {selectedListing.sellingPrice} NX pero tienes {profile.gameCoins} NX
                         </p>
                       </div>
                     </div>
@@ -745,7 +745,7 @@ export default function MarketplacePage() {
                     <div className="flex items-center justify-between">
                       <span className="text-slate-400">Te Quedara:</span>
                       <span className="text-lg font-black text-emerald-400">
-                        {(profile.nx || 0) - selectedListing.sellingPrice} NX
+                        {(profile.gameCoins || 0) - selectedListing.sellingPrice} NX
                       </span>
                     </div>
                   )}
@@ -770,11 +770,11 @@ export default function MarketplacePage() {
                   disabled={
                     purchasing === selectedListing.id || 
                     selectedListing.username === profile.username ||
-                    (profile.nx !== undefined && profile.nx < selectedListing.sellingPrice)
+                    (profile.gameCoins !== undefined && profile.gameCoins < selectedListing.sellingPrice)
                   }
                   title={
-                    profile.nx !== undefined && profile.nx < selectedListing.sellingPrice
-                      ? `NX insuficiente: tienes ${profile.nx} NX, necesitas ${selectedListing.sellingPrice} NX`
+                    profile.gameCoins !== undefined && profile.gameCoins < selectedListing.sellingPrice
+                      ? `NX insuficiente: tienes ${profile.gameCoins} NX, necesitas ${selectedListing.sellingPrice} NX`
                       : ''
                   }
                   className="flex-1 rounded-lg bg-emerald-500/20 text-emerald-400 hover:bg-emerald-500/30 transition py-2 font-semibold disabled:opacity-50 flex items-center justify-center gap-2"
@@ -788,7 +788,7 @@ export default function MarketplacePage() {
                     <>
                       Tu Item
                     </>
-                  ) : profile.nx !== undefined && profile.nx < selectedListing.sellingPrice ? (
+                  ) : profile.gameCoins !== undefined && profile.gameCoins < selectedListing.sellingPrice ? (
                     <>
                       [ADVERTENCIA] NX Insuficiente
                     </>

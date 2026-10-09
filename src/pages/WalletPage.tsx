@@ -42,8 +42,8 @@ export default function WalletPage() {
   useEffect(() => {
     if (!profile) return;
 
-    setNxBalance(profile.nx || 0);
-    setGpBalance(profile.gp || 0);
+    setNxBalance(profile.gameCoins || 0);
+    setGpBalance(profile.totalBalance || 0);
 
     const today = new Date();
     const currentMonth = today.getMonth();
@@ -156,7 +156,7 @@ export default function WalletPage() {
     setRewards(topRewards);
 
     return () => clearInterval(interval);
-  }, [profile?.nx, profile?.gp, profile?.username]);
+  }, [profile?.gameCoins, profile?.totalBalance, profile?.username]);
 
   const handlePurchaseClick = async (pkg: GcoinPackage) => {
     if (!profile) return;

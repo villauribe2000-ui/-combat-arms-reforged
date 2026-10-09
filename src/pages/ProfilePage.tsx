@@ -222,7 +222,7 @@ export default function ProfilePage() {
           bio: storedData.bio,
           country: storedData.country,
           countryFlag: countryFlag,
-          nx: profile.nx,
+          nx: profile.gameCoins,
           gp: dbProfile.Money,
           progressPercent,
           levelMessage,
