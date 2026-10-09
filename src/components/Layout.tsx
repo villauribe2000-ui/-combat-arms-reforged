@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { RANK_INFO } from '@/lib/supabase';
 import LoginModal from '@/components/LoginModal';
@@ -79,6 +79,13 @@ export default function Layout({ currentPage, onNavigate, children }: Props) {
   const { profile, loading, signOut } = useAuth();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [loginModalOpen, setLoginModalOpen] = useState(!profile && !loading);
+
+  // Cerrar modal cuando el usuario inicia sesión
+  useEffect(() => {
+    if (profile && loginModalOpen) {
+      setLoginModalOpen(false);
+    }
+  }, [profile, loginModalOpen]);
 
   const visibleItems = NAV_ITEMS.filter(item => !item.adminOnly || profile?.is_admin);
 
@@ -256,7 +263,7 @@ export default function Layout({ currentPage, onNavigate, children }: Props) {
           )}
         </main>
         
-        <LoginModal isOpen={loginModalOpen} onClose={() => setLoginModalOpen(false)} onSuccess={() => window.location.reload()} />
+        <LoginModal isOpen={loginModalOpen} onClose={() => setLoginModalOpen(false)} onSuccess={() => { setLoginModalOpen(false); }} />
       </div>
     </div>
   );
