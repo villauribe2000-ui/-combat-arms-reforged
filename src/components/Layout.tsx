@@ -78,7 +78,7 @@ type Props = {
 export default function Layout({ currentPage, onNavigate, children }: Props) {
   const { profile, loading, signOut } = useAuth();
   const [mobileOpen, setMobileOpen] = useState(false);
-  const [loginModalOpen, setLoginModalOpen] = useState(false);
+  const [loginModalOpen, setLoginModalOpen] = useState(!profile && !loading);
 
   const visibleItems = NAV_ITEMS.filter(item => !item.adminOnly || profile?.is_admin);
 
