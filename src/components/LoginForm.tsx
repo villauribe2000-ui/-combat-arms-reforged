@@ -141,16 +141,26 @@ export default function LoginForm({ onSuccess }: LoginFormProps) {
           {isLogin ? (
             <p className="text-gray-400 text-sm">
               ¿No tienes cuenta?{' '}
-              <a
-                href="https://discord.gg/5EpJwAh2r6"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-cyan-400 hover:text-cyan-300 font-medium transition-colors"
+              <button
+                type="button"
+                onClick={() => setIsLogin(false)}
+                className="text-cyan-400 hover:text-cyan-300 font-medium transition-colors cursor-pointer"
               >
                 Crea una aquí
-              </a>
+              </button>
             </p>
-          ) : null}
+          ) : (
+            <p className="text-gray-400 text-sm">
+              ¿Ya tienes cuenta?{' '}
+              <button
+                type="button"
+                onClick={() => setIsLogin(true)}
+                className="text-cyan-400 hover:text-cyan-300 font-medium transition-colors cursor-pointer"
+              >
+                Inicia sesión
+              </button>
+            </p>
+          )}
         </div>
       </div>
     </div>
