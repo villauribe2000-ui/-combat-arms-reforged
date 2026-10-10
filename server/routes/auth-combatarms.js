@@ -248,7 +248,36 @@ router.post('/register', async (req, res) => {
       ) VALUES (
         ${oidUser},
         '${username}',
-        NULL,
+        '${username}',
+        0,
+        0,
+        1,
+        0,
+        0,
+        0,
+        GETDATE()
+      )
+    `);
+
+    // 🆕 Crear entrada en CBT_UserCharacter (PERSONAJE POR DEFECTO)
+    await query(`
+      INSERT INTO COMBATARMS.dbo.CBT_UserCharacter (
+        oidUser,
+        oidCharacter,
+        strCharacterName,
+        nLevel,
+        nExp,
+        nMoney,
+        nStatus,
+        nFaceType,
+        nClassType,
+        nGenderType,
+        dtCreateDate
+      ) VALUES (
+        ${oidUser},
+        ${oidUser},
+        '${username}',
+        0,
         0,
         0,
         1,
