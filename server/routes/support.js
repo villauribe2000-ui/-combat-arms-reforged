@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { query } from '../db.js';
+import { queryWeb } from '../db.js';
 
 const router = Router();
 
@@ -14,7 +14,7 @@ function generateTicketNumber() {
 // Crear ticket de soporte
 router.post('/create', async (req, res) => {
   try {
-    const { oidUser, username, NickName, subject, description, refundId } = req.body;
+    const { oidUser, username, NickName, subject, description } = req.body;
 
     if (!oidUser || !username || !subject) {
       return res.status(400).json({ error: 'Datos incompletos' });
@@ -22,11 +22,11 @@ router.post('/create', async (req, res) => {
 
     const ticketNumber = generateTicketNumber();
 
-    const result = await query(
-      `INSERT INTO SupportTickets (ticketNumber, oidUser, username, NickName, subject, description, refundId, status, priority)
+    const result = await queryWeb(
+      `INSERT INTO SupportTickets (ticketNumber, oidUser, username, NickName, subject, description, status, priority)
        OUTPUT INSERTED.id, INSERTED.ticketNumber, INSERTED.createdAt
-       VALUES (@ticketNumber, @oidUser, @username, @NickName, @subject, @description, @refundId, 'open', 'normal')`,
-      { ticketNumber, oidUser, username, NickName, subject, description, refundId: refundId || null }
+       VALUES (@ticketNumber, @oidUser, @username, @NickName, @subject, @description, 'open', 'normal')`,
+      { ticketNumber, oidUser, username, NickName, subject, description }
     );
 
     const ticket = result.recordset[0];
@@ -49,7 +49,7 @@ router.get('/user/:username', async (req, res) => {
   try {
     const { username } = req.params;
 
-    const result = await query(
+    const result = await queryWeb(
       `SELECT id, ticketNumber, subject, status, priority, createdAt, updatedAt
        FROM SupportTickets
        WHERE username = @username
@@ -69,8 +69,8 @@ router.get('/ticket/:ticketId', async (req, res) => {
   try {
     const { ticketId } = req.params;
 
-    const ticketResult = await query(
-      `SELECT id, ticketNumber, oidUser, username, NickName, subject, description, status, priority, refundId, createdAt, updatedAt, resolvedAt, resolvedBy
+    const ticketResult = await queryWeb(
+      `SELECT id, ticketNumber, oidUser, username, NickName, subject, description, status, priority, createdAt, updatedAt, resolvedAt, resolvedBy
        FROM SupportTickets
        WHERE id = @ticketId`,
       { ticketId: parseInt(ticketId) }
@@ -83,9 +83,9 @@ router.get('/ticket/:ticketId', async (req, res) => {
     const ticket = ticketResult.recordset[0];
 
     // Obtener mensajes
-    const messagesResult = await query(
+    const messagesResult = await queryWeb(
       `SELECT id, senderType, senderUsername, message, createdAt
-       FROM SupportMessages
+       FROM TicketMessages
        WHERE ticketId = @ticketId
        ORDER BY createdAt ASC`,
       { ticketId: parseInt(ticketId) }
@@ -116,7 +116,7 @@ router.post('/message/:ticketId', async (req, res) => {
     }
 
     // Verificar que el ticket existe
-    const ticketCheck = await query(
+    const ticketCheck = await queryWeb(
       `SELECT id FROM SupportTickets WHERE id = @ticketId`,
       { ticketId: parseInt(ticketId) }
     );
@@ -126,8 +126,8 @@ router.post('/message/:ticketId', async (req, res) => {
     }
 
     // Insertar mensaje
-    const result = await query(
-      `INSERT INTO SupportMessages (ticketId, senderType, senderUsername, message)
+    const result = await queryWeb(
+      `INSERT INTO TicketMessages (ticketId, senderType, senderUsername, message)
        OUTPUT INSERTED.id, INSERTED.createdAt
        VALUES (@ticketId, @senderType, @senderUsername, @message)`,
       { ticketId: parseInt(ticketId), senderType, senderUsername, message }
@@ -136,7 +136,7 @@ router.post('/message/:ticketId', async (req, res) => {
     const msg = result.recordset[0];
 
     // Actualizar fecha de actualización del ticket
-    await query(
+    await queryWeb(
       `UPDATE SupportTickets SET updatedAt = GETDATE() WHERE id = @ticketId`,
       { ticketId: parseInt(ticketId) }
     );
@@ -157,7 +157,7 @@ router.post('/message/:ticketId', async (req, res) => {
 // Obtener todos los tickets (para admin)
 router.get('/admin/all', async (req, res) => {
   try {
-    const result = await query(
+    const result = await queryWeb(
       `SELECT id, ticketNumber, username, NickName, subject, status, priority, createdAt, updatedAt, resolvedAt, resolvedBy
        FROM SupportTickets
        ORDER BY 
@@ -188,7 +188,7 @@ router.put('/ticket/:ticketId/status', async (req, res) => {
 
     const updateFields = `status = @status, updatedAt = GETDATE()${status === 'resolved' ? ', resolvedAt = GETDATE(), resolvedBy = @adminUsername' : ''}`;
 
-    const result = await query(
+    const result = await queryWeb(
       `UPDATE SupportTickets 
        SET ${updateFields}
        WHERE id = @ticketId
@@ -215,7 +215,7 @@ router.put('/ticket/:ticketId/status', async (req, res) => {
 // Obtener tickets de reembolsos
 router.get('/admin/refunded-items', async (req, res) => {
   try {
-    const result = await query(
+    const result = await queryWeb(
       `SELECT 
         r.id as refundId,
         r.oidUser,
@@ -229,7 +229,7 @@ router.get('/admin/refunded-items', async (req, res) => {
         r.approvedBy,
         COALESCE(st.id, 0) as hasTicket
        FROM RefundRequests r
-       LEFT JOIN SupportTickets st ON st.refundId = r.id
+       LEFT JOIN SupportTickets st ON st.id = r.id
        WHERE r.status = 'approved'
        ORDER BY r.approvedAt DESC`
     );
