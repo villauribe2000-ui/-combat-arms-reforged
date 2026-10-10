@@ -449,11 +449,15 @@ router.get('/purchase-history/:username', async (req, res) => {
   try {
     const { username } = req.params;
 
+    console.log(`[PURCHASE HISTORY] Buscando compras para usuario: ${username}`);
+
     // Obtener oidUser del username - intentar primero desde CBT_UserAuth (usuarios nuevos)
     let userResult = await query(
       `SELECT oidUser FROM CBT_UserAuth WHERE strNexonID = @username OR strLNexonID = @usernameLower`,
       { username, usernameLower: username.toLowerCase() }
     );
+
+    console.log(`[PURCHASE HISTORY] Resultado CBT_UserAuth:`, userResult.recordset.length > 0 ? userResult.recordset[0] : 'no encontrado');
 
     // Si no se encuentra en CBT_UserAuth, buscar en CBT_User (usuarios antiguos)
     if (userResult.recordset.length === 0) {
@@ -461,13 +465,16 @@ router.get('/purchase-history/:username', async (req, res) => {
         `SELECT oidUser FROM CBT_User WHERE strNexonID = @username OR strLNexonID = @usernameLower`,
         { username, usernameLower: username.toLowerCase() }
       );
+      console.log(`[PURCHASE HISTORY] Resultado CBT_User:`, userResult.recordset.length > 0 ? userResult.recordset[0] : 'no encontrado');
     }
 
     if (userResult.recordset.length === 0) {
+      console.log(`[PURCHASE HISTORY] ❌ Usuario no encontrado: ${username}`);
       return res.status(404).json({ error: 'Usuario no encontrado' });
     }
 
     const oidUser = userResult.recordset[0].oidUser;
+    console.log(`[PURCHASE HISTORY] ✓ oidUser encontrado: ${oidUser}`);
 
     // Obtener últimas 50 compras desde VISMS_PurchaseLog (está en BD VISMS)
     let purchaseResult;
@@ -478,19 +485,22 @@ router.get('/purchase-history/:username', async (req, res) => {
           pl.ProductNo,
           pl.TotalPrice,
           pl.RegDate,
-          pl.strNexonID
+          pl.strNexonID,
+          pl.oid
          FROM VISMS_PurchaseLog pl
          WHERE pl.oid = @oidUser
          ORDER BY pl.RegDate DESC`,
         { oidUser }
       );
+      console.log(`[PURCHASE HISTORY] Compras encontradas en VISMS_PurchaseLog: ${purchaseResult.recordset.length}`);
     } catch (e) {
-      console.warn(`Error querying VISMS_PurchaseLog for user ${oidUser}:`, e.message);
+      console.error(`[PURCHASE HISTORY] ❌ Error querying VISMS_PurchaseLog para user ${oidUser}:`, e.message);
       // Retornar lista vacía si no hay histórico
       return res.json([]);
     }
 
     if (!purchaseResult.recordset || purchaseResult.recordset.length === 0) {
+      console.log(`[PURCHASE HISTORY] Sin compras para oidUser ${oidUser}`);
       return res.json([]);
     }
 
@@ -523,10 +533,11 @@ router.get('/purchase-history/:username', async (req, res) => {
       })
     );
 
+    console.log(`[PURCHASE HISTORY] ✓ Retornando ${purchases.length} compras`);
     res.json(purchases);
   } catch (error) {
     console.error('Get purchase history error:', error);
-    res.status(500).json({ error: 'Error al obtener historial de compras' });
+    res.status(500).json({ error: 'Error al obtener historial de compras', details: error.message });
   }
 });
 
