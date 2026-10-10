@@ -18,7 +18,7 @@ export default function LevelRewardsPage() {
   const [totalClaimable, setTotalClaimable] = useState(0);
   const [notification, setNotification] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
 
-  // Tabla de patentes con XP requerido
+  // Tabla de patentes con XP requerido (SOLO hasta nivel 60)
   const PATENTES = [
     {"exp": 0, "nivel": 0},
     {"exp": 550, "nivel": 1},
@@ -80,12 +80,7 @@ export default function LevelRewardsPage() {
     {"exp": 10400000, "nivel": 57},
     {"exp": 11600000, "nivel": 58},
     {"exp": 12800000, "nivel": 59},
-    {"exp": 14000000, "nivel": 60},
-    {"exp": 29000000, "nivel": 61},
-    {"exp": 44000000, "nivel": 62},
-    {"exp": 59000000, "nivel": 63},
-    {"exp": 74000000, "nivel": 64},
-    {"exp": 89000000, "nivel": 65}
+    {"exp": 14000000, "nivel": 60}
   ];
 
   // Tabla de recompensas por nivel (SOLO hasta nivel 60 - TOTAL: 200,000 NX)
