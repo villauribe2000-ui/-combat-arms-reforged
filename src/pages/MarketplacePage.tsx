@@ -324,6 +324,8 @@ export default function MarketplacePage() {
           <h1 className="text-3xl font-black">Marketplace</h1>
           <p className="mt-1 text-slate-400">Compra y vende items que has comprado</p>
         </div>
+        {/* DESHABILITADO: Botón "Vender Item" */}
+        {/*
         {profile && (
           <button
             onClick={handleOpenNewListingModal}
@@ -333,6 +335,7 @@ export default function MarketplacePage() {
             Vender Item
           </button>
         )}
+        */}
       </div>
 
       {/* Tabs */}
