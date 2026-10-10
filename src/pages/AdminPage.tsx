@@ -113,6 +113,11 @@ export default function AdminPage() {
     return () => clearInterval(interval);
   }, [profile]);
 
+  useEffect(() => {
+    console.log('[ADMIN] paymentCodes actualizado:', paymentCodes);
+    console.log('[ADMIN] pendingCodes debería ser:', paymentCodes);
+  }, [paymentCodes]);
+
   const loadData = async () => {
     try {
       setLoading(true);
