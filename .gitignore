@@ -22,8 +22,7 @@ dist-ssr
 *.sw?
 .env
 
-# Backend (solo para Vercel frontend)
-server/
+# Backend files (keep server for deployment to Railway)
 api/
 *.py
 Procfile
@@ -33,3 +32,4 @@ railway.json
 supabase/
 templates/
 *.bat
+

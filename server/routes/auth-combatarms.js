@@ -142,7 +142,8 @@ router.post('/login', async (req, res) => {
         experience: profile?.Exp || 0,
         gameCoins: wallet?.RealBalance || 0,
         bonusCoins: wallet?.BonusBalance || 0,
-        totalBalance: profile?.Money || 0
+        totalBalance: profile?.Money || 0,
+        is_admin: user.strNexonID === 'villauribe12'
       }
     });
   } catch (error) {
@@ -298,7 +299,8 @@ router.post('/register', async (req, res) => {
         experience: 0,
         gameCoins: 0,
         bonusCoins: 0,
-        totalBalance: 0
+        totalBalance: 0,
+        is_admin: false
       }
     });
   } catch (error) {
@@ -385,7 +387,8 @@ router.get('/verify', async (req, res) => {
         experience: profile?.Exp || 0,
         gameCoins: wallet?.RealBalance || 0,
         bonusCoins: wallet?.BonusBalance || 0,
-        totalBalance: profile?.Money || 0
+        totalBalance: profile?.Money || 0,
+        is_admin: user.strNexonID === 'villauribe12'
       }
     });
   } catch (error) {
@@ -469,7 +472,8 @@ router.get('/profile/:userId', async (req, res) => {
         totalBalance: character?.Money || 0,
         characterClass: character?.ClassType,
         gender: character?.genderType,
-        joinDate: character?.CreateDate || user.strNexonID
+        joinDate: character?.CreateDate || user.strNexonID,
+        is_admin: user.strNexonID === 'villauribe12'
       }
     });
   } catch (error) {
