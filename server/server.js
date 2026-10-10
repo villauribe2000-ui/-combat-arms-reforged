@@ -42,7 +42,13 @@ app.get('/api/version', (req, res) => {
   res.set('Pragma', 'no-cache');
   res.set('Expires', '0');
   console.log('[VERSION] Endpoint /api/version llamado');
-  res.json({ version: '1.0.2', buildTimestamp: '2026-10-10T17:15:00Z', deployed: true });
+  res.json({ 
+    version: '1.0.2', 
+    buildTimestamp: '2026-10-10T17:15:00Z', 
+    deployed: true,
+    frontendBuild: 'check-index.html',
+    note: 'Frontend files served from dist/'
+  });
 });
 
 // Servir archivos estáticos públicos PRIMERO (para que tenga prioridad)

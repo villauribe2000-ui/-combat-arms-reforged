@@ -149,10 +149,13 @@ export default function AdminPage() {
       console.log('[ADMIN] Pagos recibidos:', paymentData);
       console.log('[ADMIN] Reembolsos recibidos:', refundData);
       console.log('[ADMIN] Tickets recibidos:', ticketData);
+      console.log('[ADMIN] Intentando setPaymentCodes con:', codeData);
       setPaymentCodes(codeData || []);
+      console.log('[ADMIN] setPaymentCodes llamado');
       setPayments(paymentData || []);
       setRefunds(refundData || []);
       setSupportTickets(ticketData || []);
+      console.log('[ADMIN] Todos los states actualizados');
     } catch (error) {
       console.error('[ADMIN] Error general loading data:', error);
     } finally {
