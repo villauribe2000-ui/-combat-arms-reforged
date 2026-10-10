@@ -21,16 +21,10 @@ function generateToken(userId, username) {
 }
 
 // Helper: Calcular SHA1 - igual que HASHBYTES('SHA1', password) de SQL Server
+// SQL Server HASHBYTES usa UTF-16 LE encoding (NVARCHAR)
 function calculateSHA1(password) {
-  // SQL Server HASHBYTES('SHA1', @nvarchar) calcula SHA1 del UTF-16 LE encoding
-  // Pero el resultado es en bytes que luego se convierten a hex
-  // Intentar con el VARBINARY exacto
-  
-  // Método 1: SHA1 UTF8 (como lo hace Node.js por defecto)
-  const hash1 = crypto.createHash('sha1').update(password, 'utf8').digest('hex').toUpperCase();
-  
-  // Retornar ambas opciones - la función la usará para intentar
-  return hash1;
+  // SQL Server convierte NVARCHAR a UTF-16 LE antes de hashear
+  return crypto.createHash('sha1').update(password, 'utf16le').digest('hex').toUpperCase();
 }
 
 // ==========================================
