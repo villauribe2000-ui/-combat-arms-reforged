@@ -202,8 +202,8 @@ router.post('/payment-codes/approve/:codeId', async (req, res) => {
     );
 
     // Actualizar NX en VISMS (tabla de moneda)
-    // Usando queryWeb para conectar a VISMS
-    const updateResult = await queryWeb(
+    // Usando queryVisms para conectar a BD VISMS
+    const updateResult = await queryVisms(
       `UPDATE VISMS_UserList 
        SET RealBalance = RealBalance + @nxAmount
        WHERE strNexonID = @username`,
