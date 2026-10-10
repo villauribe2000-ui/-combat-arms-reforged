@@ -122,6 +122,8 @@ export default function AdminPage() {
         api.getPendingRefunds(),
         api.getAllTickets(),
       ]);
+      console.log('[ADMIN] Códigos recibidos:', codeData);
+      console.log('[ADMIN] Pagos recibidos:', paymentData);
       setPaymentCodes(codeData || []);
       setPayments(paymentData || []);
       setRefunds(refundData || []);
