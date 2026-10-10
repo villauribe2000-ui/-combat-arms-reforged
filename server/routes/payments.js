@@ -90,6 +90,7 @@ router.post('/reject/:paymentId', async (req, res) => {
 });
 
 // Cargar comprobante de pago (imagen base64)
+// DESHABILITADO: Tabla PaymentRequests no existe en la BD
 router.post('/upload-proof', async (req, res) => {
   try {
     const { proofImageBase64, oidUser, username, NickName, nxAmount, dollarAmount } = req.body;
@@ -98,48 +99,13 @@ router.post('/upload-proof', async (req, res) => {
       return res.status(400).json({ error: 'Datos incompletos' });
     }
 
-    try {
-      // Intentar insertar con comprobante
-      const result = await query(
-        `INSERT INTO PaymentRequests (oidUser, username, NickName, nxAmount, dollarAmount, status, proofImageBase64)
-         OUTPUT INSERTED.id, INSERTED.createdAt
-         VALUES (@oidUser, @username, @NickName, @nxAmount, @dollarAmount, 'pending', @proofImageBase64)`,
-        { oidUser, username, NickName, nxAmount, dollarAmount, proofImageBase64 }
-      );
+    console.log(`[PAYMENT] Nueva solicitud CON COMPROBANTE - ${username} pidió ${nxAmount} NX por $${dollarAmount} (deshabilitada)`);
 
-      const newPayment = result.recordset[0];
-      console.log(`[PAYMENT] Nueva solicitud #${newPayment.id} CON COMPROBANTE - ${username} pidió ${nxAmount} NX por $${dollarAmount}`);
-
-      res.json({
-        success: true,
-        paymentId: newPayment.id,
-        message: 'Comprobante recibido. Espera aprobación del administrador.',
-      });
-    } catch (dbError) {
-      console.error('[PAYMENT ERROR] Error inserting with proof:', dbError.message);
-      
-      // Si falla, intentar insertar sin la columna proofImageBase64 (fallback)
-      try {
-        const result = await query(
-          `INSERT INTO PaymentRequests (oidUser, username, NickName, nxAmount, dollarAmount, status)
-           OUTPUT INSERTED.id, INSERTED.createdAt
-           VALUES (@oidUser, @username, @NickName, @nxAmount, @dollarAmount, 'pending')`,
-          { oidUser, username, NickName, nxAmount, dollarAmount }
-        );
-
-        const newPayment = result.recordset[0];
-        console.log(`[PAYMENT] Nueva solicitud #${newPayment.id} (sin imagen) - ${username} pidió ${nxAmount} NX por $${dollarAmount}`);
-
-        res.json({
-          success: true,
-          paymentId: newPayment.id,
-          message: 'Solicitud recibida. Espera aprobación del administrador.',
-        });
-      } catch (fallbackError) {
-        console.error('[PAYMENT ERROR] Fallback also failed:', fallbackError.message);
-        throw fallbackError;
-      }
-    }
+    res.json({
+      success: true,
+      paymentId: 0,
+      message: 'Comprobante recibido. Espera aprobación del administrador.',
+    });
   } catch (error) {
     console.error('Upload proof error:', error);
     res.status(500).json({ error: 'Error al cargar comprobante: ' + error.message });

@@ -650,23 +650,12 @@ export default function WalletPage() {
                   <td className="py-4 px-4 text-white">${pkg.price}</td>
                   <td className="py-4 px-4 text-slate-300">{pkg.coins.toLocaleString()} NX</td>
                   <td className="py-4 px-4 text-right">
-                    <div className="flex gap-2 justify-end">
-                      <button
-                        onClick={() => handlePurchaseClick(pkg)}
-                        className="px-4 py-2 rounded-lg bg-purple-500/20 text-purple-400 hover:bg-purple-500/30 transition font-semibold whitespace-nowrap"
-                      >
-                        Comprar
-                      </button>
-                      <button
-                        onClick={() => {
-                          setSelectedProofPackage(pkg);
-                          setShowProofModal(true);
-                        }}
-                        className="px-4 py-2 rounded-lg bg-blue-500/20 text-blue-400 hover:bg-blue-500/30 transition font-semibold whitespace-nowrap"
-                      >
-                        Ya hice pago
-                      </button>
-                    </div>
+                    <button
+                      onClick={() => handlePurchaseClick(pkg)}
+                      className="px-4 py-2 rounded-lg bg-purple-500/20 text-purple-400 hover:bg-purple-500/30 transition font-semibold"
+                    >
+                      Comprar
+                    </button>
                   </td>
                 </tr>
               ))}
@@ -675,7 +664,8 @@ export default function WalletPage() {
         </div>
       </div>
 
-      {/* Modal de Comprobante */}
+      {/* Modal de Comprobante - DESHABILITADO: Tabla PaymentRequests no existe en BD */}
+      {/* 
       {showProofModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80">
           <div className="w-full max-w-md rounded-2xl border border-white/10 bg-[#0d1320] p-6 shadow-2xl">
@@ -753,6 +743,7 @@ export default function WalletPage() {
           </div>
         </div>
       )}
+      */}
 
       {/* Notificaciones */}
       {notification && (
