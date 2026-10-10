@@ -1,0 +1,8 @@
+DEPLOYMENT INFO
+Build Version: 1.0.2
+Build Time: 2026-10-10T17:15:00Z
+Commit Hash: c8564be
+Expected Methods in api.ts: getPendingPaymentCodes, getAllPaymentCodes, approvePaymentCode, rejectPaymentCode, submitPaymentCode
+API Endpoints: /api/version, /api/payments/payment-codes/pending, /api/payments/payment-codes/all, /api/payments/payment-codes/approve/:id, /api/payments/payment-codes/reject/:id
+Last Updated: 2026-10-10 17:20:00Z
+Status: Rebuilding

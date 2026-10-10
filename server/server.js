@@ -30,11 +30,17 @@ app.use(express.urlencoded({ limit: '50mb', extended: true }));
 
 // Health check (debe estar ANTES del catch-all)
 app.get('/health', (req, res) => {
+  res.set('Cache-Control', 'no-cache, no-store, must-revalidate');
+  res.set('Pragma', 'no-cache');
+  res.set('Expires', '0');
   res.json({ status: 'ok', version: '1.0.2' });
 });
 
 // Version endpoint (debe estar ANTES del catch-all)
 app.get('/api/version', (req, res) => {
+  res.set('Cache-Control', 'no-cache, no-store, must-revalidate');
+  res.set('Pragma', 'no-cache');
+  res.set('Expires', '0');
   console.log('[VERSION] Endpoint /api/version llamado');
   res.json({ version: '1.0.2', buildTimestamp: '2026-10-10T17:15:00Z', deployed: true });
 });
