@@ -105,12 +105,39 @@ export default function PurchaseHistoryPage() {
   const loadData = async () => {
     try {
       setLoading(true);
+      
+      // Cargar datos en paralelo pero con manejo individual de errores
+      const historyPromise = api.request<Purchase[]>('GET', `/purchase-history/${profile?.username}`).catch(err => {
+        console.error('Error loading purchase history:', err);
+        return [];
+      });
+      
+      const refundsPromise = api.getAllRefunds().catch(err => {
+        console.error('Error loading refunds:', err);
+        return [];
+      });
+      
+      const weeklyPromise = api.getWeeklyRefundCount(profile?.username || '').catch(err => {
+        console.error('Error loading weekly count:', err);
+        return null;
+      });
+      
+      const statsPromise = api.getTotalRefunded(profile?.username || '').catch(err => {
+        console.error('Error loading refund stats:', err);
+        return null;
+      });
+      
+      const detailsPromise = api.getRefundDetails(profile?.username || '').catch(err => {
+        console.error('Error loading refund details:', err);
+        return [];
+      });
+      
       const [historyData, refundsData, weeklyData, statsData, detailsData] = await Promise.all([
-        api.request<Purchase[]>('GET', `/purchase-history/${profile?.username}`),
-        api.getAllRefunds(),
-        api.getWeeklyRefundCount(profile?.username || ''),
-        api.getTotalRefunded(profile?.username || ''),
-        api.getRefundDetails(profile?.username || ''),
+        historyPromise,
+        refundsPromise,
+        weeklyPromise,
+        statsPromise,
+        detailsPromise,
       ]);
       
       // Agregar estado de marketplace para cada compra
