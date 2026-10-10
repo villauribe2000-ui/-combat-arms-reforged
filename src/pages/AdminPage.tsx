@@ -164,7 +164,9 @@ export default function AdminPage() {
     } catch (error) {
       console.error('[ADMIN] Error general loading data:', error);
     } finally {
+      console.log('[ADMIN] En finally - poniendo loading en false');
       setLoading(false);
+      console.log('[ADMIN] setLoading(false) llamado');
     }
   };
 
