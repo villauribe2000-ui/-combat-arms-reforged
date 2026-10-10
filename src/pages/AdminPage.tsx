@@ -117,6 +117,8 @@ export default function AdminPage() {
     try {
       setLoading(true);
       console.log('[ADMIN] Iniciando carga de datos...');
+      console.log('[ADMIN] Métodos disponibles:', Object.getOwnPropertyNames(Object.getPrototypeOf(api)));
+      console.log('[ADMIN] ¿getPendingPaymentCodes existe?', typeof api.getPendingPaymentCodes);
       const [codeData, paymentData, refundData, ticketData] = await Promise.all([
         api.getPendingPaymentCodes().catch(e => { console.error('[ADMIN] Error en getPendingPaymentCodes:', e); return []; }),
         api.getPendingPayments().catch(e => { console.error('[ADMIN] Error en getPendingPayments:', e); return []; }),
