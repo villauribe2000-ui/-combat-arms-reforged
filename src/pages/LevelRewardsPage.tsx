@@ -96,7 +96,7 @@ export default function LevelRewardsPage() {
     30: 3100, 31: 3200, 32: 3300, 33: 3400, 34: 3500, 35: 3600, 36: 3700, 37: 3800, 38: 3900, 39: 4000,
     40: 4100, 41: 4200, 42: 4300, 43: 4400, 44: 4500, 45: 4600, 46: 4700, 47: 4800, 48: 4900, 49: 5000,
     50: 5100, 51: 5200, 52: 5300, 53: 5400, 54: 5500, 55: 5600, 56: 5700, 57: 5800, 58: 5900, 59: 6000,
-    60: 6100
+    60: 16100
   };
 
   useEffect(() => {
@@ -229,7 +229,7 @@ export default function LevelRewardsPage() {
             <div>
               <p className="text-sm text-slate-400 mb-1">NIVEL ACTUAL</p>
               <p className="text-4xl lg:text-5xl font-black text-purple-400">{currentLevel}</p>
-              <p className="text-xs text-slate-500 mt-2">de 65 niveles máximo</p>
+              <p className="text-xs text-slate-500 mt-2">de 60 niveles máximo</p>
             </div>
             <TrendingUp className="h-16 w-16 text-purple-400 opacity-20" />
           </div>
