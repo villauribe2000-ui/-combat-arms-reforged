@@ -232,6 +232,33 @@ router.post('/register', async (req, res) => {
       VALUES ('${username}')
     `);
 
+    // 🆕 Crear entrada en CBT_User (NECESARIO PARA QUE EL JUEGO FUNCIONE)
+    await query(`
+      INSERT INTO COMBATARMS.dbo.CBT_User (
+        oidUser,
+        strNexonID,
+        NickName,
+        Exp,
+        Money,
+        Status,
+        FaceType,
+        ClassType,
+        genderType,
+        CreateDate
+      ) VALUES (
+        ${oidUser},
+        '${username}',
+        '${username}',
+        0,
+        0,
+        1,
+        0,
+        0,
+        0,
+        GETDATE()
+      )
+    `);
+
     // Crear entrada en VISMS
     await query(`
       INSERT INTO VISMS.dbo.VISMS_UserList (
