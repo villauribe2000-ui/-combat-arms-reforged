@@ -449,11 +449,19 @@ router.get('/purchase-history/:username', async (req, res) => {
   try {
     const { username } = req.params;
 
-    // Obtener oidUser del username desde COMBATARMS
-    const userResult = await query(
-      `SELECT oidUser FROM CBT_User WHERE strNexonID = @username`,
-      { username }
+    // Obtener oidUser del username - intentar primero desde CBT_UserAuth (usuarios nuevos)
+    let userResult = await query(
+      `SELECT oidUser FROM CBT_UserAuth WHERE strNexonID = @username OR strLNexonID = @usernameLower`,
+      { username, usernameLower: username.toLowerCase() }
     );
+
+    // Si no se encuentra en CBT_UserAuth, buscar en CBT_User (usuarios antiguos)
+    if (userResult.recordset.length === 0) {
+      userResult = await query(
+        `SELECT oidUser FROM CBT_User WHERE strNexonID = @username OR strLNexonID = @usernameLower`,
+        { username, usernameLower: username.toLowerCase() }
+      );
+    }
 
     if (userResult.recordset.length === 0) {
       return res.status(404).json({ error: 'Usuario no encontrado' });
@@ -462,18 +470,29 @@ router.get('/purchase-history/:username', async (req, res) => {
     const oidUser = userResult.recordset[0].oidUser;
 
     // Obtener últimas 50 compras desde VISMS_PurchaseLog (está en BD VISMS)
-    const purchaseResult = await queryVisms(
-      `SELECT TOP 50 
-        pl.SRL,
-        pl.ProductNo,
-        pl.TotalPrice,
-        pl.RegDate,
-        pl.strNexonID
-       FROM VISMS_PurchaseLog pl
-       WHERE pl.oid = @oidUser
-       ORDER BY pl.RegDate DESC`,
-      { oidUser }
-    );
+    let purchaseResult;
+    try {
+      purchaseResult = await queryVisms(
+        `SELECT TOP 50 
+          pl.SRL,
+          pl.ProductNo,
+          pl.TotalPrice,
+          pl.RegDate,
+          pl.strNexonID
+         FROM VISMS_PurchaseLog pl
+         WHERE pl.oid = @oidUser
+         ORDER BY pl.RegDate DESC`,
+        { oidUser }
+      );
+    } catch (e) {
+      console.warn(`Error querying VISMS_PurchaseLog for user ${oidUser}:`, e.message);
+      // Retornar lista vacía si no hay histórico
+      return res.json([]);
+    }
+
+    if (!purchaseResult.recordset || purchaseResult.recordset.length === 0) {
+      return res.json([]);
+    }
 
     // Obtener nombres de productos desde COMBATARMS
     const purchases = await Promise.all(
