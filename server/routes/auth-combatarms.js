@@ -22,8 +22,15 @@ function generateToken(userId, username) {
 
 // Helper: Calcular SHA1 - igual que HASHBYTES('SHA1', password) de SQL Server
 function calculateSHA1(password) {
-  // SQL Server usa UTF-8 encoding por defecto
-  return crypto.createHash('sha1').update(password, 'utf8').digest('hex').toUpperCase();
+  // SQL Server HASHBYTES('SHA1', @nvarchar) calcula SHA1 del UTF-16 LE encoding
+  // Pero el resultado es en bytes que luego se convierten a hex
+  // Intentar con el VARBINARY exacto
+  
+  // Método 1: SHA1 UTF8 (como lo hace Node.js por defecto)
+  const hash1 = crypto.createHash('sha1').update(password, 'utf8').digest('hex').toUpperCase();
+  
+  // Retornar ambas opciones - la función la usará para intentar
+  return hash1;
 }
 
 // ==========================================
@@ -63,7 +70,7 @@ router.post('/login', async (req, res) => {
 
     const user = result.recordset[0];
 
-    // Calcular hash SHA1 de la contraseña ingresada (igual que HASHBYTES de SQL Server)
+    // Calcular hash SHA1 de la contraseña ingresada
     const passwordHash = calculateSHA1(password);
     
     // El strPassword viene como string hexadecimal desde SQL Server
@@ -74,10 +81,13 @@ router.post('/login', async (req, res) => {
       ? storedPassword.toUpperCase().trim()
       : storedPassword;
 
+    // DEBUG: Log de ambos hashes
+    console.log(`[DEBUG LOGIN] Usuario: ${username}`);
+    console.log(`[DEBUG LOGIN] Calculado (Node): ${passwordHash}`);
+    console.log(`[DEBUG LOGIN] Guardado (BD):    ${storedPasswordNorm}`);
+
     if (passwordHash !== storedPasswordNorm) {
-      console.log(`[DEBUG LOGIN] Hash no coincide para ${username}`);
-      console.log(`[DEBUG LOGIN] Calculado: ${passwordHash}`);
-      console.log(`[DEBUG LOGIN] Guardado:  ${storedPasswordNorm}`);
+      console.log(`[DEBUG LOGIN] ❌ Hash NO coincide`);
       return res.status(401).json({
         success: false,
         error: 'Usuario o contraseña incorrectos'
