@@ -122,10 +122,10 @@ export default function HomePage({ onNavigate }: { onNavigate: (page: PageId) =>
         
         <div className="relative z-10 text-center">
           <h2 className="text-4xl font-black lg:text-5xl mb-12">
-            <span className="bg-gradient-to-r from-amber-300 via-orange-300 to-amber-400 bg-clip-text text-transparent">┬íDescarga Ahora!</span>
+            <span className="bg-gradient-to-r from-amber-300 via-orange-300 to-amber-400 bg-clip-text text-transparent">¡Descarga Ahora!</span>
           </h2>
           <p className="mt-6 mx-auto max-w-2xl text-lg text-slate-300">
-            ├Ünete a miles de jugadores en la plataforma competitiva definitiva. 
+            Únete a miles de jugadores en la plataforma competitiva definitiva. 
             Descarga Combat Arms Reforged y comienza tu aventura hoy.
           </p>
           
