@@ -116,20 +116,23 @@ export default function AdminPage() {
   const loadData = async () => {
     try {
       setLoading(true);
+      console.log('[ADMIN] Iniciando carga de datos...');
       const [codeData, paymentData, refundData, ticketData] = await Promise.all([
-        api.getPendingPaymentCodes(),
-        api.getPendingPayments(),
-        api.getPendingRefunds(),
-        api.getAllTickets(),
+        api.getPendingPaymentCodes().catch(e => { console.error('[ADMIN] Error en getPendingPaymentCodes:', e); return []; }),
+        api.getPendingPayments().catch(e => { console.error('[ADMIN] Error en getPendingPayments:', e); return []; }),
+        api.getPendingRefunds().catch(e => { console.error('[ADMIN] Error en getPendingRefunds:', e); return []; }),
+        api.getAllTickets().catch(e => { console.error('[ADMIN] Error en getAllTickets:', e); return []; }),
       ]);
       console.log('[ADMIN] Códigos recibidos:', codeData);
       console.log('[ADMIN] Pagos recibidos:', paymentData);
+      console.log('[ADMIN] Reembolsos recibidos:', refundData);
+      console.log('[ADMIN] Tickets recibidos:', ticketData);
       setPaymentCodes(codeData || []);
       setPayments(paymentData || []);
       setRefunds(refundData || []);
       setSupportTickets(ticketData || []);
     } catch (error) {
-      console.error('Error loading data:', error);
+      console.error('[ADMIN] Error general loading data:', error);
     } finally {
       setLoading(false);
     }
