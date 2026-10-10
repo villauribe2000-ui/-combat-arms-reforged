@@ -178,8 +178,11 @@ router.post('/register', async (req, res) => {
     // Validar que el usuario no exista
     const existing = await query(`
       SELECT COUNT(*) as count FROM COMBATARMS.dbo.CBT_UserAuth 
-      WHERE strNexonID = '${username}' OR strLNexonID = '${username.toLowerCase()}'
-    `);
+      WHERE strNexonID = @username OR strLNexonID = @usernameLower
+    `, {
+      username,
+      usernameLower: username.toLowerCase()
+    });
 
     if (existing.recordset[0].count > 0) {
       return res.status(400).json({
@@ -188,11 +191,8 @@ router.post('/register', async (req, res) => {
       });
     }
 
-    // Calcular hash SHA1
-    const passwordHash = calculateSHA1(password);
-    
-    // Insertar usuario - USAR HASHBYTES DIRECTAMENTE COMO SQL SERVER
-    await query(`
+    // Insertar usuario con parámetros seguros
+    const insertAuthResult = await query(`
       INSERT INTO COMBATARMS.dbo.CBT_UserAuth (
         strNexonID,
         strLNexonID,
@@ -205,10 +205,10 @@ router.post('/register', async (req, res) => {
         strLastLoginIP,
         strLastHWID
       ) VALUES (
-        '${username}',
-        '${username.toLowerCase()}',
-        CONVERT(VARBINARY(20), HASHBYTES('SHA1', N'${password}'), 2),
-        '${email}',
+        @username,
+        @usernameLower,
+        CONVERT(VARBINARY(20), HASHBYTES('SHA1', @password), 2),
+        @email,
         1,
         GETDATE(),
         GETDATE(),
@@ -216,75 +216,22 @@ router.post('/register', async (req, res) => {
         '181.136.167.82',
         '1111-2222-3333-4444-5555-6666-7777-8888'
       )
-    `);
+      
+      SELECT @@IDENTITY as oidUser
+    `, {
+      username,
+      usernameLower: username.toLowerCase(),
+      password,
+      email
+    });
 
-    // Obtener el oidUser del usuario creado
-    const newUser = await query(`
-      SELECT oidUser FROM COMBATARMS.dbo.CBT_UserAuth 
-      WHERE strNexonID = '${username}'
-    `);
+    const oidUser = insertAuthResult.recordset[0].oidUser;
 
-    const oidUser = newUser.recordset[0].oidUser;
-
-    // Crear nickname reservado (IGUAL AL BOT DE DISCORD)
+    // Crear nickname reservado
     await query(`
       INSERT INTO COMBATARMS.dbo.CBT_UserNicknames (nickname)
-      VALUES ('${username}')
-    `);
-
-    // 🆕 Crear entrada en CBT_User (NECESARIO PARA QUE EL JUEGO FUNCIONE)
-    await query(`
-      INSERT INTO COMBATARMS.dbo.CBT_User (
-        oidUser,
-        strNexonID,
-        NickName,
-        Exp,
-        Money,
-        Status,
-        FaceType,
-        ClassType,
-        genderType,
-        CreateDate
-      ) VALUES (
-        ${oidUser},
-        '${username}',
-        '${username}',
-        0,
-        0,
-        1,
-        0,
-        0,
-        0,
-        GETDATE()
-      )
-    `);
-
-    // 🆕 Crear entrada en CBT_UserCharacter (PERSONAJE POR DEFECTO)
-    await query(`
-      INSERT INTO COMBATARMS.dbo.CBT_UserCharacter (
-        oidUser,
-        strCharacterName,
-        nLevel,
-        nExp,
-        nMoney,
-        nStatus,
-        nFaceType,
-        nClassType,
-        nGenderType,
-        dtCreateDate
-      ) VALUES (
-        ${oidUser},
-        '${username}',
-        0,
-        0,
-        0,
-        1,
-        0,
-        0,
-        0,
-        GETDATE()
-      )
-    `);
+      VALUES (@username)
+    `, { username });
 
     // Crear entrada en VISMS
     await query(`
@@ -300,16 +247,16 @@ router.post('/register', async (req, res) => {
         UpdDate
       ) VALUES (
         'ca_classic',
-        ${oidUser},
-        '${username}',
-        '${username.toLowerCase()}',
+        @oidUser,
+        @username,
+        @usernameLower,
         0,
         0,
         0,
         GETDATE(),
         GETDATE()
       )
-    `);
+    `, { oidUser, username, usernameLower: username.toLowerCase() });
 
     // Generar JWT
     const token = generateToken(oidUser, username);
