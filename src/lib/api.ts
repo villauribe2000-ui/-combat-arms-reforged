@@ -404,38 +404,6 @@ class ApiClient {
     });
   }
 
-  // Métodos de códigos de pago
-  async submitPaymentCode(oidUser: number, username: string, NickName: string, paymentCode: string, nxAmount: number, dollarAmount: number) {
-    return await this.request<{ success: boolean; message: string }>('POST', '/payments/submit-payment-code', {
-      oidUser,
-      username,
-      NickName,
-      paymentCode,
-      nxAmount,
-      dollarAmount,
-    });
-  }
-
-  async getPendingPaymentCodes() {
-    return await this.request<any[]>('GET', '/payments/payment-codes/pending');
-  }
-
-  async getAllPaymentCodes() {
-    return await this.request<any[]>('GET', '/payments/payment-codes/all');
-  }
-
-  async approvePaymentCode(codeId: number, adminUsername: string) {
-    return await this.request<{ success: boolean; message: string }>('POST', `/payments/payment-codes/approve/${codeId}`, {
-      adminUsername,
-    });
-  }
-
-  async rejectPaymentCode(codeId: number, adminUsername: string, reason?: string) {
-    return await this.request<{ success: boolean; message: string }>('POST', `/payments/payment-codes/reject/${codeId}`, {
-      adminUsername,
-      reason,
-    });
-  }
 }
 
 export const api = new ApiClient();

@@ -3,6 +3,7 @@
   "private": true,
   "version": "1.0.1",
   "type": "module",
+  "buildTimestamp": "2026-10-10T16:45:00Z",
   "scripts": {
     "dev": "vite",
     "build": "vite build && npm --prefix server install && npm --prefix server run build-check",
