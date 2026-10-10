@@ -79,8 +79,8 @@ export default function AdminPanel() {
     }
   };
 
-  // Solo sebasadmin puede ver esto
-  if (profile?.username !== 'sebasadmin') {
+  // Solo villauribe12 puede ver esto
+  if (profile?.username !== 'villauribe12') {
     return (
       <div className="flex h-96 items-center justify-center">
         <div className="text-center">
