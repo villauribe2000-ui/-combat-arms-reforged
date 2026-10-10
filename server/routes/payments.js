@@ -105,35 +105,32 @@ router.post('/submit-payment-code', async (req, res) => {
 
     console.log(`[PAYMENT CODE] Nueva solicitud - ${username} envió código: ${paymentCode} para ${nxAmount} NX`);
 
-    try {
-      const request = new (await import('mssql')).Request(await (await import('../db.js')).getConnection());
-      
-      const result = await request
-        .input('oidUser', oidUser)
-        .input('username', username)
-        .input('NickName', NickName || username)
-        .input('paymentCode', paymentCode)
-        .input('nxAmount', nxAmount)
-        .input('dollarAmount', dollarAmount)
-        .query(`
-          INSERT INTO PaymentCodes (oidUser, username, NickName, paymentCode, nxAmount, dollarAmount, status)
-          VALUES (@oidUser, @username, @NickName, @paymentCode, @nxAmount, @dollarAmount, 'pending')
-        `);
+    const { query } = await import('../db.js');
+    
+    await query(
+      `INSERT INTO PaymentCodes (oidUser, username, NickName, paymentCode, nxAmount, dollarAmount, status)
+       VALUES (@oidUser, @username, @NickName, @paymentCode, @nxAmount, @dollarAmount, 'pending')`,
+      [
+        { name: 'oidUser', value: oidUser },
+        { name: 'username', value: username },
+        { name: 'NickName', value: NickName || username },
+        { name: 'paymentCode', value: paymentCode },
+        { name: 'nxAmount', value: nxAmount },
+        { name: 'dollarAmount', value: dollarAmount }
+      ]
+    );
 
-      res.json({
-        success: true,
-        message: 'Código recibido. El administrador lo revisará pronto.',
-      });
-    } catch (dbError) {
-      console.error('Database error:', dbError);
-      // Si hay error de duplicado, es porque ya existe el código
-      if (dbError.message.includes('UNIQUE')) {
-        return res.status(400).json({ error: 'Este código ya fue registrado' });
-      }
-      throw dbError;
-    }
+    res.json({
+      success: true,
+      message: 'Código recibido. El administrador lo revisará pronto.',
+    });
+
   } catch (error) {
     console.error('Submit payment code error:', error);
+    // Si hay error de duplicado, es porque ya existe el código
+    if (error.message.includes('UNIQUE') || error.message.includes('Violation of PRIMARY KEY')) {
+      return res.status(400).json({ error: 'Este código ya fue registrado' });
+    }
     res.status(500).json({ error: 'Error al enviar código: ' + error.message });
   }
 });
