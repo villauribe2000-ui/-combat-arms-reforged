@@ -4,6 +4,21 @@ import crypto from 'crypto';
 
 const router = Router();
 
+// MANTENIMIENTO: La tienda está en mantenimiento
+const MAINTENANCE_MODE = true;
+const MAINTENANCE_MESSAGE = 'La tienda está en mantenimiento. Por favor, intenta más tarde.';
+
+// Middleware para verificar modo mantenimiento en compras
+const maintenanceCheck = (req, res, next) => {
+  if (MAINTENANCE_MODE) {
+    return res.status(503).json({ 
+      error: MAINTENANCE_MESSAGE,
+      status: 'maintenance'
+    });
+  }
+  next();
+};
+
 // Paquetes de Gcoin disponibles
 const GCOIN_PACKAGES = [
   { id: 1, coins: 100, price: 0.13 },
@@ -73,8 +88,8 @@ router.get('/transactions/:userId', async (req, res) => {
   }
 });
 
-// Crear orden para PayPal.me (solo registro)
-router.post('/create-order', async (req, res) => {
+// Crear orden para PayPal.me (solo registro) - EN MANTENIMIENTO
+router.post('/create-order', maintenanceCheck, async (req, res) => {
   try {
     const { userId, packageId } = req.body;
 
@@ -136,8 +151,8 @@ router.post('/webhook/paypal', async (req, res) => {
   }
 });
 
-// Endpoint manual para acreditar NX (después de verificar pago)
-router.post('/confirm-payment', async (req, res) => {
+// Endpoint manual para acreditar NX (después de verificar pago) - EN MANTENIMIENTO
+router.post('/confirm-payment', maintenanceCheck, async (req, res) => {
   try {
     const { userId, packageId, transactionId } = req.body;
 
@@ -200,8 +215,8 @@ router.post('/confirm-payment', async (req, res) => {
   }
 });
 
-// Add NX from level rewards
-router.post('/claim-level-reward', async (req, res) => {
+// Add NX from level rewards - EN MANTENIMIENTO
+router.post('/claim-level-reward', maintenanceCheck, async (req, res) => {
   try {
     const { username, level, nxAmount } = req.body;
 
