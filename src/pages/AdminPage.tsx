@@ -132,23 +132,38 @@ export default function AdminPage() {
       }
 
       console.log('[ADMIN] Llamando getPendingPaymentCodes...');
-      const codeData = await api.getPendingPaymentCodes(); 
-      console.log('[ADMIN] Respuesta de getPendingPaymentCodes:', codeData);
+      let codeData = [];
+      try {
+        codeData = await api.getPendingPaymentCodes(); 
+        console.log('[ADMIN] Respuesta de getPendingPaymentCodes:', codeData);
+      } catch (e) {
+        console.error('[ADMIN] Error en getPendingPaymentCodes:', e);
+        codeData = [];
+      }
       
-      const paymentData = await api.getPendingPayments().catch(e => { 
-        console.error('[ADMIN] Error en getPendingPayments:', e); 
-        return []; 
-      });
+      let paymentData = [];
+      try {
+        paymentData = await api.getPendingPayments();
+      } catch (e) {
+        console.error('[ADMIN] Error en getPendingPayments:', e);
+        paymentData = [];
+      }
       
-      const refundData = await api.getPendingRefunds().catch(e => { 
-        console.error('[ADMIN] Error en getPendingRefunds:', e); 
-        return []; 
-      });
+      let refundData = [];
+      try {
+        refundData = await api.getPendingRefunds();
+      } catch (e) {
+        console.error('[ADMIN] Error en getPendingRefunds:', e);
+        refundData = [];
+      }
       
-      const ticketData = await api.getAllTickets().catch(e => { 
-        console.error('[ADMIN] Error en getAllTickets:', e); 
-        return []; 
-      });
+      let ticketData = [];
+      try {
+        ticketData = await api.getAllTickets();
+      } catch (e) {
+        console.error('[ADMIN] Error en getAllTickets:', e);
+        ticketData = [];
+      }
 
       console.log('[ADMIN] Códigos recibidos:', codeData);
       console.log('[ADMIN] Pagos recibidos:', paymentData);
@@ -158,10 +173,9 @@ export default function AdminPage() {
       setPaymentCodes(codeData || []);
       console.log('[ADMIN] setPaymentCodes llamado');
       
-      // No actualizar si hay errores
-      if (paymentData.length > 0) setPayments(paymentData);
-      if (refundData.length > 0) setRefunds(refundData);
-      if (ticketData.length > 0) setSupportTickets(ticketData);
+      setPayments(paymentData || []);
+      setRefunds(refundData || []);
+      setSupportTickets(ticketData || []);
       console.log('[ADMIN] Todos los states actualizados');
     } catch (error) {
       console.error('[ADMIN] Error general loading data:', error);
