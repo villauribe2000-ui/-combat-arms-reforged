@@ -321,6 +321,24 @@ export default function WalletPage() {
     }
   };
 
+  // Función para calcular el precio basado en la base de precios
+  const calculateCustomPrice = (nxAmount: string): number => {
+    if (!nxAmount) return 0;
+    const amount = parseInt(nxAmount);
+    
+    // Encontrar el paquete más cercano o usar proporción
+    // Basarse en el mejor precio: 1600000 NX por $100 = 16000 NX por $1
+    // O usar la proporción más favorable
+    
+    // Mejor proporción: 1600000 NX = $100 (16000 NX por dólar)
+    // Segunda mejor: 800000 NX = $50 (16000 NX por dólar)
+    // Tercera mejor: 480000 NX = $30 (16000 NX por dólar)
+    
+    // Usar la proporción de 16000 NX por dólar (mejor precio)
+    const price = amount / 16000;
+    return Math.max(0.01, parseFloat(price.toFixed(2)));
+  };
+
   if (!profile) {
     return null;
   }
@@ -555,6 +573,12 @@ export default function WalletPage() {
                 {customNxAmount ? parseInt(customNxAmount).toLocaleString() : '0'}
               </p>
             </div>
+            <div className="p-4 rounded-xl bg-blue-500/10 border border-blue-500/30">
+              <p className="text-xs text-slate-400 mb-2">PRECIO A PAGAR</p>
+              <p className="text-2xl font-bold text-blue-400">
+                ${calculateCustomPrice(customNxAmount).toFixed(2)}
+              </p>
+            </div>
             <div className="p-4 rounded-xl bg-emerald-500/10 border border-emerald-500/30">
               <p className="text-xs text-slate-400 mb-2">BONUS (10%)</p>
               <p className="text-2xl font-bold text-emerald-400">+{customNxBonus.toLocaleString()}</p>
@@ -582,9 +606,8 @@ export default function WalletPage() {
               }
               // Guardar la cantidad en sessionStorage para referencia
               sessionStorage.setItem('customNxAmount', customNxAmount);
-              const nxValue = parseInt(customNxAmount);
-              const estimatedPrice = (nxValue / 1000000) * 100; // Aproximación
-              const paypalLink = `https://paypal.me/LBetancourthQuenguan/${estimatedPrice.toFixed(2)}`;
+              const customPrice = calculateCustomPrice(customNxAmount);
+              const paypalLink = `https://paypal.me/LBetancourthQuenguan/${customPrice.toFixed(2)}`;
               window.location.href = paypalLink;
             }}
             disabled={!customNxAmount || parseInt(customNxAmount) < 1000}
@@ -596,7 +619,7 @@ export default function WalletPage() {
           >
             {!customNxAmount || parseInt(customNxAmount) < 1000
               ? 'Ingresa una cantidad (mín. 1000 NX)'
-              : 'Comprar Ahora'}
+              : `Comprar por $${calculateCustomPrice(customNxAmount).toFixed(2)}`}
           </button>
           <p className="text-xs text-slate-500 mt-2 text-center">
             Serás redirigido a PayPal para completar el pago
