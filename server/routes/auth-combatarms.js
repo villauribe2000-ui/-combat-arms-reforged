@@ -165,6 +165,14 @@ router.post('/register', async (req, res) => {
     
     // 🆕 Obtener IP del cliente
     const clientIP = getClientIP(req);
+    
+    // 🆕 VALIDAR QUE LA IP SE DETECTÓ CORRECTAMENTE
+    if (!clientIP || clientIP === '0.0.0.0' || clientIP === '::1' || clientIP === '127.0.0.1') {
+      return res.status(400).json({
+        success: false,
+        error: 'No se pudo detectar tu dirección IP. Intenta de nuevo.'
+      });
+    }
 
     // Validar datos
     if (!username || !password || !email) {
