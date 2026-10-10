@@ -335,7 +335,7 @@ export default function AdminPage() {
   const totalNX = payments.filter(p => p.status === 'pending').reduce((sum, p) => sum + p.nxAmount, 0);
   const totalDollars = payments.filter(p => p.status === 'pending').reduce((sum, p) => sum + p.dollarAmount, 0);
   
-  const pendingCodes = paymentCodes.filter(c => c.status === 'pending');
+  const pendingCodes = paymentCodes; // El endpoint ya devuelve solo pendientes
   const totalCodesNX = pendingCodes.reduce((sum, c) => sum + c.nxAmount, 0);
   const totalCodesDollars = pendingCodes.reduce((sum, c) => sum + c.dollarAmount, 0);
   
