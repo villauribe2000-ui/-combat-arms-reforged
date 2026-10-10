@@ -6,7 +6,6 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import { getPoolConnection, disconnect, query, queryVisms } from './db.js';
 import { authMiddleware } from './auth.js';
-import { initializeTables } from './init-db.js';
 import authRoutes from './routes/auth.js';
 import authCombatarmsRoutes from './routes/auth-combatarms.js';
 import dataRoutes from './routes/data.js';
@@ -92,15 +91,8 @@ app.use((err, req, res, next) => {
 // La tabla MarketplaceListings no existe en la base de datos actual
 async function runMigrations() {
   try {
-    console.log('[MIGRATION] Inicializando tablas en combatarms_web...');
-    try {
-      await initializeTables();
-      console.log('[MIGRATION] ✓ Tablas inicializadas correctamente');
-    } catch (initError) {
-      console.warn('[MIGRATION] ⚠️ Advertencia en inicialización de tablas:', initError.message);
-      console.warn('[MIGRATION] Continuando de todos modos...');
-    }
-    console.log('[MIGRATION] ✓ Migraciones completadas');
+    console.log('[MIGRATION] Migraciones deshabilitadas - ejecutar init-db.js manualmente si es necesario');
+    // await initializeTables();
   } catch (error) {
     console.error('[MIGRATION] Error durante migraciones:', error.message);
   }
