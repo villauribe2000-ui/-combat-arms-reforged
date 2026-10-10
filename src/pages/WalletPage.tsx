@@ -26,17 +26,14 @@ export default function WalletPage() {
   const [timeUntilReset, setTimeUntilReset] = useState<string>('');
 
   const packages: GcoinPackage[] = [
-    { id: 1, coins: 100, price: 0.13 },
-    { id: 2, coins: 200, price: 0.27 },
-    { id: 3, coins: 500, price: 0.67 },
-    { id: 4, coins: 1000, price: 1.33 },
-    { id: 5, coins: 1500, price: 2.00 },
-    { id: 6, coins: 2000, price: 2.67 },
-    { id: 7, coins: 3000, price: 4.00 },
-    { id: 8, coins: 5000, price: 6.67 },
-    { id: 9, coins: 10000, price: 13.33 },
-    { id: 10, coins: 20000, price: 26.67 },
-    { id: 11, coins: 30000, price: 40.00 },
+    { id: 1, coins: 15000, price: 1.00 },
+    { id: 2, coins: 35000, price: 2.00 },
+    { id: 3, coins: 80000, price: 5.00 },
+    { id: 4, coins: 160000, price: 10.00 },
+    { id: 5, coins: 320000, price: 20.00 },
+    { id: 6, coins: 480000, price: 30.00 },
+    { id: 7, coins: 800000, price: 50.00 },
+    { id: 8, coins: 1600000, price: 100.00 },
   ];
 
   useEffect(() => {
@@ -149,9 +146,9 @@ export default function WalletPage() {
 
     // Definir las 3 recompensas más caras
     const topRewards = [
-      { packageId: 11, coins: 30000, bonus: 1500 },
-      { packageId: 10, coins: 20000, bonus: 1000 },
-      { packageId: 9, coins: 10000, bonus: 500 },
+      { packageId: 8, coins: 1600000, bonus: 160000 },
+      { packageId: 7, coins: 800000, bonus: 80000 },
+      { packageId: 6, coins: 480000, bonus: 48000 },
     ];
     setRewards(topRewards);
 
