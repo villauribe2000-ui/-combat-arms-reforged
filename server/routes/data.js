@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { query, queryGuildDB, queryVisms } from '../db.js';
+import { query, queryGuildDB, queryVisms, getUserOidByUsername } from '../db.js';
 
 const router = Router();
 
@@ -546,17 +546,12 @@ router.get('/available-items/:username', async (req, res) => {
   try {
     const { username } = req.params;
 
-    // Obtener oidUser del username
-    const userResult = await query(
-      `SELECT oidUser FROM CBT_User WHERE strNexonID = @username`,
-      { username }
-    );
-
-    if (userResult.recordset.length === 0) {
+    // Obtener oidUser - usar función helper que busca en ambas tablas
+    const oidUser = await getUserOidByUsername(username);
+    
+    if (!oidUser) {
       return res.status(404).json({ error: 'Usuario no encontrado' });
     }
-
-    const oidUser = userResult.recordset[0].oidUser;
 
     // Primero obtener todos los IDs de compras que han sido reembolsadas (pending o approved)
     const refundedPurchasesResult = await query(

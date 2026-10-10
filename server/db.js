@@ -166,6 +166,38 @@ export async function queryVisms(sql, params = {}) {
   return await request.query(sql);
 }
 
+// Helper: Obtener oidUser desde username (busca en ambas tablas)
+export async function getUserOidByUsername(username) {
+  if (!username) return null;
+  
+  try {
+    // Intentar primero en CBT_UserAuth (usuarios nuevos web)
+    let result = await query(
+      `SELECT oidUser FROM CBT_UserAuth WHERE strNexonID = @username OR strLNexonID = @usernameLower`,
+      { username, usernameLower: username.toLowerCase() }
+    );
+    
+    if (result.recordset.length > 0) {
+      return result.recordset[0].oidUser;
+    }
+    
+    // Si no encuentra, buscar en CBT_User (usuarios antiguos)
+    result = await query(
+      `SELECT oidUser FROM CBT_User WHERE strNexonID = @username OR strLNexonID = @usernameLower`,
+      { username, usernameLower: username.toLowerCase() }
+    );
+    
+    if (result.recordset.length > 0) {
+      return result.recordset[0].oidUser;
+    }
+    
+    return null;
+  } catch (error) {
+    console.error(`Error getting oidUser for username "${username}":`, error.message);
+    return null;
+  }
+}
+
 export async function disconnect() {
   if (pool) await pool.close();
   if (poolLog) await poolLog.close();

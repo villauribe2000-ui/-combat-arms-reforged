@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { query, queryVisms } from '../db.js';
+import { query, queryVisms, getUserOidByUsername } from '../db.js';
 
 const router = Router();
 
@@ -131,25 +131,12 @@ router.get('/total-refunded/:username', async (req, res) => {
   try {
     const { username } = req.params;
 
-    // Obtener oidUser - intentar primero en CBT_UserAuth
-    let userResult = await query(
-      `SELECT oidUser FROM CBT_UserAuth WHERE strNexonID = @username OR strLNexonID = @usernameLower`,
-      { username, usernameLower: username.toLowerCase() }
-    );
-
-    // Si no se encuentra, buscar en CBT_User
-    if (userResult.recordset.length === 0) {
-      userResult = await query(
-        `SELECT oidUser FROM CBT_User WHERE strNexonID = @username OR strLNexonID = @usernameLower`,
-        { username, usernameLower: username.toLowerCase() }
-      );
-    }
-
-    if (userResult.recordset.length === 0) {
+    // Obtener oidUser - usar función helper que busca en ambas tablas
+    const oidUser = await getUserOidByUsername(username);
+    
+    if (!oidUser) {
       return res.status(404).json({ error: 'Usuario no encontrado' });
     }
-
-    const oidUser = userResult.recordset[0].oidUser;
 
     // Obtener total de NX reembolsado (solo aprobados)
     const totalResult = await query(
@@ -182,25 +169,12 @@ router.get('/refund-details/:username', async (req, res) => {
   try {
     const { username } = req.params;
 
-    // Obtener oidUser - intentar primero en CBT_UserAuth
-    let userResult = await query(
-      `SELECT oidUser FROM CBT_UserAuth WHERE strNexonID = @username OR strLNexonID = @usernameLower`,
-      { username, usernameLower: username.toLowerCase() }
-    );
-
-    // Si no se encuentra, buscar en CBT_User
-    if (userResult.recordset.length === 0) {
-      userResult = await query(
-        `SELECT oidUser FROM CBT_User WHERE strNexonID = @username OR strLNexonID = @usernameLower`,
-        { username, usernameLower: username.toLowerCase() }
-      );
-    }
-
-    if (userResult.recordset.length === 0) {
+    // Obtener oidUser - usar función helper que busca en ambas tablas
+    const oidUser = await getUserOidByUsername(username);
+    
+    if (!oidUser) {
       return res.status(404).json({ error: 'Usuario no encontrado' });
     }
-
-    const oidUser = userResult.recordset[0].oidUser;
 
     // Obtener todos los reembolsos aprobados
     const result = await query(
@@ -240,25 +214,12 @@ router.get('/weekly-count/:username', async (req, res) => {
   try {
     const { username } = req.params;
 
-    // Obtener oidUser - intentar primero en CBT_UserAuth
-    let userResult = await query(
-      `SELECT oidUser FROM CBT_UserAuth WHERE strNexonID = @username OR strLNexonID = @usernameLower`,
-      { username, usernameLower: username.toLowerCase() }
-    );
-
-    // Si no se encuentra, buscar en CBT_User
-    if (userResult.recordset.length === 0) {
-      userResult = await query(
-        `SELECT oidUser FROM CBT_User WHERE strNexonID = @username OR strLNexonID = @usernameLower`,
-        { username, usernameLower: username.toLowerCase() }
-      );
-    }
-
-    if (userResult.recordset.length === 0) {
+    // Obtener oidUser - usar función helper que busca en ambas tablas
+    const oidUser = await getUserOidByUsername(username);
+    
+    if (!oidUser) {
       return res.status(404).json({ error: 'Usuario no encontrado' });
     }
-
-    const oidUser = userResult.recordset[0].oidUser;
 
     // Calcular el lunes de esta semana
     const today = new Date();
