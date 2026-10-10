@@ -451,30 +451,15 @@ router.get('/purchase-history/:username', async (req, res) => {
 
     console.log(`[PURCHASE HISTORY] Buscando compras para usuario: ${username}`);
 
-    // Obtener oidUser del username - intentar primero desde CBT_UserAuth (usuarios nuevos)
-    let userResult = await query(
-      `SELECT oidUser FROM CBT_UserAuth WHERE strNexonID = @username OR strLNexonID = @usernameLower`,
-      { username, usernameLower: username.toLowerCase() }
-    );
+    // Obtener oidUser - usar función helper que busca en ambas tablas
+    const oidUser = await getUserOidByUsername(username);
 
-    console.log(`[PURCHASE HISTORY] Resultado CBT_UserAuth:`, userResult.recordset.length > 0 ? userResult.recordset[0] : 'no encontrado');
+    console.log(`[PURCHASE HISTORY] oidUser encontrado: ${oidUser}`);
 
-    // Si no se encuentra en CBT_UserAuth, buscar en CBT_User (usuarios antiguos)
-    if (userResult.recordset.length === 0) {
-      userResult = await query(
-        `SELECT oidUser FROM CBT_User WHERE strNexonID = @username OR strLNexonID = @usernameLower`,
-        { username, usernameLower: username.toLowerCase() }
-      );
-      console.log(`[PURCHASE HISTORY] Resultado CBT_User:`, userResult.recordset.length > 0 ? userResult.recordset[0] : 'no encontrado');
-    }
-
-    if (userResult.recordset.length === 0) {
+    if (!oidUser) {
       console.log(`[PURCHASE HISTORY] ❌ Usuario no encontrado: ${username}`);
       return res.status(404).json({ error: 'Usuario no encontrado' });
     }
-
-    const oidUser = userResult.recordset[0].oidUser;
-    console.log(`[PURCHASE HISTORY] ✓ oidUser encontrado: ${oidUser}`);
 
     // Obtener últimas 50 compras desde VISMS_PurchaseLog (está en BD VISMS)
     let purchaseResult;
