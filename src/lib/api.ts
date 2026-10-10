@@ -328,6 +328,24 @@ class ApiClient {
     return await this.request<any[]>('GET', '/support/admin/refunded-items');
   }
 
+  // Refund endpoints
+  async getPendingRefunds() {
+    return await this.request<any[]>('GET', '/refunds/pending');
+  }
+
+  async approveRefund(refundId: number, adminUsername: string) {
+    return await this.request<{ success: boolean; message: string; details: any }>('POST', `/refunds/approve/${refundId}`, {
+      adminUsername,
+    });
+  }
+
+  async rejectRefund(refundId: number, adminUsername: string, reason?: string) {
+    return await this.request<{ success: boolean; message: string }>('POST', `/refunds/reject/${refundId}`, {
+      adminUsername,
+      reason,
+    });
+  }
+
   // Marketplace endpoints
   async createMarketplaceListing(oidUser: number, username: string, NickName: string, itemName: string, itemDescription: string, itemRarity: string, sellingPrice: number, quantity: number, condition: string, imageBase64?: string, purchaseLogId?: number) {
     return await this.request<{ success: boolean; listingId: number; message: string; createdAt: string }>('POST', '/marketplace/create-listing', {
