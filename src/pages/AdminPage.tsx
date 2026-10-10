@@ -447,6 +447,7 @@ export default function AdminPage() {
           {/* Códigos Table */}
           <div className="rounded-2xl border border-white/5 bg-[#0d1320] p-6">
             <h2 className="mb-6 text-lg font-bold">Códigos de Pago Pendientes</h2>
+            {console.log('[ADMIN] Estado render: loading=', loading, 'pendingCodes.length=', pendingCodes.length)}
 
             {loading ? (
               <div className="flex justify-center py-12">
