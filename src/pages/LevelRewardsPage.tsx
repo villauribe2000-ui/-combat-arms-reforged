@@ -88,7 +88,7 @@ export default function LevelRewardsPage() {
     {"exp": 89000000, "nivel": 65}
   ];
 
-  // Tabla de recompensas por nivel
+  // Tabla de recompensas por nivel (SOLO hasta nivel 60)
   const LEVEL_REWARDS: Record<number, number> = {
     0: 16, 1: 32, 2: 49, 3: 65, 4: 81, 5: 97, 6: 113, 7: 129, 8: 146, 9: 162,
     10: 178, 11: 194, 12: 210, 13: 227, 14: 243, 15: 259, 16: 275, 17: 291, 18: 307, 19: 323,
@@ -111,11 +111,11 @@ export default function LevelRewardsPage() {
         // Calcular nivel actual
         let userLevel = 0;
         if (userExp < 0 || userExp >= 89000000) {
-          userLevel = 65;
+          userLevel = 60; // Máximo es 60 para recompensas
         } else {
           for (let i = PATENTES.length - 1; i >= 0; i--) {
             if (userExp >= PATENTES[i].exp) {
-              userLevel = PATENTES[i].nivel;
+              userLevel = Math.min(PATENTES[i].nivel, 60); // Limitar a 60
               break;
             }
           }
@@ -129,11 +129,11 @@ export default function LevelRewardsPage() {
         const claimed = JSON.parse(claimedData);
         setClaimedLevelRewards(claimed);
 
-        // Crear lista de recompensas
+        // Crear lista de recompensas (SOLO hasta nivel 60)
         const rewardsList: LevelReward[] = [];
         let claimableTotal = 0;
 
-        for (let level = 0; level <= 65; level++) {
+        for (let level = 0; level <= 60; level++) {
           const isUnlocked = level <= userLevel;
           const isClaimed = claimed.includes(level);
           const reward = LEVEL_REWARDS[level] || 0;
