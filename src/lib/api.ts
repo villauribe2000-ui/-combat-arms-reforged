@@ -260,6 +260,7 @@ class ApiClient {
   }
 
   async getPendingPaymentCodes() {
+    // Fetch pending payment codes from /payments/payment-codes/pending
     return await this.request<any[]>('GET', '/payments/payment-codes/pending');
   }
 
