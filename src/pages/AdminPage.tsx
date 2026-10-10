@@ -117,14 +117,34 @@ export default function AdminPage() {
     try {
       setLoading(true);
       console.log('[ADMIN] Iniciando carga de datos...');
-      console.log('[ADMIN] Métodos disponibles:', Object.getOwnPropertyNames(Object.getPrototypeOf(api)));
-      console.log('[ADMIN] ¿getPendingPaymentCodes existe?', typeof api.getPendingPaymentCodes);
-      const [codeData, paymentData, refundData, ticketData] = await Promise.all([
-        api.getPendingPaymentCodes().catch(e => { console.error('[ADMIN] Error en getPendingPaymentCodes:', e); return []; }),
-        api.getPendingPayments().catch(e => { console.error('[ADMIN] Error en getPendingPayments:', e); return []; }),
-        api.getPendingRefunds().catch(e => { console.error('[ADMIN] Error en getPendingRefunds:', e); return []; }),
-        api.getAllTickets().catch(e => { console.error('[ADMIN] Error en getAllTickets:', e); return []; }),
-      ]);
+      console.log('[ADMIN] Instancia de API:', api);
+      console.log('[ADMIN] Tipo de api.getPendingPaymentCodes:', typeof api.getPendingPaymentCodes);
+      
+      if (!api.getPendingPaymentCodes) {
+        console.error('[ADMIN] ERROR CRÍTICO: getPendingPaymentCodes no existe en api');
+        throw new Error('Método getPendingPaymentCodes no disponible');
+      }
+
+      const codeData = await api.getPendingPaymentCodes().catch(e => { 
+        console.error('[ADMIN] Error en getPendingPaymentCodes:', e); 
+        return []; 
+      });
+      
+      const paymentData = await api.getPendingPayments().catch(e => { 
+        console.error('[ADMIN] Error en getPendingPayments:', e); 
+        return []; 
+      });
+      
+      const refundData = await api.getPendingRefunds().catch(e => { 
+        console.error('[ADMIN] Error en getPendingRefunds:', e); 
+        return []; 
+      });
+      
+      const ticketData = await api.getAllTickets().catch(e => { 
+        console.error('[ADMIN] Error en getAllTickets:', e); 
+        return []; 
+      });
+
       console.log('[ADMIN] Códigos recibidos:', codeData);
       console.log('[ADMIN] Pagos recibidos:', paymentData);
       console.log('[ADMIN] Reembolsos recibidos:', refundData);
