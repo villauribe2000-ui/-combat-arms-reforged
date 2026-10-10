@@ -24,6 +24,8 @@ export default function WalletPage() {
   const [rewards, setRewards] = useState<{ packageId: number; coins: number; bonus: number }[]>([]);
   const [claimedRewards, setClaimedRewards] = useState<number[]>([]);
   const [timeUntilReset, setTimeUntilReset] = useState<string>('');
+  const [customNxAmount, setCustomNxAmount] = useState<string>('');
+  const [customNxBonus, setCustomNxBonus] = useState<number>(0);
 
   const packages: GcoinPackage[] = [
     { id: 1, coins: 15000, price: 1.00 },
@@ -304,6 +306,21 @@ export default function WalletPage() {
     setTimeout(() => setNotification(null), 3000);
   };
 
+  const handleCustomNxChange = (value: string) => {
+    // Permitir solo números
+    const numValue = value.replace(/\D/g, '');
+    setCustomNxAmount(numValue);
+    
+    // Calcular el bonus (10%)
+    if (numValue) {
+      const amount = parseInt(numValue);
+      const bonus = Math.floor(amount * 0.1);
+      setCustomNxBonus(bonus);
+    } else {
+      setCustomNxBonus(0);
+    }
+  };
+
   if (!profile) {
     return null;
   }
@@ -504,6 +521,86 @@ export default function WalletPage() {
             </div>
           </div>
           <span className="text-xs bg-emerald-500/20 text-emerald-400 px-3 py-1 rounded-full">Disponible</span>
+        </div>
+      </div>
+
+      {/* Compra Personalizada */}
+      <div className="rounded-2xl border border-white/5 bg-[#0d1320] p-6">
+        <h2 className="mb-4 flex items-center gap-2 text-lg font-bold">
+          <Crown className="h-5 w-5 text-cyan-400" /> Compra Personalizada
+        </h2>
+        <p className="text-sm text-slate-400 mb-6">Compra la cantidad exacta que necesites y recibe 10% de bonus</p>
+
+        <div className="grid gap-6 md:grid-cols-2">
+          {/* Input y cálculo */}
+          <div>
+            <label className="block mb-3">
+              <p className="text-sm font-semibold text-slate-300 mb-2">Cantidad de NX</p>
+              <input
+                type="text"
+                placeholder="Ej: 50000"
+                value={customNxAmount}
+                onChange={(e) => handleCustomNxChange(e.target.value)}
+                className="w-full px-4 py-3 rounded-lg bg-white/5 border border-white/10 text-white placeholder-slate-500 focus:outline-none focus:border-cyan-400 transition"
+              />
+              <p className="text-xs text-slate-500 mt-2">Solo números</p>
+            </label>
+          </div>
+
+          {/* Resumen */}
+          <div className="space-y-3">
+            <div className="p-4 rounded-xl bg-cyan-500/10 border border-cyan-500/30">
+              <p className="text-xs text-slate-400 mb-2">NX A COMPRAR</p>
+              <p className="text-2xl font-bold text-cyan-400">
+                {customNxAmount ? parseInt(customNxAmount).toLocaleString() : '0'}
+              </p>
+            </div>
+            <div className="p-4 rounded-xl bg-emerald-500/10 border border-emerald-500/30">
+              <p className="text-xs text-slate-400 mb-2">BONUS (10%)</p>
+              <p className="text-2xl font-bold text-emerald-400">+{customNxBonus.toLocaleString()}</p>
+            </div>
+            <div className="p-4 rounded-xl bg-purple-500/10 border border-purple-500/30">
+              <p className="text-xs text-slate-400 mb-2">TOTAL A RECIBIR</p>
+              <p className="text-2xl font-bold text-purple-400">
+                {(parseInt(customNxAmount || '0') + customNxBonus).toLocaleString()}
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {/* Botón de compra */}
+        <div className="mt-6">
+          <button
+            onClick={() => {
+              if (!customNxAmount) {
+                setNotification({
+                  type: 'error',
+                  message: 'Por favor ingresa una cantidad válida'
+                });
+                setTimeout(() => setNotification(null), 3000);
+                return;
+              }
+              // Guardar la cantidad en sessionStorage para referencia
+              sessionStorage.setItem('customNxAmount', customNxAmount);
+              const nxValue = parseInt(customNxAmount);
+              const estimatedPrice = (nxValue / 1000000) * 100; // Aproximación
+              const paypalLink = `https://paypal.me/LBetancourthQuenguan/${estimatedPrice.toFixed(2)}`;
+              window.location.href = paypalLink;
+            }}
+            disabled={!customNxAmount || parseInt(customNxAmount) < 1000}
+            className={`w-full py-3 rounded-lg font-semibold transition ${
+              !customNxAmount || parseInt(customNxAmount) < 1000
+                ? 'bg-slate-700/20 text-slate-400 cursor-not-allowed'
+                : 'bg-gradient-to-r from-cyan-500 to-blue-600 text-white hover:shadow-lg hover:shadow-cyan-500/30'
+            }`}
+          >
+            {!customNxAmount || parseInt(customNxAmount) < 1000
+              ? 'Ingresa una cantidad (mín. 1000 NX)'
+              : 'Comprar Ahora'}
+          </button>
+          <p className="text-xs text-slate-500 mt-2 text-center">
+            Serás redirigido a PayPal para completar el pago
+          </p>
         </div>
       </div>
 
