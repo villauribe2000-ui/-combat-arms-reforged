@@ -131,11 +131,19 @@ router.get('/total-refunded/:username', async (req, res) => {
   try {
     const { username } = req.params;
 
-    // Obtener oidUser
-    const userResult = await query(
-      `SELECT oidUser FROM CBT_User WHERE strNexonID = @username`,
-      { username }
+    // Obtener oidUser - intentar primero en CBT_UserAuth
+    let userResult = await query(
+      `SELECT oidUser FROM CBT_UserAuth WHERE strNexonID = @username OR strLNexonID = @usernameLower`,
+      { username, usernameLower: username.toLowerCase() }
     );
+
+    // Si no se encuentra, buscar en CBT_User
+    if (userResult.recordset.length === 0) {
+      userResult = await query(
+        `SELECT oidUser FROM CBT_User WHERE strNexonID = @username OR strLNexonID = @usernameLower`,
+        { username, usernameLower: username.toLowerCase() }
+      );
+    }
 
     if (userResult.recordset.length === 0) {
       return res.status(404).json({ error: 'Usuario no encontrado' });
@@ -174,11 +182,19 @@ router.get('/refund-details/:username', async (req, res) => {
   try {
     const { username } = req.params;
 
-    // Obtener oidUser
-    const userResult = await query(
-      `SELECT oidUser FROM CBT_User WHERE strNexonID = @username`,
-      { username }
+    // Obtener oidUser - intentar primero en CBT_UserAuth
+    let userResult = await query(
+      `SELECT oidUser FROM CBT_UserAuth WHERE strNexonID = @username OR strLNexonID = @usernameLower`,
+      { username, usernameLower: username.toLowerCase() }
     );
+
+    // Si no se encuentra, buscar en CBT_User
+    if (userResult.recordset.length === 0) {
+      userResult = await query(
+        `SELECT oidUser FROM CBT_User WHERE strNexonID = @username OR strLNexonID = @usernameLower`,
+        { username, usernameLower: username.toLowerCase() }
+      );
+    }
 
     if (userResult.recordset.length === 0) {
       return res.status(404).json({ error: 'Usuario no encontrado' });
@@ -224,11 +240,19 @@ router.get('/weekly-count/:username', async (req, res) => {
   try {
     const { username } = req.params;
 
-    // Obtener oidUser
-    const userResult = await query(
-      `SELECT oidUser FROM CBT_User WHERE strNexonID = @username`,
-      { username }
+    // Obtener oidUser - intentar primero en CBT_UserAuth
+    let userResult = await query(
+      `SELECT oidUser FROM CBT_UserAuth WHERE strNexonID = @username OR strLNexonID = @usernameLower`,
+      { username, usernameLower: username.toLowerCase() }
     );
+
+    // Si no se encuentra, buscar en CBT_User
+    if (userResult.recordset.length === 0) {
+      userResult = await query(
+        `SELECT oidUser FROM CBT_User WHERE strNexonID = @username OR strLNexonID = @usernameLower`,
+        { username, usernameLower: username.toLowerCase() }
+      );
+    }
 
     if (userResult.recordset.length === 0) {
       return res.status(404).json({ error: 'Usuario no encontrado' });
