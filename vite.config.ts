@@ -20,7 +20,8 @@ export default defineConfig({
         chunkFileNames: `assets/[name]-${Date.now()}.js`,
         assetFileNames: `assets/[name]-${Date.now()}.[ext]`
       }
-    }
+    },
+    minify: 'terser'
   },
   server: {
     host: '0.0.0.0',
