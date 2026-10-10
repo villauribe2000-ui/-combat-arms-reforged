@@ -28,6 +28,17 @@ app.use(cors());
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
 
+// Health check (debe estar ANTES del catch-all)
+app.get('/health', (req, res) => {
+  res.json({ status: 'ok', version: '1.0.2' });
+});
+
+// Version endpoint (debe estar ANTES del catch-all)
+app.get('/api/version', (req, res) => {
+  console.log('[VERSION] Endpoint /api/version llamado');
+  res.json({ version: '1.0.2', buildTimestamp: '2026-10-10T17:15:00Z', deployed: true });
+});
+
 // Servir archivos estáticos públicos PRIMERO (para que tenga prioridad)
 app.use(express.static(path.join(__dirname, '../public')));
 
@@ -40,11 +51,6 @@ app.use('/assets', express.static(path.join(__dirname, '../dist/assets')));
 // Servir src/assets como /src/assets (para imágenes que se referencian directamente en JSX)
 app.use('/src/assets', express.static(path.join(__dirname, '../src/assets')));
 
-// Version endpoint
-app.get('/api/version', (req, res) => {
-  res.json({ version: '1.0.2', buildTimestamp: '2026-10-10T17:15:00Z', deployed: true });
-});
-
 // Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/auth-combatarms', authCombatarmsRoutes);
@@ -56,11 +62,6 @@ app.use('/api/support', supportRoutes);
 app.use('/api/marketplace', marketplaceRoutes);
 app.use('/api/combatarms-web', combatarmsWebRoutes);
 app.use('/api/protected', authMiddleware, dataRoutes);
-
-// Health check
-app.get('/health', (req, res) => {
-  res.json({ status: 'ok' });
-});
 
 // Catch-all: servir index.html para rutas del frontend (SPA)
 app.get('*', (req, res) => {
