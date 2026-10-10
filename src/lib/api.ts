@@ -329,18 +329,30 @@ class ApiClient {
   }
 
   // Refund endpoints
+  async requestRefund(oidUser: number, username: string, NickName: string, productName: string, nxPaid: number, productId?: number, purchaseLogId?: number) {
+    return await this.request<{ success: boolean; refundId: number; message: string; nxToRefund: number }>('POST', '/refund/request-refund', {
+      oidUser,
+      username,
+      NickName,
+      productId,
+      productName,
+      purchaseLogId,
+      nxPaid,
+    });
+  }
+
   async getPendingRefunds() {
-    return await this.request<any[]>('GET', '/refunds/pending');
+    return await this.request<any[]>('GET', '/refund/pending');
   }
 
   async approveRefund(refundId: number, adminUsername: string) {
-    return await this.request<{ success: boolean; message: string; details: any }>('POST', `/refunds/approve/${refundId}`, {
+    return await this.request<{ success: boolean; message: string; details: any }>('POST', `/refund/approve/${refundId}`, {
       adminUsername,
     });
   }
 
   async rejectRefund(refundId: number, adminUsername: string, reason?: string) {
-    return await this.request<{ success: boolean; message: string }>('POST', `/refunds/reject/${refundId}`, {
+    return await this.request<{ success: boolean; message: string }>('POST', `/refund/reject/${refundId}`, {
       adminUsername,
       reason,
     });

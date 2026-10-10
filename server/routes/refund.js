@@ -3,6 +3,59 @@ import { queryWeb } from '../db.js';
 
 const router = Router();
 
+// Crear solicitud de reembolso
+router.post('/request-refund', async (req, res) => {
+  try {
+    const { oidUser, username, NickName, productId, productName, purchaseLogId, nxPaid } = req.body;
+
+    if (!oidUser || !username || !productName || !nxPaid) {
+      return res.status(400).json({ error: 'Datos incompletos' });
+    }
+
+    // Calcular comisión (10%)
+    const nxCommission = Math.floor(nxPaid * 0.1);
+    const nxToRefund = nxPaid - nxCommission;
+
+    console.log(`[REFUND] Solicitud de reembolso - ${username}: ${productName} (${nxPaid} NX)`);
+
+    // Insertar en BD
+    const result = await queryWeb(
+      `INSERT INTO RefundRequests (
+        oidUser, username, NickName, productId, productName, purchaseLogId,
+        nxPaid, nxCommission, nxToRefund, status
+      )
+       OUTPUT INSERTED.id, INSERTED.createdAt
+       VALUES (@oidUser, @username, @NickName, @productId, @productName, @purchaseLogId,
+               @nxPaid, @nxCommission, @nxToRefund, 'pending')`,
+      {
+        oidUser,
+        username,
+        NickName: NickName || username,
+        productId: productId || null,
+        productName,
+        purchaseLogId: purchaseLogId || null,
+        nxPaid,
+        nxCommission,
+        nxToRefund
+      }
+    );
+
+    const refund = result.recordset[0];
+    console.log(`[REFUND] ✓ Reembolso #${refund.id} creado`);
+
+    res.json({
+      success: true,
+      refundId: refund.id,
+      message: 'Solicitud de reembolso creada. El administrador la revisará pronto.',
+      nxToRefund,
+    });
+
+  } catch (error) {
+    console.error('Create refund request error:', error);
+    res.status(500).json({ error: 'Error al crear solicitud de reembolso: ' + error.message });
+  }
+});
+
 // Obtener reembolsos pendientes (para admin)
 router.get('/pending', async (req, res) => {
   try {
