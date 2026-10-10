@@ -83,6 +83,7 @@ export default function ProfilePage() {
   useEffect(() => {
     if (!profile?.username) return;
     
+    // Force reload profile data
     (async () => {
       try {
         const dbProfile = await api.getProfile(profile.username);
