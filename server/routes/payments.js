@@ -201,32 +201,19 @@ router.post('/payment-codes/approve/:codeId', async (req, res) => {
       }
     );
 
-    // Buscar al usuario en COMBATARMS (tablas del juego)
-    const userResult = await query(
-      `SELECT TOP 1 oidUser as oidUser FROM CBT_UserAuth WHERE strNexonID = @username
-       UNION
-       SELECT TOP 1 oidUser FROM CBT_User WHERE strNexonID = @username`,
-      { username: username }
+    // Actualizar NX en VISMS (tabla de moneda)
+    // Usando queryWeb para conectar a VISMS
+    const updateResult = await queryWeb(
+      `UPDATE VISMS_UserList 
+       SET RealBalance = RealBalance + @nxAmount
+       WHERE strNexonID = @username`,
+      {
+        username: username,
+        nxAmount: nxAmount
+      }
     );
 
-    if (userResult.recordset && userResult.recordset.length > 0) {
-      const userOid = userResult.recordset[0].oidUser;
-      
-      // Actualizar NX en VISMS_GameAccount
-      await query(
-        `UPDATE VISMS_GameAccount 
-         SET NXAccount = NXAccount + @nxAmount
-         WHERE OidUser = @userOid`,
-        {
-          userOid: userOid,
-          nxAmount: nxAmount
-        }
-      );
-
-      console.log(`[PAYMENT CODE] ✓ NX añadido: ${username} recibió ${nxAmount} NX`);
-    } else {
-      console.warn(`[PAYMENT CODE] ⚠️ Usuario no encontrado: ${username}`);
-    }
+    console.log(`[PAYMENT CODE] ✓ NX añadido: ${username} recibió ${nxAmount} NX`);
 
     res.json({
       success: true,
