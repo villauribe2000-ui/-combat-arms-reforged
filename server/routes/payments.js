@@ -185,7 +185,7 @@ router.post('/payment-codes/approve/:codeId', async (req, res) => {
 
     console.log(`[PAYMENT CODE] Aprobando código #${codeId} por ${adminUsername}`);
 
-    const { query, getConnection } = await import('../db.js');
+    const { query } = await import('../db.js');
     
     // Obtener datos del código
     const codeResult = await query(
@@ -199,60 +199,48 @@ router.post('/payment-codes/approve/:codeId', async (req, res) => {
 
     const { oidUser, username, nxAmount } = codeResult.recordset[0];
 
-    // Usar transacción para actualizar código y NX
-    const connection = await getConnection();
-    const transaction = new (await import('mssql')).Transaction(connection);
-    await transaction.begin();
+    // Actualizar estado del código
+    await query(
+      `UPDATE PaymentCodes 
+       SET status = 'approved', approvedAt = GETDATE(), approvedBy = @adminUsername
+       WHERE id = @id`,
+      [
+        { name: 'id', value: codeId },
+        { name: 'adminUsername', value: adminUsername }
+      ]
+    );
 
-    try {
-      const request = new (await import('mssql')).Request(transaction);
+    // Buscar al usuario en ambas tablas
+    const userResult = await query(
+      `SELECT TOP 1 oidUser as oidUser FROM CBT_UserAuth WHERE strNexonID = @username
+       UNION
+       SELECT TOP 1 oidUser FROM CBT_User WHERE strNexonID = @username`,
+      [{ name: 'username', value: username }]
+    );
+
+    if (userResult.recordset && userResult.recordset.length > 0) {
+      const userOid = userResult.recordset[0].oidUser;
       
-      // Actualizar estado del código
-      await request
-        .input('id', codeId)
-        .input('adminUsername', adminUsername)
-        .query(`
-          UPDATE PaymentCodes 
-          SET status = 'approved', approvedAt = GETDATE(), approvedBy = @adminUsername
-          WHERE id = @id
-        `);
+      // Actualizar NX en VISMS_GameAccount
+      await query(
+        `UPDATE VISMS_GameAccount 
+         SET NXAccount = NXAccount + @nxAmount
+         WHERE OidUser = @userOid`,
+        [
+          { name: 'userOid', value: userOid },
+          { name: 'nxAmount', value: nxAmount }
+        ]
+      );
 
-      // Buscar al usuario en ambas tablas y actualizar su NX
-      const userResult = await request
-        .input('username2', username)
-        .query(`
-          SELECT oidUser FROM CBT_UserAuth WHERE UserName = @username2
-          UNION
-          SELECT OidUser FROM CBT_User WHERE UserName = @username2
-        `);
-
-      if (userResult.recordset && userResult.recordset.length > 0) {
-        const userOid = userResult.recordset[0].oidUser;
-        
-        // Actualizar NX en VISMS_GameAccount
-        await request
-          .input('userOid', userOid)
-          .input('nxAmount2', nxAmount)
-          .query(`
-            UPDATE VISMS_GameAccount 
-            SET NXAccount = NXAccount + @nxAmount2
-            WHERE OidUser = @userOid
-          `);
-
-        console.log(`[PAYMENT CODE] ✓ NX añadido: ${username} recibió ${nxAmount} NX`);
-      }
-
-      await transaction.commit();
-
-      res.json({
-        success: true,
-        message: `Código aprobado. ${nxAmount} NX añadidos a ${username}`,
-      });
-
-    } catch (error) {
-      await transaction.rollback();
-      throw error;
+      console.log(`[PAYMENT CODE] ✓ NX añadido: ${username} recibió ${nxAmount} NX`);
+    } else {
+      console.warn(`[PAYMENT CODE] ⚠️ Usuario no encontrado: ${username}`);
     }
+
+    res.json({
+      success: true,
+      message: `Código aprobado. ${nxAmount} NX añadidos a ${username}`,
+    });
 
   } catch (error) {
     console.error('Approve payment code error:', error);
