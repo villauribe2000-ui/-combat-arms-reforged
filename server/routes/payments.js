@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { query, queryVisms } from '../db.js';
+import { query, queryVisms, queryWeb } from '../db.js';
 
 const router = Router();
 
@@ -105,9 +105,7 @@ router.post('/submit-payment-code', async (req, res) => {
 
     console.log(`[PAYMENT CODE] Nueva solicitud - ${username} envió código: ${paymentCode} para ${nxAmount} NX`);
 
-    const { query } = await import('../db.js');
-    
-    await query(
+    await queryWeb(
       `INSERT INTO PaymentCodes (oidUser, username, NickName, paymentCode, nxAmount, dollarAmount, status)
        VALUES (@oidUser, @username, @NickName, @paymentCode, @nxAmount, @dollarAmount, 'pending')`,
       {
@@ -140,8 +138,7 @@ router.get('/payment-codes/pending', async (req, res) => {
   try {
     console.log('[PAYMENT CODE] Obteniendo códigos pendientes');
     
-    const { query } = await import('../db.js');
-    const result = await query(
+    const result = await queryWeb(
       'SELECT id, oidUser, username, NickName, paymentCode, nxAmount, dollarAmount, createdAt FROM PaymentCodes WHERE status = @status ORDER BY createdAt DESC',
       { status: 'pending' }
     );
@@ -158,8 +155,7 @@ router.get('/payment-codes/all', async (req, res) => {
   try {
     console.log('[PAYMENT CODE] Obteniendo todos los códigos');
     
-    const { query } = await import('../db.js');
-    const result = await query(
+    const result = await queryWeb(
       'SELECT id, oidUser, username, NickName, paymentCode, nxAmount, dollarAmount, status, createdAt, approvedAt, rejectedAt, approvedBy FROM PaymentCodes ORDER BY createdAt DESC'
     );
 
@@ -182,10 +178,8 @@ router.post('/payment-codes/approve/:codeId', async (req, res) => {
 
     console.log(`[PAYMENT CODE] Aprobando código #${codeId} por ${adminUsername}`);
 
-    const { query } = await import('../db.js');
-    
-    // Obtener datos del código
-    const codeResult = await query(
+    // Obtener datos del código desde combatarms_web
+    const codeResult = await queryWeb(
       'SELECT oidUser, username, nxAmount FROM PaymentCodes WHERE id = @id',
       { id: codeId }
     );
@@ -196,8 +190,8 @@ router.post('/payment-codes/approve/:codeId', async (req, res) => {
 
     const { oidUser, username, nxAmount } = codeResult.recordset[0];
 
-    // Actualizar estado del código
-    await query(
+    // Actualizar estado del código en combatarms_web
+    await queryWeb(
       `UPDATE PaymentCodes 
        SET status = 'approved', approvedAt = GETDATE(), approvedBy = @adminUsername
        WHERE id = @id`,
@@ -207,7 +201,7 @@ router.post('/payment-codes/approve/:codeId', async (req, res) => {
       }
     );
 
-    // Buscar al usuario en ambas tablas
+    // Buscar al usuario en COMBATARMS (tablas del juego)
     const userResult = await query(
       `SELECT TOP 1 oidUser as oidUser FROM CBT_UserAuth WHERE strNexonID = @username
        UNION
@@ -257,9 +251,7 @@ router.post('/payment-codes/reject/:codeId', async (req, res) => {
 
     console.log(`[PAYMENT CODE] Rechazando código #${codeId} por ${adminUsername}. Razón: ${reason || 'N/A'}`);
 
-    const { query } = await import('../db.js');
-    
-    await query(
+    await queryWeb(
       `UPDATE PaymentCodes 
        SET status = 'rejected', rejectedAt = GETDATE(), rejectionReason = @reason
        WHERE id = @id`,

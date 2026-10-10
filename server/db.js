@@ -58,6 +58,7 @@ let pool = null;
 let poolLog = null;
 let poolGuild = null;
 let poolVisms = null;
+let poolWeb = null;
 
 export async function getPoolConnection() {
   if (!pool) {
@@ -118,6 +119,31 @@ export async function getPoolConnectionVisms() {
   return poolVisms;
 }
 
+export async function getPoolConnectionWeb() {
+  if (!poolWeb) {
+    const configWeb = {
+      server: (process.env.DB_SERVER || '94.72.114.174').split(',')[0],
+      database: 'combatarms_web',
+      user: process.env.DB_USER || 'combatadmin',
+      password: process.env.DB_PASSWORD || 'Admin123456',
+      port: parseInt(process.env.DB_PORT) || 1433,
+      pool: {
+        max: 10,
+        min: 0,
+        idleTimeoutMillis: 30000,
+      },
+      options: {
+        trustServerCertificate: true,
+        encrypt: false,
+      },
+    };
+    poolWeb = new sql.ConnectionPool(configWeb);
+    await poolWeb.connect();
+    console.log('✓ Conectado a combatarms_web');
+  }
+  return poolWeb;
+}
+
 export async function query(sql, params = {}) {
   const pool = await getPoolConnection();
   const request = pool.request();
@@ -166,6 +192,18 @@ export async function queryVisms(sql, params = {}) {
   return await request.query(sql);
 }
 
+export async function queryWeb(sql, params = {}) {
+  const pool = await getPoolConnectionWeb();
+  const request = pool.request();
+  
+  // Agregar parámetros
+  Object.keys(params).forEach(key => {
+    request.input(key, params[key]);
+  });
+  
+  return await request.query(sql);
+}
+
 // Helper: Obtener oidUser desde username (busca en ambas tablas)
 export async function getUserOidByUsername(username) {
   if (!username) return null;
@@ -203,5 +241,6 @@ export async function disconnect() {
   if (poolLog) await poolLog.close();
   if (poolGuild) await poolGuild.close();
   if (poolVisms) await poolVisms.close();
+  if (poolWeb) await poolWeb.close();
   console.log('Desconectado de SQL Server');
 }
