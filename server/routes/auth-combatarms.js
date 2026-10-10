@@ -11,6 +11,17 @@ import jwt from 'jsonwebtoken';
 const router = express.Router();
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-change-this';
 
+// Helper: Obtener IP del cliente
+function getClientIP(req) {
+  // Intentar obtener la IP real (detrás de proxies)
+  return req.headers['x-forwarded-for']?.split(',')[0].trim() ||
+         req.headers['x-real-ip'] ||
+         req.connection.remoteAddress ||
+         req.socket.remoteAddress ||
+         req.connection.socket?.remoteAddress ||
+         '0.0.0.0';
+}
+
 // Helper: Generar JWT
 function generateToken(userId, username) {
   return jwt.sign(
@@ -151,6 +162,9 @@ router.post('/login', async (req, res) => {
 router.post('/register', async (req, res) => {
   try {
     const { username, password, email } = req.body;
+    
+    // 🆕 Obtener IP del cliente
+    const clientIP = getClientIP(req);
 
     // Validar datos
     if (!username || !password || !email) {
@@ -213,7 +227,7 @@ router.post('/register', async (req, res) => {
         GETDATE(),
         GETDATE(),
         'AA-BB-CC-DD-EE-FF',
-        '181.136.167.82',
+        @clientIP,
         '1111-2222-3333-4444-5555-6666-7777-8888'
       )
       
@@ -222,7 +236,8 @@ router.post('/register', async (req, res) => {
       username,
       usernameLower: username.toLowerCase(),
       password,
-      email
+      email,
+      clientIP
     });
 
     const oidUser = insertAuthResult.recordset[0].oidUser;
