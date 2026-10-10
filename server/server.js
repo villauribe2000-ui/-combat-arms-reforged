@@ -68,7 +68,19 @@ app.use((err, req, res, next) => {
 });
 
 // Ejecutar migraciones
+// DESHABILITADO: Las migraciones de MarketplaceListings han sido comentadas
+// La tabla MarketplaceListings no existe en la base de datos actual
 async function runMigrations() {
+  try {
+    console.log('[MIGRATION] ✓ Migraciones completadas (deshabilitadas - tabla MarketplaceListings no existe)');
+  } catch (error) {
+    console.error('[MIGRATION] Error durante migraciones:', error.message);
+  }
+}
+
+/*
+// CÓDIGO DE MIGRACIÓN ORIGINAL - DESHABILITADO
+async function runMigrationsOriginal() {
   try {
     console.log('[MIGRATION] Verificando si es necesaria migración de productId...');
     
@@ -132,6 +144,7 @@ async function runMigrations() {
     console.error('[MIGRATION] Error durante migraciones:', error.message);
   }
 }
+*/
 
 // Start server
 async function start() {

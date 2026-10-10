@@ -609,10 +609,18 @@ router.get('/available-items/:username', async (req, res) => {
   }
 });
 
-// Get marketplace status for a purchase (es el item está en venta)
+/*
+// DESHABILITADO: Get marketplace status for a purchase (tabla MarketplaceListings no existe)
 router.get('/purchase-marketplace-status/:purchaseLogId', async (req, res) => {
   try {
     const { purchaseLogId } = req.params;
+
+    // DESHABILITADO: MarketplaceListings no existe en la BD
+    res.json({
+      isForSale: false,
+      listing: null,
+    });
+    return;
 
     const result = await query(
       `SELECT id, status, createdAt, updatedAt, soldAt, soldTo
@@ -645,5 +653,6 @@ router.get('/purchase-marketplace-status/:purchaseLogId', async (req, res) => {
     res.status(500).json({ error: 'Error al obtener estado del marketplace' });
   }
 });
+*/
 
 export default router;
