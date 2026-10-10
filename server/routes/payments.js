@@ -110,14 +110,14 @@ router.post('/submit-payment-code', async (req, res) => {
     await query(
       `INSERT INTO PaymentCodes (oidUser, username, NickName, paymentCode, nxAmount, dollarAmount, status)
        VALUES (@oidUser, @username, @NickName, @paymentCode, @nxAmount, @dollarAmount, 'pending')`,
-      [
-        { name: 'oidUser', value: oidUser },
-        { name: 'username', value: username },
-        { name: 'NickName', value: NickName || username },
-        { name: 'paymentCode', value: paymentCode },
-        { name: 'nxAmount', value: nxAmount },
-        { name: 'dollarAmount', value: dollarAmount }
-      ]
+      {
+        oidUser: oidUser,
+        username: username,
+        NickName: NickName || username,
+        paymentCode: paymentCode,
+        nxAmount: nxAmount,
+        dollarAmount: dollarAmount
+      }
     );
 
     res.json({
@@ -143,7 +143,7 @@ router.get('/payment-codes/pending', async (req, res) => {
     const { query } = await import('../db.js');
     const result = await query(
       'SELECT id, oidUser, username, NickName, paymentCode, nxAmount, dollarAmount, createdAt FROM PaymentCodes WHERE status = @status ORDER BY createdAt DESC',
-      [{ name: 'status', value: 'pending' }]
+      { status: 'pending' }
     );
 
     res.json(result.recordset || []);
@@ -187,7 +187,7 @@ router.post('/payment-codes/approve/:codeId', async (req, res) => {
     // Obtener datos del código
     const codeResult = await query(
       'SELECT oidUser, username, nxAmount FROM PaymentCodes WHERE id = @id',
-      [{ name: 'id', value: codeId }]
+      { id: codeId }
     );
 
     if (!codeResult.recordset || codeResult.recordset.length === 0) {
@@ -201,10 +201,10 @@ router.post('/payment-codes/approve/:codeId', async (req, res) => {
       `UPDATE PaymentCodes 
        SET status = 'approved', approvedAt = GETDATE(), approvedBy = @adminUsername
        WHERE id = @id`,
-      [
-        { name: 'id', value: codeId },
-        { name: 'adminUsername', value: adminUsername }
-      ]
+      {
+        id: codeId,
+        adminUsername: adminUsername
+      }
     );
 
     // Buscar al usuario en ambas tablas
@@ -212,7 +212,7 @@ router.post('/payment-codes/approve/:codeId', async (req, res) => {
       `SELECT TOP 1 oidUser as oidUser FROM CBT_UserAuth WHERE strNexonID = @username
        UNION
        SELECT TOP 1 oidUser FROM CBT_User WHERE strNexonID = @username`,
-      [{ name: 'username', value: username }]
+      { username: username }
     );
 
     if (userResult.recordset && userResult.recordset.length > 0) {
@@ -223,10 +223,10 @@ router.post('/payment-codes/approve/:codeId', async (req, res) => {
         `UPDATE VISMS_GameAccount 
          SET NXAccount = NXAccount + @nxAmount
          WHERE OidUser = @userOid`,
-        [
-          { name: 'userOid', value: userOid },
-          { name: 'nxAmount', value: nxAmount }
-        ]
+        {
+          userOid: userOid,
+          nxAmount: nxAmount
+        }
       );
 
       console.log(`[PAYMENT CODE] ✓ NX añadido: ${username} recibió ${nxAmount} NX`);
@@ -263,10 +263,10 @@ router.post('/payment-codes/reject/:codeId', async (req, res) => {
       `UPDATE PaymentCodes 
        SET status = 'rejected', rejectedAt = GETDATE(), rejectionReason = @reason
        WHERE id = @id`,
-      [
-        { name: 'id', value: codeId },
-        { name: 'reason', value: reason || 'Sin especificar' }
-      ]
+      {
+        id: codeId,
+        reason: reason || 'Sin especificar'
+      }
     );
 
     res.json({
