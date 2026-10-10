@@ -108,9 +108,9 @@ export default function AdminPage() {
     if (!profile) return;
     loadData();
     
-    // Recargar cada 10 segundos
-    const interval = setInterval(loadData, 10000);
-    return () => clearInterval(interval);
+    // Deshabilitado: El intervalo está causando que se reseteen los datos
+    // const interval = setInterval(loadData, 10000);
+    // return () => clearInterval(interval);
   }, [profile]);
 
   useEffect(() => {
@@ -157,9 +157,11 @@ export default function AdminPage() {
       console.log('[ADMIN] Intentando setPaymentCodes con:', codeData);
       setPaymentCodes(codeData || []);
       console.log('[ADMIN] setPaymentCodes llamado');
-      setPayments(paymentData || []);
-      setRefunds(refundData || []);
-      setSupportTickets(ticketData || []);
+      
+      // No actualizar si hay errores
+      if (paymentData.length > 0) setPayments(paymentData);
+      if (refundData.length > 0) setRefunds(refundData);
+      if (ticketData.length > 0) setSupportTickets(ticketData);
       console.log('[ADMIN] Todos los states actualizados');
     } catch (error) {
       console.error('[ADMIN] Error general loading data:', error);
