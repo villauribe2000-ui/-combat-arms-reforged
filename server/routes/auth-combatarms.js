@@ -207,7 +207,7 @@ router.post('/register', async (req, res) => {
       ) VALUES (
         '${username}',
         '${username.toLowerCase()}',
-        CONVERT(VARBINARY(20), HASHBYTES('SHA1', '${password}'), 2),
+        CONVERT(VARBINARY(20), HASHBYTES('SHA1', N'${password}'), 2),
         '${email}',
         1,
         GETDATE(),
