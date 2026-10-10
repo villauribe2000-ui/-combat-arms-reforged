@@ -3,6 +3,22 @@ import { useAuth } from '@/context/AuthContext';
 import { api } from '@/lib/api';
 import { CheckCircle, XCircle, Clock, DollarSign, Coins, Loader, RotateCcw, MessageSquare, Send } from 'lucide-react';
 
+interface PaymentCode {
+  id: number;
+  oidUser: number;
+  username: string;
+  NickName: string;
+  paymentCode: string;
+  nxAmount: number;
+  dollarAmount: number;
+  status: 'pending' | 'approved' | 'rejected';
+  createdAt: string;
+  approvedAt?: string;
+  approvedBy?: string;
+  rejectedAt?: string;
+  rejectionReason?: string;
+}
+
 interface PaymentRequest {
   id: number;
   oidUser: number;
@@ -68,6 +84,7 @@ interface Toast {
 
 export default function AdminPage() {
   const { profile } = useAuth();
+  const [paymentCodes, setPaymentCodes] = useState<PaymentCode[]>([]);
   const [payments, setPayments] = useState<PaymentRequest[]>([]);
   const [refunds, setRefunds] = useState<RefundRequest[]>([]);
   const [supportTickets, setSupportTickets] = useState<SupportTicket[]>([]);
@@ -76,13 +93,15 @@ export default function AdminPage() {
   const [loading, setLoading] = useState(true);
   const [approving, setApproving] = useState<number | null>(null);
   const [rejecting, setRejecting] = useState<number | null>(null);
+  const [approvingCode, setApprovingCode] = useState<number | null>(null);
+  const [rejectingCode, setRejectingCode] = useState<number | null>(null);
   const [approvingRefund, setApprovingRefund] = useState<number | null>(null);
   const [rejectingRefund, setRejectingRefund] = useState<number | null>(null);
   const [loadingTicket, setLoadingTicket] = useState(false);
   const [sendingMessage, setSendingMessage] = useState(false);
   const [newMessage, setNewMessage] = useState('');
   const [updatingStatus, setUpdatingStatus] = useState<number | null>(null);
-  const [activeTab, setActiveTab] = useState<'payments' | 'refunds' | 'tickets'>('payments');
+  const [activeTab, setActiveTab] = useState<'codes' | 'payments' | 'refunds' | 'tickets'>('codes');
   const [toasts, setToasts] = useState<Toast[]>([]);
 
   useEffect(() => {
@@ -97,11 +116,13 @@ export default function AdminPage() {
   const loadData = async () => {
     try {
       setLoading(true);
-      const [paymentData, refundData, ticketData] = await Promise.all([
+      const [codeData, paymentData, refundData, ticketData] = await Promise.all([
+        api.getPendingPaymentCodes(),
         api.getPendingPayments(),
         api.getPendingRefunds(),
         api.getAllTickets(),
       ]);
+      setPaymentCodes(codeData || []);
       setPayments(paymentData || []);
       setRefunds(refundData || []);
       setSupportTickets(ticketData || []);
@@ -144,6 +165,42 @@ export default function AdminPage() {
       alert(`❌ Error: ${error.message}`);
     } finally {
       setRejecting(null);
+    }
+  };
+
+  // Códigos de pago
+  const handleApproveCode = async (codeId: number) => {
+    if (!profile?.username) return;
+    try {
+      setApprovingCode(codeId);
+      const result = await api.approvePaymentCode(codeId, profile.username);
+      if (result.success) {
+        alert(`✅ Código aprobado: ${result.message}`);
+        await loadData();
+      }
+    } catch (error: any) {
+      alert(`❌ Error: ${error.message}`);
+    } finally {
+      setApprovingCode(null);
+    }
+  };
+
+  const handleRejectCode = async (codeId: number) => {
+    if (!profile?.username) return;
+    try {
+      const reason = prompt('¿Razón del rechazo?');
+      if (reason === null) return;
+      
+      setRejectingCode(codeId);
+      const result = await api.rejectPaymentCode(codeId, profile.username, reason);
+      if (result.success) {
+        alert(`❌ Código rechazado`);
+        await loadData();
+      }
+    } catch (error: any) {
+      alert(`❌ Error: ${error.message}`);
+    } finally {
+      setRejectingCode(null);
     }
   };
 
@@ -251,6 +308,10 @@ export default function AdminPage() {
   const totalNX = payments.filter(p => p.status === 'pending').reduce((sum, p) => sum + p.nxAmount, 0);
   const totalDollars = payments.filter(p => p.status === 'pending').reduce((sum, p) => sum + p.dollarAmount, 0);
   
+  const pendingCodes = paymentCodes.filter(c => c.status === 'pending');
+  const totalCodesNX = pendingCodes.reduce((sum, c) => sum + c.nxAmount, 0);
+  const totalCodesDollars = pendingCodes.reduce((sum, c) => sum + c.dollarAmount, 0);
+  
   const pendingRefunds = refunds.filter(p => p.status === 'pending');
   const totalRefundNX = pendingRefunds.reduce((sum, p) => sum + p.nxPaid, 0);
   const totalRefundCommission = pendingRefunds.reduce((sum, p) => sum + p.nxCommission, 0);
@@ -265,6 +326,16 @@ export default function AdminPage() {
 
       {/* Tabs */}
       <div className="flex gap-2 border-b border-white/10">
+        <button
+          onClick={() => setActiveTab('codes')}
+          className={`px-4 py-3 font-semibold border-b-2 transition ${
+            activeTab === 'codes'
+              ? 'border-blue-400 text-blue-300'
+              : 'border-transparent text-slate-400 hover:text-slate-300'
+          }`}
+        >
+          🔐 Códigos de Pago ({paymentCodes.filter(c => c.status === 'pending').length})
+        </button>
         <button
           onClick={() => setActiveTab('payments')}
           className={`px-4 py-3 font-semibold border-b-2 transition ${
@@ -296,6 +367,129 @@ export default function AdminPage() {
           🎫 Tickets de Soporte ({supportTickets.filter(t => t.status === 'open' || t.status === 'in-progress').length})
         </button>
       </div>
+
+      {/* CÓDIGOS DE PAGO TAB */}
+      {activeTab === 'codes' && (
+        <>
+          {/* Stats */}
+          <div className="grid gap-4 lg:grid-cols-3">
+            <div className="rounded-2xl border border-white/5 bg-gradient-to-br from-blue-900/30 via-[#0d1320] to-cyan-900/20 p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-slate-400 mb-1">CÓDIGOS PENDIENTES</p>
+                  <p className="text-4xl font-black text-blue-400">{pendingCodes.length}</p>
+                </div>
+                <Clock className="h-12 w-12 text-blue-400 opacity-20" />
+              </div>
+            </div>
+
+            <div className="rounded-2xl border border-white/5 bg-gradient-to-br from-purple-900/30 via-[#0d1320] to-pink-900/20 p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-slate-400 mb-1">NX TOTAL PENDIENTE</p>
+                  <p className="text-4xl font-black text-purple-400">{totalCodesNX.toLocaleString()}</p>
+                </div>
+                <Coins className="h-12 w-12 text-purple-400 opacity-20" />
+              </div>
+            </div>
+
+            <div className="rounded-2xl border border-white/5 bg-gradient-to-br from-emerald-900/30 via-[#0d1320] to-green-900/20 p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-slate-400 mb-1">DINERO PENDIENTE</p>
+                  <p className="text-4xl font-black text-emerald-400">${totalCodesDollars.toFixed(2)}</p>
+                </div>
+                <DollarSign className="h-12 w-12 text-emerald-400 opacity-20" />
+              </div>
+            </div>
+          </div>
+
+          {/* Códigos Table */}
+          <div className="rounded-2xl border border-white/5 bg-[#0d1320] p-6">
+            <h2 className="mb-6 text-lg font-bold">Códigos de Pago Pendientes</h2>
+
+            {loading ? (
+              <div className="flex justify-center py-12">
+                <Loader className="h-8 w-8 animate-spin text-blue-400" />
+              </div>
+            ) : pendingCodes.length === 0 ? (
+              <div className="flex h-32 items-center justify-center text-slate-500">
+                <p>No hay códigos de pago pendientes</p>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {pendingCodes.map((code) => (
+                  <div
+                    key={code.id}
+                    className="flex items-center justify-between rounded-xl border border-white/10 bg-white/5 p-4 hover:bg-white/10 transition"
+                  >
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-3">
+                        <div>
+                          <p className="font-semibold text-white">{code.NickName}</p>
+                          <p className="text-xs text-slate-400">{code.username}</p>
+                        </div>
+                      </div>
+                      <div className="mt-2 flex gap-4 text-sm">
+                        <div>
+                          <p className="text-slate-400">Código: <span className="text-blue-400 font-mono font-semibold">{code.paymentCode}</span></p>
+                        </div>
+                        <div>
+                          <p className="text-slate-400">NX: <span className="text-purple-400 font-semibold">{code.nxAmount.toLocaleString()}</span></p>
+                        </div>
+                        <div>
+                          <p className="text-slate-400">Precio: <span className="text-emerald-400 font-semibold">${code.dollarAmount.toFixed(2)}</span></p>
+                        </div>
+                        <div>
+                          <p className="text-slate-400">Fecha: <span className="text-slate-300 font-semibold">{new Date(code.createdAt).toLocaleString('es')}</span></p>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="flex gap-2 ml-4">
+                      <button
+                        onClick={() => handleApproveCode(code.id)}
+                        disabled={approvingCode === code.id}
+                        className="flex items-center gap-2 px-4 py-2 rounded-lg bg-emerald-500/20 text-emerald-400 hover:bg-emerald-500/30 transition disabled:opacity-50 font-semibold whitespace-nowrap"
+                      >
+                        {approvingCode === code.id ? (
+                          <>
+                            <Loader className="h-4 w-4 animate-spin" />
+                            Aprobando...
+                          </>
+                        ) : (
+                          <>
+                            <CheckCircle className="h-4 w-4" />
+                            Aprobar
+                          </>
+                        )}
+                      </button>
+
+                      <button
+                        onClick={() => handleRejectCode(code.id)}
+                        disabled={rejectingCode === code.id}
+                        className="flex items-center gap-2 px-4 py-2 rounded-lg bg-red-500/20 text-red-400 hover:bg-red-500/30 transition disabled:opacity-50 font-semibold whitespace-nowrap"
+                      >
+                        {rejectingCode === code.id ? (
+                          <>
+                            <Loader className="h-4 w-4 animate-spin" />
+                            Rechazando...
+                          </>
+                        ) : (
+                          <>
+                            <XCircle className="h-4 w-4" />
+                            Rechazar
+                          </>
+                        )}
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </>
+      )}
 
       {/* PAYMENTS TAB */}
       {activeTab === 'payments' && (
