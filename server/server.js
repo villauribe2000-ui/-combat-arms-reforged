@@ -40,6 +40,11 @@ app.use('/assets', express.static(path.join(__dirname, '../dist/assets')));
 // Servir src/assets como /src/assets (para imágenes que se referencian directamente en JSX)
 app.use('/src/assets', express.static(path.join(__dirname, '../src/assets')));
 
+// Version endpoint
+app.get('/api/version', (req, res) => {
+  res.json({ version: '1.0.2', buildTimestamp: '2026-10-10T17:15:00Z', deployed: true });
+});
+
 // Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/auth-combatarms', authCombatarmsRoutes);
