@@ -20,9 +20,10 @@ function generateToken(userId, username) {
   );
 }
 
-// Helper: Calcular SHA1 como lo hace SQL Server (retorna como hex string)
+// Helper: Calcular SHA1 - igual que HASHBYTES('SHA1', password) de SQL Server
 function calculateSHA1(password) {
-  return crypto.createHash('sha1').update(password).digest('hex').toUpperCase();
+  // SQL Server usa UTF-8 encoding por defecto
+  return crypto.createHash('sha1').update(password, 'utf8').digest('hex').toUpperCase();
 }
 
 // ==========================================
@@ -62,15 +63,15 @@ router.post('/login', async (req, res) => {
 
     const user = result.recordset[0];
 
-    // Calcular hash SHA1 de la contraseña ingresada
-    const passwordHash = calculateSHA1(password); // Ahora es hex string en mayúsculas
+    // Calcular hash SHA1 de la contraseña ingresada (igual que HASHBYTES de SQL Server)
+    const passwordHash = calculateSHA1(password);
     
     // El strPassword viene como string hexadecimal desde SQL Server
     const storedPassword = user.strPassword;
     
-    // Normalizar a mayúsculas para comparar
+    // Normalizar a mayúsculas y eliminar espacios
     const storedPasswordNorm = (typeof storedPassword === 'string') 
-      ? storedPassword.toUpperCase() 
+      ? storedPassword.toUpperCase().trim()
       : storedPassword;
 
     if (passwordHash !== storedPasswordNorm) {
