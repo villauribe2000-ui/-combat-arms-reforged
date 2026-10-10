@@ -89,28 +89,216 @@ router.post('/reject/:paymentId', async (req, res) => {
   }
 });
 
-// Cargar comprobante de pago (imagen base64)
-// DESHABILITADO: Tabla PaymentRequests no existe en la BD
-router.post('/upload-proof', async (req, res) => {
+// Enviar código de pago (nuevo sistema)
+router.post('/submit-payment-code', async (req, res) => {
   try {
-    const { proofImageBase64, oidUser, username, NickName, nxAmount, dollarAmount } = req.body;
+    const { oidUser, username, NickName, paymentCode, nxAmount, dollarAmount } = req.body;
 
-    if (!proofImageBase64 || !oidUser || !username || !nxAmount || !dollarAmount) {
+    if (!oidUser || !username || !paymentCode || !nxAmount || !dollarAmount) {
       return res.status(400).json({ error: 'Datos incompletos' });
     }
 
-    console.log(`[PAYMENT] Nueva solicitud CON COMPROBANTE - ${username} pidió ${nxAmount} NX por $${dollarAmount} (deshabilitada)`);
+    // Validar que el código no esté vacío y tenga un formato razonable
+    if (paymentCode.trim().length < 3) {
+      return res.status(400).json({ error: 'El código debe tener al menos 3 caracteres' });
+    }
+
+    console.log(`[PAYMENT CODE] Nueva solicitud - ${username} envió código: ${paymentCode} para ${nxAmount} NX`);
+
+    try {
+      const request = new (await import('mssql')).Request(await (await import('../db.js')).getConnection());
+      
+      const result = await request
+        .input('oidUser', oidUser)
+        .input('username', username)
+        .input('NickName', NickName || username)
+        .input('paymentCode', paymentCode)
+        .input('nxAmount', nxAmount)
+        .input('dollarAmount', dollarAmount)
+        .query(`
+          INSERT INTO PaymentCodes (oidUser, username, NickName, paymentCode, nxAmount, dollarAmount, status)
+          VALUES (@oidUser, @username, @NickName, @paymentCode, @nxAmount, @dollarAmount, 'pending')
+        `);
+
+      res.json({
+        success: true,
+        message: 'Código recibido. El administrador lo revisará pronto.',
+      });
+    } catch (dbError) {
+      console.error('Database error:', dbError);
+      // Si hay error de duplicado, es porque ya existe el código
+      if (dbError.message.includes('UNIQUE')) {
+        return res.status(400).json({ error: 'Este código ya fue registrado' });
+      }
+      throw dbError;
+    }
+  } catch (error) {
+    console.error('Submit payment code error:', error);
+    res.status(500).json({ error: 'Error al enviar código: ' + error.message });
+  }
+});
+
+// Obtener códigos pendientes (para admin)
+router.get('/payment-codes/pending', async (req, res) => {
+  try {
+    console.log('[PAYMENT CODE] Obteniendo códigos pendientes');
+    
+    const { query } = await import('../db.js');
+    const result = await query(
+      'SELECT id, oidUser, username, NickName, paymentCode, nxAmount, dollarAmount, createdAt FROM PaymentCodes WHERE status = @status ORDER BY createdAt DESC',
+      [{ name: 'status', value: 'pending' }]
+    );
+
+    res.json(result.recordset || []);
+  } catch (error) {
+    console.error('Get pending payment codes error:', error);
+    res.status(500).json({ error: 'Error al obtener códigos pendientes' });
+  }
+});
+
+// Obtener todos los códigos (para admin - historial)
+router.get('/payment-codes/all', async (req, res) => {
+  try {
+    console.log('[PAYMENT CODE] Obteniendo todos los códigos');
+    
+    const { query } = await import('../db.js');
+    const result = await query(
+      'SELECT id, oidUser, username, NickName, paymentCode, nxAmount, dollarAmount, status, createdAt, approvedAt, rejectedAt, approvedBy FROM PaymentCodes ORDER BY createdAt DESC'
+    );
+
+    res.json(result.recordset || []);
+  } catch (error) {
+    console.error('Get all payment codes error:', error);
+    res.status(500).json({ error: 'Error al obtener códigos' });
+  }
+});
+
+// Aprobar código de pago (admin)
+router.post('/payment-codes/approve/:codeId', async (req, res) => {
+  try {
+    const codeId = parseInt(req.params.codeId);
+    const { adminUsername } = req.body;
+
+    if (!adminUsername) {
+      return res.status(400).json({ error: 'Admin username requerido' });
+    }
+
+    console.log(`[PAYMENT CODE] Aprobando código #${codeId} por ${adminUsername}`);
+
+    const { query, getConnection } = await import('../db.js');
+    
+    // Obtener datos del código
+    const codeResult = await query(
+      'SELECT oidUser, username, nxAmount FROM PaymentCodes WHERE id = @id',
+      [{ name: 'id', value: codeId }]
+    );
+
+    if (!codeResult.recordset || codeResult.recordset.length === 0) {
+      return res.status(404).json({ error: 'Código no encontrado' });
+    }
+
+    const { oidUser, username, nxAmount } = codeResult.recordset[0];
+
+    // Usar transacción para actualizar código y NX
+    const connection = await getConnection();
+    const transaction = new (await import('mssql')).Transaction(connection);
+    await transaction.begin();
+
+    try {
+      const request = new (await import('mssql')).Request(transaction);
+      
+      // Actualizar estado del código
+      await request
+        .input('id', codeId)
+        .input('adminUsername', adminUsername)
+        .query(`
+          UPDATE PaymentCodes 
+          SET status = 'approved', approvedAt = GETDATE(), approvedBy = @adminUsername
+          WHERE id = @id
+        `);
+
+      // Buscar al usuario en ambas tablas y actualizar su NX
+      const userResult = await request
+        .input('username2', username)
+        .query(`
+          SELECT oidUser FROM CBT_UserAuth WHERE UserName = @username2
+          UNION
+          SELECT OidUser FROM CBT_User WHERE UserName = @username2
+        `);
+
+      if (userResult.recordset && userResult.recordset.length > 0) {
+        const userOid = userResult.recordset[0].oidUser;
+        
+        // Actualizar NX en VISMS_GameAccount
+        await request
+          .input('userOid', userOid)
+          .input('nxAmount2', nxAmount)
+          .query(`
+            UPDATE VISMS_GameAccount 
+            SET NXAccount = NXAccount + @nxAmount2
+            WHERE OidUser = @userOid
+          `);
+
+        console.log(`[PAYMENT CODE] ✓ NX añadido: ${username} recibió ${nxAmount} NX`);
+      }
+
+      await transaction.commit();
+
+      res.json({
+        success: true,
+        message: `Código aprobado. ${nxAmount} NX añadidos a ${username}`,
+      });
+
+    } catch (error) {
+      await transaction.rollback();
+      throw error;
+    }
+
+  } catch (error) {
+    console.error('Approve payment code error:', error);
+    res.status(500).json({ error: 'Error al aprobar código: ' + error.message });
+  }
+});
+
+// Rechazar código de pago (admin)
+router.post('/payment-codes/reject/:codeId', async (req, res) => {
+  try {
+    const codeId = parseInt(req.params.codeId);
+    const { adminUsername, reason } = req.body;
+
+    if (!adminUsername) {
+      return res.status(400).json({ error: 'Admin username requerido' });
+    }
+
+    console.log(`[PAYMENT CODE] Rechazando código #${codeId} por ${adminUsername}. Razón: ${reason || 'N/A'}`);
+
+    const { query } = await import('../db.js');
+    
+    await query(
+      `UPDATE PaymentCodes 
+       SET status = 'rejected', rejectedAt = GETDATE(), rejectionReason = @reason
+       WHERE id = @id`,
+      [
+        { name: 'id', value: codeId },
+        { name: 'reason', value: reason || 'Sin especificar' }
+      ]
+    );
 
     res.json({
       success: true,
-      paymentId: 0,
-      message: 'Comprobante recibido. Espera aprobación del administrador.',
+      message: 'Código rechazado',
     });
+
   } catch (error) {
-    console.error('Upload proof error:', error);
-    res.status(500).json({ error: 'Error al cargar comprobante: ' + error.message });
+    console.error('Reject payment code error:', error);
+    res.status(500).json({ error: 'Error al rechazar código: ' + error.message });
   }
 });
+
+// Cargar comprobante de pago (imagen base64) - DESHABILITADO
+// router.post('/upload-proof', async (req, res) => {
+//   DESHABILITADO: Tabla PaymentRequests no existe en la BD
+// });
 
 // DEBUG: Ver todos los pagos de un usuario
 // DESHABILITADO: Tabla PaymentRequests no existe

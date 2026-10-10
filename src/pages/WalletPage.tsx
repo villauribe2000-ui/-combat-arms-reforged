@@ -17,8 +17,8 @@ export default function WalletPage() {
   const [selectedPackage, setSelectedPackage] = useState<GcoinPackage | null>(null);
   const [showProofModal, setShowProofModal] = useState(false);
   const [selectedProofPackage, setSelectedProofPackage] = useState<GcoinPackage | null>(null);
-  const [proofImage, setProofImage] = useState<string | null>(null);
-  const [uploading, setUploading] = useState(false);
+  const [paymentCode, setPaymentCode] = useState<string>('');
+  const [submittingCode, setSubmittingCode] = useState(false);
   const [notification, setNotification] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
   const [nxPurchases, setNxPurchases] = useState<{ packageId: number; coins: number; date: string; amount: number }[]>([]);
   const [rewards, setRewards] = useState<{ packageId: number; coins: number; bonus: number }[]>([]);
@@ -223,38 +223,38 @@ export default function WalletPage() {
         }
 
         const compressedBase64 = canvas.toDataURL('image/jpeg', 0.7);
-        setProofImage(compressedBase64);
+        // Unused - keeping for backwards compatibility
       };
       img.src = event.target?.result as string;
     };
     reader.readAsDataURL(file);
   };
 
-  const handleSubmitProof = async () => {
-    if (!profile || !selectedProofPackage || !proofImage) {
-      setNotification({ type: 'error', message: 'Por favor carga una imagen' });
+  const handleSubmitPaymentCode = async () => {
+    if (!profile || !selectedProofPackage || !paymentCode.trim()) {
+      setNotification({ type: 'error', message: 'Por favor ingresa un código' });
       return;
     }
 
     try {
-      setUploading(true);
-      await api.uploadPaymentProof(
+      setSubmittingCode(true);
+      await api.submitPaymentCode(
         parseInt(profile.id),
         profile.username,
         profile.NickName || profile.username,
+        paymentCode,
         selectedProofPackage.coins,
-        selectedProofPackage.price,
-        proofImage
+        selectedProofPackage.price
       );
 
       setNotification({ 
         type: 'success', 
-        message: 'Comprobante recibido. El administrador lo revisará pronto.' 
+        message: 'Código recibido. El administrador lo revisará pronto.' 
       });
       
       setTimeout(() => {
         setShowProofModal(false);
-        setProofImage(null);
+        setPaymentCode('');
         setSelectedProofPackage(null);
         setNotification(null);
       }, 3000);
@@ -262,10 +262,10 @@ export default function WalletPage() {
       console.error('Error:', error);
       setNotification({ 
         type: 'error', 
-        message: 'Error al enviar comprobante. Intenta de nuevo.' 
+        message: error.message || 'Error al enviar código. Intenta de nuevo.' 
       });
     } finally {
-      setUploading(false);
+      setSubmittingCode(false);
     }
   };
 
@@ -650,12 +650,23 @@ export default function WalletPage() {
                   <td className="py-4 px-4 text-white">${pkg.price}</td>
                   <td className="py-4 px-4 text-slate-300">{pkg.coins.toLocaleString()} NX</td>
                   <td className="py-4 px-4 text-right">
-                    <button
-                      onClick={() => handlePurchaseClick(pkg)}
-                      className="px-4 py-2 rounded-lg bg-purple-500/20 text-purple-400 hover:bg-purple-500/30 transition font-semibold"
-                    >
-                      Comprar
-                    </button>
+                    <div className="flex gap-2 justify-end">
+                      <button
+                        onClick={() => handlePurchaseClick(pkg)}
+                        className="px-4 py-2 rounded-lg bg-purple-500/20 text-purple-400 hover:bg-purple-500/30 transition font-semibold whitespace-nowrap"
+                      >
+                        Comprar
+                      </button>
+                      <button
+                        onClick={() => {
+                          setSelectedProofPackage(pkg);
+                          setShowProofModal(true);
+                        }}
+                        className="px-4 py-2 rounded-lg bg-blue-500/20 text-blue-400 hover:bg-blue-500/30 transition font-semibold whitespace-nowrap"
+                      >
+                        Ya pagué
+                      </button>
+                    </div>
                   </td>
                 </tr>
               ))}
@@ -664,17 +675,16 @@ export default function WalletPage() {
         </div>
       </div>
 
-      {/* Modal de Comprobante - DESHABILITADO: Tabla PaymentRequests no existe en BD */}
-      {/* 
+      {/* Modal de Código de Pago */}
       {showProofModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80">
           <div className="w-full max-w-md rounded-2xl border border-white/10 bg-[#0d1320] p-6 shadow-2xl">
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-bold text-white">Cargar Comprobante de Pago</h2>
+              <h2 className="text-lg font-bold text-white">Confirmar Pago</h2>
               <button
                 onClick={() => {
                   setShowProofModal(false);
-                  setProofImage(null);
+                  setPaymentCode('');
                   setSelectedProofPackage(null);
                 }}
                 className="text-slate-400 hover:text-white"
@@ -693,39 +703,26 @@ export default function WalletPage() {
               </div>
             )}
 
-            {proofImage ? (
-              <div className="mb-4">
-                <div className="relative rounded-lg overflow-hidden border border-white/10 bg-black">
-                  <img src={proofImage} alt="Comprobante" className="w-full h-64 object-contain" />
-                  <button
-                    onClick={() => setProofImage(null)}
-                    className="absolute top-2 right-2 p-2 rounded-lg bg-red-500/20 text-red-400 hover:bg-red-500/30"
-                  >
-                    <X className="h-4 w-4" />
-                  </button>
-                </div>
-              </div>
-            ) : (
-              <label className="block mb-4">
+            <div className="mb-4">
+              <label className="block mb-2">
+                <p className="text-sm font-semibold text-slate-300 mb-2">Código de Transacción</p>
                 <input
-                  type="file"
-                  accept="image/*"
-                  onChange={handleProofImageChange}
-                  className="hidden"
+                  type="text"
+                  placeholder="Ej: TXN-ABC123XYZ"
+                  value={paymentCode}
+                  onChange={(e) => setPaymentCode(e.target.value)}
+                  maxLength={100}
+                  className="w-full px-4 py-3 rounded-lg bg-white/5 border border-white/10 text-white placeholder-slate-500 focus:outline-none focus:border-blue-400 transition"
                 />
-                <div className="flex flex-col items-center justify-center border-2 border-dashed border-white/20 rounded-lg p-6 cursor-pointer hover:border-blue-400/50 transition">
-                  <Upload className="h-8 w-8 text-slate-400 mb-2" />
-                  <p className="text-sm text-slate-400">Haz clic para cargar imagen</p>
-                  <p className="text-xs text-slate-500 mt-1">PNG, JPG hasta 2MB</p>
-                </div>
+                <p className="text-xs text-slate-500 mt-2">Ingresa el código que recibiste de PayPal</p>
               </label>
-            )}
+            </div>
 
             <div className="flex gap-3">
               <button
                 onClick={() => {
                   setShowProofModal(false);
-                  setProofImage(null);
+                  setPaymentCode('');
                   setSelectedProofPackage(null);
                 }}
                 className="flex-1 px-4 py-2 rounded-lg bg-slate-700/20 text-slate-300 hover:bg-slate-700/30 transition font-semibold"
@@ -733,17 +730,16 @@ export default function WalletPage() {
                 Cancelar
               </button>
               <button
-                onClick={handleSubmitProof}
-                disabled={!proofImage || uploading}
+                onClick={handleSubmitPaymentCode}
+                disabled={!paymentCode.trim() || submittingCode}
                 className="flex-1 px-4 py-2 rounded-lg bg-blue-500/20 text-blue-400 hover:bg-blue-500/30 transition font-semibold disabled:opacity-50"
               >
-                {uploading ? 'Enviando...' : 'Enviar Comprobante'}
+                {submittingCode ? 'Enviando...' : 'Enviar Código'}
               </button>
             </div>
           </div>
         </div>
       )}
-      */}
 
       {/* Notificaciones */}
       {notification && (
