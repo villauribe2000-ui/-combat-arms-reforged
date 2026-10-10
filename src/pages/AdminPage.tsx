@@ -122,13 +122,13 @@ export default function AdminPage() {
       
       if (!api.getPendingPaymentCodes) {
         console.error('[ADMIN] ERROR CRÍTICO: getPendingPaymentCodes no existe en api');
+        console.error('[ADMIN] Métodos disponibles:', Object.getOwnPropertyNames(Object.getPrototypeOf(api)));
         throw new Error('Método getPendingPaymentCodes no disponible');
       }
 
-      const codeData = await api.getPendingPaymentCodes().catch(e => { 
-        console.error('[ADMIN] Error en getPendingPaymentCodes:', e); 
-        return []; 
-      });
+      console.log('[ADMIN] Llamando getPendingPaymentCodes...');
+      const codeData = await api.getPendingPaymentCodes(); 
+      console.log('[ADMIN] Respuesta de getPendingPaymentCodes:', codeData);
       
       const paymentData = await api.getPendingPayments().catch(e => { 
         console.error('[ADMIN] Error en getPendingPayments:', e); 
