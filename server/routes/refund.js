@@ -42,23 +42,39 @@ router.post('/request-refund', async (req, res) => {
       });
     }
 
-    // NUEVO: Buscar el InventorySeqNo del item más reciente - buscar por ItemNo ya que ProductID puede ser NULL
+    // NUEVO: Buscar el InventorySeqNo del item específico
+    // Intentar buscar por ProductID primero
     let inventorySeqNo = null;
-    const itemResult = await query(
-      `SELECT TOP 1 InventorySeqNo, ProductID FROM CBT_UserInventory
-       WHERE oidUser = @oidUser
-       ORDER BY InventorySeqNo DESC`,
-      { oidUser }
-    );
+    let itemResult = null;
+    
+    if (productId && productId > 0) {
+      itemResult = await query(
+        `SELECT TOP 1 InventorySeqNo, ProductID FROM CBT_UserInventory
+         WHERE oidUser = @oidUser AND ProductID = @productId
+         ORDER BY InventorySeqNo DESC`,
+        { oidUser, productId }
+      );
+    }
+    
+    // Si no encontró por ProductID, obtener cualquier item del usuario
+    if (!itemResult || itemResult.recordset.length === 0) {
+      itemResult = await query(
+        `SELECT TOP 1 InventorySeqNo, ProductID FROM CBT_UserInventory
+         WHERE oidUser = @oidUser
+         ORDER BY InventorySeqNo DESC`,
+        { oidUser }
+      );
+    }
 
-    if (itemResult.recordset.length > 0) {
+    if (itemResult && itemResult.recordset.length > 0) {
       inventorySeqNo = itemResult.recordset[0].InventorySeqNo;
       console.log(`[REFUND] Found InventorySeqNo: ${inventorySeqNo} for oidUser: ${oidUser} (ProductID: ${itemResult.recordset[0].ProductID})`);
     } else {
       console.error(`[REFUND ERROR] No se encontró ningún item en el inventario para oidUser: ${oidUser}`);
-      return res.status(400).json({ 
-        error: 'No se encontró el item en el inventario. Verifica que el producto existe en tu inventario.' 
-      });
+      // En lugar de fallar, permitir crear la solicitud sin InventorySeqNo
+      // El admin podrá especificarlo manualmente al aprobar
+      console.warn(`[REFUND WARNING] Continuando sin InventorySeqNo - el admin deberá especificarlo al aprobar`);
+      inventorySeqNo = null;
     }
 
     // NUEVO: Verificar límite de 5 reembolsos por semana (reinicia cada lunes)
