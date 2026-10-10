@@ -247,80 +247,9 @@ class ApiClient {
     });
   }
 
-  // Refund endpoints
-  async getItemDetails(oidUser: number, inventorySeqNo: number) {
-    return await this.request<any>('GET', `/refund/item/${oidUser}/${inventorySeqNo}`);
-  }
-
-  async processRefund(oidUser: number, username: string, inventorySeqNo: number, nxAmount: number, adminUsername: string, reason?: string) {
-    return await this.request<{ success: boolean; message: string; newBalance: number; itemRemoved: any }>('POST', '/refund/process', {
-      oidUser,
-      username,
-      inventorySeqNo,
-      nxAmount,
-      adminUsername,
-      reason,
-    });
-  }
-
-  async removeItem(oidUser: number, inventorySeqNo: number, adminUsername: string, reason?: string) {
-    return await this.request<{ success: boolean; message: string; itemRemoved: any }>('POST', '/refund/remove-item', {
-      oidUser,
-      inventorySeqNo,
-      adminUsername,
-      reason,
-    });
-  }
-
-  // Refund request endpoints (new system with commission)
-  async requestRefund(oidUser: number, username: string, NickName: string, productId: number, productName: string, purchaseLogId: number, nxPaid: number) {
-    return await this.request<{ success: boolean; refundId: number; message: string; details: any }>('POST', '/refund/request-refund', {
-      oidUser,
-      username,
-      NickName,
-      productId,
-      productName,
-      purchaseLogId,
-      nxPaid,
-    });
-  }
-
-  async getPendingRefunds() {
-    return await this.request<any[]>('GET', '/refund/pending');
-  }
-
-  async getAllRefunds() {
-    return await this.request<any[]>('GET', '/refund/all');
-  }
-
-  async approveRefund(refundId: number, adminUsername: string) {
-    return await this.request<{ success: boolean; message: string; details: any }>('POST', `/refund/approve/${refundId}`, {
-      adminUsername,
-    });
-  }
-
-  async rejectRefund(refundId: number, adminUsername: string, rejectedReason?: string) {
-    return await this.request<{ success: boolean; message: string }>('POST', `/refund/reject/${refundId}`, {
-      adminUsername,
-      rejectedReason,
-    });
-  }
-
-  async findInventoryItem(oidUser: number, productId: number) {
-    return await this.request<any>('GET', `/refund/find-item/${oidUser}/${productId}`);
-  }
-
-  async getWeeklyRefundCount(username: string) {
-    return await this.request<{ used: number; remaining: number; limit: number; mondayOfWeek: string }>('GET', `/refund/weekly-count/${username}`);
-  }
-
-  async getTotalRefunded(username: string) {
-    return await this.request<{ totalRefunds: number; totalNXRefunded: number; totalCommission: number; totalNXPaid: number }>('GET', `/refund/total-refunded/${username}`);
-  }
-
-  async getRefundDetails(username: string) {
-    return await this.request<any[]>('GET', `/refund/refund-details/${username}`);
-  }
+  // Refund endpoints - DESHABILITADOS
+  // Sistema de reembolsos removido por solicitud del usuario
+  // La tabla RefundRequests no existe en la base de datos
 
   // Support endpoints
   async createSupportTicket(oidUser: number, username: string, NickName: string, subject: string, description: string, refundId?: number) {

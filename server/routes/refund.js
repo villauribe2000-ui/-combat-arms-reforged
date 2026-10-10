@@ -3,6 +3,11 @@ import { query, queryVisms, getUserOidByUsername } from '../db.js';
 
 const router = Router();
 
+// DESHABILITADO: Sistema de reembolsos removido
+// La tabla RefundRequests no existe en la base de datos
+// Todos los endpoints de reembolsos están comentados
+
+/*
 // Crear solicitud de reembolso
 router.post('/request-refund', async (req, res) => {
   try {
@@ -141,8 +146,9 @@ router.post('/request-refund', async (req, res) => {
     res.status(500).json({ error: 'Error al crear solicitud de reembolso' });
   }
 });
+*/
 
-// Obtener total de NX reembolsado para un usuario
+// Todos los endpoints de reembolsos deshabilitados
 router.get('/total-refunded/:username', async (req, res) => {
   try {
     const { username } = req.params;
@@ -179,7 +185,9 @@ router.get('/total-refunded/:username', async (req, res) => {
     res.status(500).json({ error: 'Error al obtener total de reembolsos' });
   }
 });
+*/
 
+/*
 // Obtener detalles de reembolsos aprobados (para mostrar en historial)
 router.get('/refund-details/:username', async (req, res) => {
   try {
@@ -207,7 +215,9 @@ router.get('/refund-details/:username', async (req, res) => {
     res.status(500).json({ error: 'Error al obtener detalles de reembolsos' });
   }
 });
+*/
 
+/*
 // Obtener solicitudes de reembolso pendientes (para admin)
 router.get('/pending', async (req, res) => {
   try {
@@ -224,7 +234,9 @@ router.get('/pending', async (req, res) => {
     res.status(500).json({ error: 'Error al obtener solicitudes' });
   }
 });
+*/
 
+/*
 // Obtener conteo de reembolsos de esta semana para un usuario
 router.get('/weekly-count/:username', async (req, res) => {
   try {
@@ -268,7 +280,9 @@ router.get('/weekly-count/:username', async (req, res) => {
     res.status(500).json({ error: 'Error al obtener conteo de reembolsos' });
   }
 });
+*/
 
+/*
 // Obtener todas las solicitudes de reembolso (para admin)
 router.get('/all', async (req, res) => {
   try {
@@ -285,7 +299,9 @@ router.get('/all', async (req, res) => {
     res.status(500).json({ error: 'Error al obtener solicitudes' });
   }
 });
+*/
 
+/*
 // Buscar item del inventario por producto (para obtener InventorySeqNo)
 router.get('/find-item/:oidUser/:productId', async (req, res) => {
   try {
@@ -310,7 +326,9 @@ router.get('/find-item/:oidUser/:productId', async (req, res) => {
     res.status(500).json({ error: 'Error al buscar item' });
   }
 });
+*/
 
+/*
 // Aprobar reembolso (elimina item, devuelve NX, cobra 10%)
 router.post('/approve/:refundId', async (req, res) => {
   try {
@@ -447,7 +465,9 @@ router.post('/approve/:refundId', async (req, res) => {
     res.status(500).json({ error: 'Error al aprobar reembolso', details: error.message });
   }
 });
+*/
 
+/*
 // Rechazar reembolso
 router.post('/reject/:refundId', async (req, res) => {
   try {
@@ -493,7 +513,9 @@ router.post('/reject/:refundId', async (req, res) => {
     res.status(500).json({ error: 'Error al rechazar reembolso' });
   }
 });
+*/
 
+/*
 // Obtener detalles de un item del inventario
 router.get('/item/:oidUser/:inventorySeqNo', async (req, res) => {
   try {
@@ -516,7 +538,9 @@ router.get('/item/:oidUser/:inventorySeqNo', async (req, res) => {
     res.status(500).json({ error: 'Error al obtener item' });
   }
 });
+*/
 
+/*
 // Procesar devolución (refund) - versión antigua (sin comisión, solo para admin manual)
 router.post('/process', async (req, res) => {
   try {
@@ -614,7 +638,9 @@ router.post('/process', async (req, res) => {
     res.status(500).json({ error: 'Error al procesar devolución', details: error.message });
   }
 });
+*/
 
+/*
 // Eliminar solo el item (sin devolver NX)
 router.post('/remove-item', async (req, res) => {
   try {
