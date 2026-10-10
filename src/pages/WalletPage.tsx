@@ -146,9 +146,9 @@ export default function WalletPage() {
 
     // Definir las 3 recompensas más caras
     const topRewards = [
-      { packageId: 8, coins: 1600000, bonus: 160000 },
-      { packageId: 7, coins: 800000, bonus: 80000 },
-      { packageId: 6, coins: 480000, bonus: 48000 },
+      { packageId: 8, coins: 1600000, bonus: 16000 },
+      { packageId: 7, coins: 800000, bonus: 8000 },
+      { packageId: 6, coins: 480000, bonus: 4800 },
     ];
     setRewards(topRewards);
 
