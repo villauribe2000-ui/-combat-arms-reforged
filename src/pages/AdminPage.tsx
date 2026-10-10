@@ -344,6 +344,7 @@ export default function AdminPage() {
   const totalDollars = payments.filter(p => p.status === 'pending').reduce((sum, p) => sum + p.dollarAmount, 0);
   
   const pendingCodes = paymentCodes; // El endpoint ya devuelve solo pendientes
+  console.log('[ADMIN] En render - pendingCodes:', pendingCodes, 'length:', pendingCodes.length);
   const totalCodesNX = pendingCodes.reduce((sum, c) => sum + c.nxAmount, 0);
   const totalCodesDollars = pendingCodes.reduce((sum, c) => sum + c.dollarAmount, 0);
   
