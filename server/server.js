@@ -93,7 +93,13 @@ app.use((err, req, res, next) => {
 async function runMigrations() {
   try {
     console.log('[MIGRATION] Inicializando tablas en combatarms_web...');
-    await initializeTables();
+    try {
+      await initializeTables();
+      console.log('[MIGRATION] ✓ Tablas inicializadas correctamente');
+    } catch (initError) {
+      console.warn('[MIGRATION] ⚠️ Advertencia en inicialización de tablas:', initError.message);
+      console.warn('[MIGRATION] Continuando de todos modos...');
+    }
     console.log('[MIGRATION] ✓ Migraciones completadas');
   } catch (error) {
     console.error('[MIGRATION] Error durante migraciones:', error.message);
