@@ -238,6 +238,15 @@ export default function ProfilePage() {
 
         // Cargar recompensas de nivel reclamadas
         const claimedRewardsKey = `level_rewards_${profile?.username}`;
+        const rewardsVersionKey = `level_rewards_version_${profile?.username}`;
+        const currentVersion = '1.1'; // Versión de recompensas - cambiar para invalidar caché
+        
+        // Si la versión no coincide, limpiar todo
+        if (localStorage.getItem(rewardsVersionKey) !== currentVersion) {
+          localStorage.removeItem(claimedRewardsKey);
+          localStorage.setItem(rewardsVersionKey, currentVersion);
+        }
+        
         const claimedRewardsData = localStorage.getItem(claimedRewardsKey) || '[]';
         setClaimedLevelRewards(JSON.parse(claimedRewardsData));
       } catch (error) {
