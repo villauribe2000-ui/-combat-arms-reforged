@@ -340,7 +340,7 @@ export default function HomePage({ onNavigate }: { onNavigate: (page: PageId) =>
                 <thead>
                   <tr className="border-b border-white/10">
                     <th className="px-6 py-3 text-left text-amber-400 font-semibold">Requisitos</th>
-                    <th className="px-6 py-3 text-left text-amber-400 font-semibold">M├¡nimo</th>
+                    <th className="px-6 py-3 text-left text-amber-400 font-semibold">Mínimo</th>
                     <th className="px-6 py-3 text-left text-amber-400 font-semibold">Recomendado</th>
                   </tr>
                 </thead>
@@ -361,14 +361,14 @@ export default function HomePage({ onNavigate }: { onNavigate: (page: PageId) =>
                     <td className="px-6 py-4 text-white font-medium">512MB RAM</td>
                   </tr>
                   <tr className="border-b border-white/5 hover:bg-white/5">
-                    <td className="px-6 py-4 text-slate-400">TARJETA GR├üFICA</td>
+                    <td className="px-6 py-4 text-slate-400">TARJETA GRÁFICA</td>
                     <td className="px-6 py-4 text-white font-medium">GeForce 2MX</td>
                     <td className="px-6 py-4 text-white font-medium">GeForce FX 5600 o superior</td>
                   </tr>
                   <tr className="border-b border-white/5 hover:bg-white/5">
                     <td className="px-6 py-4 text-slate-400">DIRECT X</td>
-                    <td className="px-6 py-4 text-white font-medium">Versi├│n 9.0C o posterior</td>
-                    <td className="px-6 py-4 text-white font-medium">Versi├│n 9.0C o posterior</td>
+                    <td className="px-6 py-4 text-white font-medium">Versión 9.0C o posterior</td>
+                    <td className="px-6 py-4 text-white font-medium">Versión 9.0C o posterior</td>
                   </tr>
                   <tr className="border-b border-white/5 hover:bg-white/5">
                     <td className="px-6 py-4 text-slate-400">ESPACIO EN DISCO</td>
@@ -376,7 +376,7 @@ export default function HomePage({ onNavigate }: { onNavigate: (page: PageId) =>
                     <td className="px-6 py-4 text-white font-medium">2.0GB</td>
                   </tr>
                   <tr className="hover:bg-white/5">
-                    <td className="px-6 py-4 text-slate-400">CONEXI├ôN A INTERNET</td>
+                    <td className="px-6 py-4 text-slate-400">CONEXIÓN A INTERNET</td>
                     <td className="px-6 py-4 text-white font-medium">Cable/DSL</td>
                     <td className="px-6 py-4 text-white font-medium">Cable/DSL o superior</td>
                   </tr>
@@ -409,11 +409,11 @@ export default function HomePage({ onNavigate }: { onNavigate: (page: PageId) =>
               <svg className="h-5 w-5" fill="currentColor" viewBox="0 0 24 24">
                 <path d="M20.317 4.3671a19.8062 19.8062 0 00-4.885-1.515a.074.074 0 00-.079.0366c-.211.3671-.444.8426-.607 1.2182a18.27 18.27 0 00-5.487 0c-.163-.3756-.399-.8511-.61-1.2182a.077.077 0 00-.079-.0355c-1.675.289-3.29.89-4.885 1.515a.07.07 0 00-.032.0277C.533 9.046-.32 13.58.099 18.057a.082.082 0 00.031.0605c2.0946 1.5348 4.1353 2.466 6.1545 3.0823a.078.078 0 00.085-.0276c.462-.6171.873-1.266 1.226-1.9466a.076.076 0 00-.041-.1061a13.107 13.107 0 01-1.872-.892.077.077 0 01-.008-.128 10.2457 10.2457 0 00.372-.294.074.074 0 01.077-.01c3.928 1.793 8.18 1.793 12.062 0a.074.074 0 01.078.01c.12.098.246.198.373.294a.077.077 0 01-.006.127 12.299 12.299 0 01-1.873.892.076.076 0 00-.041.107c.36.699.77 1.349 1.225 1.947a.077.077 0 00.084.028c2.04-.617 4.081-1.548 6.165-3.083a.077.077 0 00.032-.0605c.504-4.944-.838-9.233-3.549-13.002a.061.061 0 00-.031-.0277zM8.02 15.3312c-1.1825 0-2.1569-.9718-2.1569-2.1771 0-1.2054.9555-2.1772 2.1569-2.1772 1.2108 0 2.1757.9718 2.1568 2.1772 0 1.2053-.9555 2.1771-2.1568 2.1771zm7.9748 0c-1.1825 0-2.1569-.9718-2.1569-2.1771 0-1.2054.9554-2.1772 2.1569-2.1772 1.2108 0 2.1757.9718 2.1568 2.1772 0 1.2053-.946 2.1771-2.1568 2.1771Z"/>
               </svg>
-              ├Ünete a Discord
+              Únete a Discord
             </a>
           </div>
           <p className="text-sm text-slate-400">
-            ┬⌐ 2026 @Reforged. All rights reserved.
+            © 2026 @Reforged. All rights reserved.
           </p>
         </div>
       </footer>
