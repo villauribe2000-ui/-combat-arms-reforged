@@ -126,7 +126,7 @@ router.post('/login', async (req, res) => {
         experience: profile?.Exp || 0,
         gameCoins: wallet?.RealBalance || 0,
         bonusCoins: wallet?.BonusBalance || 0,
-        totalBalance: wallet?.TotalBalance || 0
+        totalBalance: profile?.Money || 0
       }
     });
   } catch (error) {
@@ -356,7 +356,7 @@ router.get('/verify', async (req, res) => {
         experience: profile?.Exp || 0,
         gameCoins: wallet?.RealBalance || 0,
         bonusCoins: wallet?.BonusBalance || 0,
-        totalBalance: wallet?.TotalBalance || 0
+        totalBalance: profile?.Money || 0
       }
     });
   } catch (error) {
@@ -437,7 +437,7 @@ router.get('/profile/:userId', async (req, res) => {
         experience: character?.Exp || 0,
         gameCoins: wallet?.RealBalance || 0,
         bonusCoins: wallet?.BonusBalance || 0,
-        totalBalance: wallet?.TotalBalance || 0,
+        totalBalance: character?.Money || 0,
         characterClass: character?.ClassType,
         gender: character?.genderType,
         joinDate: character?.CreateDate || user.strNexonID
