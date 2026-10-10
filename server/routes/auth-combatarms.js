@@ -248,7 +248,7 @@ router.post('/register', async (req, res) => {
       ) VALUES (
         ${oidUser},
         '${username}',
-        '${username}',
+        NULL,
         0,
         0,
         1,
