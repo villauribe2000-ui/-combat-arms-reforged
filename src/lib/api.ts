@@ -431,6 +431,16 @@ class ApiClient {
   logout() {
     this.clearToken();
   }
+
+  // Change password endpoint
+  async changePassword(userId: number, currentPassword: string, newPassword: string, confirmPassword: string) {
+    return await this.request<{ success: boolean; message: string }>('POST', '/auth-combatarms/change-password', {
+      userId,
+      currentPassword,
+      newPassword,
+      confirmPassword,
+    });
+  }
 }
 
 export const api = new ApiClient();

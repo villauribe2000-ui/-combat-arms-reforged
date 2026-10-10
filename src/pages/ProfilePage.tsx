@@ -79,6 +79,15 @@ export default function ProfilePage() {
   const [selectedCountry, setSelectedCountry] = useState('');
   const [showCountrySelector, setShowCountrySelector] = useState(false);
   const [claimedLevelRewards, setClaimedLevelRewards] = useState<number[]>([]);
+  
+  // Change password states
+  const [showChangePassword, setShowChangePassword] = useState(false);
+  const [currentPassword, setCurrentPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [passwordError, setPasswordError] = useState('');
+  const [passwordSuccess, setPasswordSuccess] = useState('');
+  const [loadingPassword, setLoadingPassword] = useState(false);
 
   useEffect(() => {
     if (!profile?.username) return;
@@ -224,7 +233,7 @@ export default function ProfilePage() {
           country: storedData.country,
           countryFlag: countryFlag,
           nx: profile.gameCoins,
-          gp: dbProfile.Money,
+          gp: profile.totalBalance,
           progressPercent,
           levelMessage,
           level: currentLevelNumber,
@@ -309,6 +318,58 @@ export default function ProfilePage() {
     
     // Guardar en localStorage
     localStorage.setItem(`level_rewards_${profile?.username}`, JSON.stringify(newClaimed));
+  };
+
+  const handleChangePassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    setPasswordError('');
+    setPasswordSuccess('');
+
+    // Validar campos
+    if (!currentPassword || !newPassword || !confirmPassword) {
+      setPasswordError('Todos los campos son requeridos');
+      return;
+    }
+
+    if (newPassword.length < 6) {
+      setPasswordError('La contraseña debe tener al menos 6 caracteres');
+      return;
+    }
+
+    if (newPassword !== confirmPassword) {
+      setPasswordError('Las contraseñas nuevas no coinciden');
+      return;
+    }
+
+    if (currentPassword === newPassword) {
+      setPasswordError('La contraseña nueva debe ser diferente a la actual');
+      return;
+    }
+
+    try {
+      setLoadingPassword(true);
+      await api.changePassword(
+        profile?.id || 0,
+        currentPassword,
+        newPassword,
+        confirmPassword
+      );
+
+      setPasswordSuccess('¡Contraseña cambiada exitosamente!');
+      setCurrentPassword('');
+      setNewPassword('');
+      setConfirmPassword('');
+      
+      setTimeout(() => {
+        setShowChangePassword(false);
+        setPasswordSuccess('');
+      }, 2000);
+    } catch (error: any) {
+      setPasswordError(error.message || 'Error al cambiar la contraseña');
+    } finally {
+      setLoadingPassword(false);
+    }
   };
 
   const selectedCountryData = COUNTRIES.find(c => c.code === selectedCountry);
@@ -509,6 +570,90 @@ export default function ProfilePage() {
                 <span className="font-bold text-cyan-400">{kdRatio}</span>
               </div>
             </div>
+          </div>
+
+          {/* Change Password Card */}
+          <div className="rounded-2xl border border-white/5 bg-[#0d1320] p-6">
+            <h2 className="mb-4 text-lg font-bold">Seguridad</h2>
+            {!showChangePassword ? (
+              <button
+                onClick={() => setShowChangePassword(true)}
+                className="w-full px-4 py-3 rounded-lg bg-blue-500/20 text-blue-400 hover:bg-blue-500/30 transition font-semibold"
+              >
+                Cambiar Contraseña
+              </button>
+            ) : (
+              <form onSubmit={handleChangePassword} className="space-y-3">
+                <div>
+                  <label className="text-xs text-slate-400 block mb-2">Contraseña Actual</label>
+                  <input
+                    type="password"
+                    value={currentPassword}
+                    onChange={(e) => setCurrentPassword(e.target.value)}
+                    placeholder="Ingresa tu contraseña actual"
+                    className="w-full px-3 py-2 rounded-lg bg-white/10 border border-white/20 text-white placeholder-slate-500 focus:outline-none focus:border-blue-500"
+                  />
+                </div>
+                
+                <div>
+                  <label className="text-xs text-slate-400 block mb-2">Nueva Contraseña</label>
+                  <input
+                    type="password"
+                    value={newPassword}
+                    onChange={(e) => setNewPassword(e.target.value)}
+                    placeholder="Mínimo 6 caracteres"
+                    className="w-full px-3 py-2 rounded-lg bg-white/10 border border-white/20 text-white placeholder-slate-500 focus:outline-none focus:border-blue-500"
+                  />
+                </div>
+
+                <div>
+                  <label className="text-xs text-slate-400 block mb-2">Confirmar Nueva Contraseña</label>
+                  <input
+                    type="password"
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    placeholder="Repite la nueva contraseña"
+                    className="w-full px-3 py-2 rounded-lg bg-white/10 border border-white/20 text-white placeholder-slate-500 focus:outline-none focus:border-blue-500"
+                  />
+                </div>
+
+                {passwordError && (
+                  <div className="p-3 rounded-lg bg-red-500/20 border border-red-500/30 text-red-400 text-xs">
+                    {passwordError}
+                  </div>
+                )}
+
+                {passwordSuccess && (
+                  <div className="p-3 rounded-lg bg-emerald-500/20 border border-emerald-500/30 text-emerald-400 text-xs">
+                    {passwordSuccess}
+                  </div>
+                )}
+
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowChangePassword(false);
+                      setCurrentPassword('');
+                      setNewPassword('');
+                      setConfirmPassword('');
+                      setPasswordError('');
+                      setPasswordSuccess('');
+                    }}
+                    className="flex-1 px-3 py-2 rounded-lg bg-slate-700/20 text-slate-300 hover:bg-slate-700/30 transition font-semibold text-sm"
+                  >
+                    Cancelar
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={loadingPassword}
+                    className="flex-1 px-3 py-2 rounded-lg bg-blue-500/20 text-blue-400 hover:bg-blue-500/30 transition font-semibold text-sm disabled:opacity-50"
+                  >
+                    {loadingPassword ? 'Cambiando...' : 'Cambiar'}
+                  </button>
+                </div>
+              </form>
+            )}
           </div>
         </div>
       </div>

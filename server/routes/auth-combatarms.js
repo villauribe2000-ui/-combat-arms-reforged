@@ -457,4 +457,99 @@ router.get('/profile/:userId', async (req, res) => {
   }
 });
 
+// ==========================================
+// CAMBIAR CONTRASEÑA
+// ==========================================
+
+// POST /api/auth-combatarms/change-password - Cambiar contraseña del usuario
+router.post('/change-password', async (req, res) => {
+  try {
+    const { userId, currentPassword, newPassword, confirmPassword } = req.body;
+
+    // Validar datos
+    if (!userId || !currentPassword || !newPassword || !confirmPassword) {
+      return res.status(400).json({
+        success: false,
+        error: 'Todos los campos son requeridos'
+      });
+    }
+
+    // Validar que las contraseñas nuevas coincidan
+    if (newPassword !== confirmPassword) {
+      return res.status(400).json({
+        success: false,
+        error: 'Las contraseñas nuevas no coinciden'
+      });
+    }
+
+    // Validar longitud mínima
+    if (newPassword.length < 6) {
+      return res.status(400).json({
+        success: false,
+        error: 'La contraseña debe tener al menos 6 caracteres'
+      });
+    }
+
+    // Validar que la contraseña nueva sea diferente a la actual
+    if (currentPassword === newPassword) {
+      return res.status(400).json({
+        success: false,
+        error: 'La contraseña nueva debe ser diferente a la actual'
+      });
+    }
+
+    // Obtener usuario
+    const userResult = await query(`
+      SELECT 
+        oidUser,
+        strNexonID,
+        CONVERT(VARCHAR(max), CONVERT(VARBINARY(max), strPassword), 2) as strPassword
+      FROM COMBATARMS.dbo.CBT_UserAuth
+      WHERE oidUser = ${userId}
+    `);
+
+    if (!userResult.recordset || userResult.recordset.length === 0) {
+      return res.status(404).json({
+        success: false,
+        error: 'Usuario no encontrado'
+      });
+    }
+
+    const user = userResult.recordset[0];
+
+    // Validar contraseña actual
+    const currentPasswordHash = calculateSHA1(currentPassword);
+    const storedPasswordNorm = user.strPassword.toUpperCase().trim();
+
+    if (currentPasswordHash !== storedPasswordNorm) {
+      console.log(`[CHANGE PASSWORD] Contraseña actual incorrecta para usuario ${user.strNexonID}`);
+      return res.status(401).json({
+        success: false,
+        error: 'La contraseña actual es incorrecta'
+      });
+    }
+
+    // Actualizar contraseña en BD
+    await query(`
+      UPDATE COMBATARMS.dbo.CBT_UserAuth
+      SET strPassword = CONVERT(VARBINARY(20), HASHBYTES('SHA1', '${newPassword}'), 2),
+          UpdDate = GETDATE()
+      WHERE oidUser = ${userId}
+    `);
+
+    console.log(`[CHANGE PASSWORD SUCCESS] Contraseña cambiada para usuario ${user.strNexonID}`);
+
+    return res.json({
+      success: true,
+      message: 'Contraseña cambiada exitosamente'
+    });
+  } catch (error) {
+    console.error('Error cambiando contraseña:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Error al cambiar la contraseña'
+    });
+  }
+});
+
 export default router;
