@@ -263,7 +263,6 @@ router.post('/register', async (req, res) => {
     await query(`
       INSERT INTO COMBATARMS.dbo.CBT_UserCharacter (
         oidUser,
-        oidCharacter,
         strCharacterName,
         nLevel,
         nExp,
@@ -274,7 +273,6 @@ router.post('/register', async (req, res) => {
         nGenderType,
         dtCreateDate
       ) VALUES (
-        ${oidUser},
         ${oidUser},
         '${username}',
         0,
