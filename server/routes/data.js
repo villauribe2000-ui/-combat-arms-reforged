@@ -1000,7 +1000,7 @@ router.post('/birthday/claim', async (req, res) => {
       await queryVisms(
         `UPDATE VISMS_UserList 
          SET RealBalance = RealBalance + @nxAmount 
-         WHERE oidUser = @oidUser`,
+         WHERE oid = @oidUser`,
         { oidUser, nxAmount }
       );
       console.log(`[BIRTHDAY CLAIM] ✓ NX sumado en VISMS correctamente`);
