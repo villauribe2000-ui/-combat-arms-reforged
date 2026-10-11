@@ -271,7 +271,10 @@ export default function BirthdayPage() {
             <div className="text-center">
               <CheckCircle className="h-12 w-12 text-emerald-400 mx-auto mb-2" />
               <p className="text-emerald-400 font-bold">¡Ya reclamaste tu regalo este año!</p>
-              <p className="text-slate-400 text-sm mt-2">Vuelve el próximo año para otro 🎂</p>
+              <p className="text-slate-400 text-sm mt-4">Vuelve el próximo año para otro 🎂</p>
+              <p className="text-slate-500 text-xs mt-4">
+                Faltan <span className="text-cyan-400 font-bold">{daysLeft}</span> días para tu próximo cumpleaños
+              </p>
             </div>
           ) : (
             <div className="text-center">
