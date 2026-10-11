@@ -207,37 +207,111 @@ export default function BirthdayPage() {
         {/* Gift Box */}
         <div className="relative mb-8">
           <div
-            className={`relative w-32 h-32 cursor-pointer transition-transform duration-300 ${
-              isBirthdayToday && !alreadyClaimed ? 'hover:scale-110' : ''
+            className={`relative w-40 h-40 cursor-pointer transition-transform duration-300 ${
+              isBirthdayToday && !alreadyClaimed ? 'hover:scale-110 hover:-rotate-3' : ''
             }`}
             onClick={isBirthdayToday && !alreadyClaimed && !isOpening ? handleOpenGift : undefined}
           >
-            {/* Gift Box */}
-            <div
-              className={`w-full h-full rounded-xl transition-all duration-500 ${
-                isOpening
-                  ? 'opacity-0 scale-0 rotate-45'
-                  : 'bg-gradient-to-br from-red-500 to-red-700 shadow-lg'
-              }`}
-            >
-              {/* Box shine effect */}
-              <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/20 to-transparent rounded-xl"></div>
+            {/* Premium Gift Box - 3D Effect */}
+            {!isOpening && (
+              <div
+                className={`relative w-full h-full rounded-2xl transition-all duration-500 transform-gpu`}
+                style={{
+                  background: 'linear-gradient(135deg, #1e293b 0%, #0f172a 50%, #1e293b 100%)',
+                  boxShadow: `0 20px 40px rgba(0, 0, 0, 0.8), 
+                              inset 0 1px 0 rgba(255, 255, 255, 0.1),
+                              0 0 40px rgba(139, 92, 246, 0.3)`,
+                }}
+              >
+                {/* Top face */}
+                <div
+                  className="absolute inset-0 rounded-2xl"
+                  style={{
+                    background: 'linear-gradient(135deg, #a78bfa 0%, #8b5cf6 50%, #7c3aed 100%)',
+                    clipPath: 'polygon(0% 100%, 0% 50%, 100% 40%, 100% 100%)',
+                    boxShadow: 'inset -2px -2px 8px rgba(0, 0, 0, 0.3)',
+                  }}
+                />
 
-              {/* Ribbon */}
-              <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-4 h-full bg-yellow-300 rounded-full"></div>
-              <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-full h-4 bg-yellow-300 rounded-full"></div>
+                {/* Front face */}
+                <div
+                  className="absolute inset-0 rounded-2xl"
+                  style={{
+                    background: 'linear-gradient(to bottom, #6366f1 0%, #4f46e5 100%)',
+                    clipPath: 'polygon(0% 50%, 100% 40%, 100% 100%, 0% 100%)',
+                    boxShadow: 'inset 2px 2px 8px rgba(255, 255, 255, 0.2), inset -2px -2px 8px rgba(0, 0, 0, 0.3)',
+                  }}
+                />
 
-              {/* Bow */}
-              <div className="absolute top-2 left-1/2 transform -translate-x-1/2 w-8 h-8 bg-yellow-300 rounded-full"></div>
-            </div>
+                {/* Side face */}
+                <div
+                  className="absolute inset-0 rounded-2xl"
+                  style={{
+                    background: 'linear-gradient(to right, #4f46e5 0%, #4f46e5 100%)',
+                    clipPath: 'polygon(0% 50%, 0% 100%, 5px 105px, 5px 55px)',
+                  }}
+                />
+
+                {/* Ribbon horizontal */}
+                <div
+                  className="absolute top-1/2 left-0 right-0 h-3 -translate-y-1/2"
+                  style={{
+                    background: 'linear-gradient(to right, #fbbf24 0%, #fcd34d 50%, #fbbf24 100%)',
+                    boxShadow: '0 4px 12px rgba(251, 191, 36, 0.4), inset 0 1px 2px rgba(255, 255, 255, 0.3)',
+                  }}
+                />
+
+                {/* Ribbon vertical */}
+                <div
+                  className="absolute top-0 bottom-0 left-1/2 w-3 -translate-x-1/2"
+                  style={{
+                    background: 'linear-gradient(to bottom, #fbbf24 0%, #fcd34d 50%, #fbbf24 100%)',
+                    boxShadow: '0 4px 12px rgba(251, 191, 36, 0.4), inset 0 1px 2px rgba(255, 255, 255, 0.3)',
+                  }}
+                />
+
+                {/* Bow - left loop */}
+                <div
+                  className="absolute top-0 left-1/2 w-6 h-6 -translate-x-8 -translate-y-2"
+                  style={{
+                    background: 'radial-gradient(circle at 30% 30%, #fed7aa, #fb923c)',
+                    borderRadius: '50% 0 50% 50%',
+                    boxShadow: '0 4px 12px rgba(251, 146, 60, 0.5), inset -1px -1px 3px rgba(0, 0, 0, 0.2)',
+                  }}
+                />
+
+                {/* Bow - right loop */}
+                <div
+                  className="absolute top-0 right-1/2 w-6 h-6 translate-x-8 -translate-y-2"
+                  style={{
+                    background: 'radial-gradient(circle at 70% 30%, #fed7aa, #fb923c)',
+                    borderRadius: '0 50% 50% 50%',
+                    boxShadow: '0 4px 12px rgba(251, 146, 60, 0.5), inset 1px -1px 3px rgba(0, 0, 0, 0.2)',
+                  }}
+                />
+
+                {/* Bow center */}
+                <div
+                  className="absolute top-0 left-1/2 w-4 h-4 -translate-x-1/2 -translate-y-1"
+                  style={{
+                    background: 'radial-gradient(circle at 30% 30%, #fef08a, #fbbf24)',
+                    borderRadius: '50%',
+                    boxShadow: '0 3px 8px rgba(251, 191, 36, 0.6)',
+                  }}
+                />
+
+                {/* Gloss effect */}
+                <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-white/20 to-transparent opacity-60"></div>
+              </div>
+            )}
 
             {/* Sparkles when opening */}
             {showCelebration && (
               <>
-                <Sparkles className="absolute -top-4 -left-4 h-8 w-8 text-yellow-300 animate-bounce" />
-                <Sparkles className="absolute -top-4 -right-4 h-8 w-8 text-yellow-300 animate-bounce" />
-                <Sparkles className="absolute -bottom-4 -left-4 h-8 w-8 text-yellow-300 animate-bounce" />
-                <Sparkles className="absolute -bottom-4 -right-4 h-8 w-8 text-yellow-300 animate-bounce" />
+                <Sparkles className="absolute -top-6 -left-6 h-10 w-10 text-yellow-300 animate-bounce" />
+                <Sparkles className="absolute -top-6 -right-6 h-10 w-10 text-yellow-300 animate-bounce" style={{ animationDelay: '0.1s' }} />
+                <Sparkles className="absolute -bottom-6 -left-6 h-10 w-10 text-yellow-300 animate-bounce" style={{ animationDelay: '0.2s' }} />
+                <Sparkles className="absolute -bottom-6 -right-6 h-10 w-10 text-yellow-300 animate-bounce" style={{ animationDelay: '0.3s' }} />
               </>
             )}
 
@@ -251,7 +325,7 @@ export default function BirthdayPage() {
 
           {/* Status badge */}
           {isBirthdayToday && !alreadyClaimed && (
-            <div className="absolute -bottom-12 left-1/2 transform -translate-x-1/2 whitespace-nowrap">
+            <div className="absolute -bottom-14 left-1/2 transform -translate-x-1/2 whitespace-nowrap">
               <p className="text-sm text-emerald-400 font-bold animate-bounce">👆 Abre aquí 👆</p>
             </div>
           )}
