@@ -656,66 +656,98 @@ router.get('/purchase-marketplace-status/:purchaseLogId', async (req, res) => {
 */
 
 // ==========================================
-// ENDPOINTS PARA RECOMPENSAS DE NIVEL
+// ENDPOINTS PARA RECOMPENSAS DE NIVEL - PERSISTENCIA EN combatarms_web SOLO
 // ==========================================
 
 // Obtener recompensas reclamadas del usuario
 router.get('/claimed-rewards/:username', async (req, res) => {
   try {
     const { username } = req.params;
-
+    
+    console.log(`[CLAIMED REWARDS] Obteniendo recompensas reclamadas para: ${username}`);
+    
+    // Obtener oidUser usando la función helper
+    const oidUser = await getUserOidByUsername(username);
+    
+    if (!oidUser) {
+      console.log(`[CLAIMED REWARDS] ❌ Usuario no encontrado: ${username}`);
+      return res.json([]);
+    }
+    
+    // Obtener todas las recompensas reclamadas del usuario SOLO de combatarms_web
     const result = await queryWeb(
-      `SELECT level, nxAmount, claimedAt FROM ClaimedLevelRewards WHERE username = @username ORDER BY level ASC`,
-      { username }
+      `SELECT id, oidUser, username, level, nxAmount, claimedAt 
+       FROM ClaimedLevelRewards 
+       WHERE oidUser = @oidUser
+       ORDER BY level ASC`,
+      { oidUser }
     );
-
-    res.json(result.recordset || []);
+    
+    console.log(`[CLAIMED REWARDS] ✓ Encontradas ${result.recordset.length} recompensas reclamadas`);
+    res.json(result.recordset);
+    
   } catch (error) {
-    console.error('Get claimed rewards error:', error);
-    res.status(500).json({ error: 'Error al obtener recompensas reclamadas' });
+    console.error('[CLAIMED REWARDS] Error:', error.message);
+    res.json([]); // Devolver array vacío en caso de error
   }
 });
 
-// Reclamar recompensa de nivel
+// Reclamar recompensa de nivel - SOLO guardar en combatarms_web
 router.post('/claim-level-reward', async (req, res) => {
   try {
-    const { oidUser, username, level, nxAmount } = req.body;
-
-    if (!oidUser || !username || level === undefined || !nxAmount) {
-      return res.status(400).json({ error: 'Datos incompletos' });
+    const { username, level, nxAmount } = req.body;
+    
+    console.log(`[CLAIM REWARD] Usuario: ${username}, Nivel: ${level}, NX: ${nxAmount}`);
+    
+    if (!username || level === undefined || !nxAmount) {
+      return res.status(400).json({ error: 'Parámetros incompletos' });
     }
-
-    console.log(`[REWARD] ${username} reclama nivel ${level} - ${nxAmount} NX`);
-
-    // Verificar que no ha sido reclamado antes
-    const checkResult = await queryWeb(
+    
+    // Obtener oidUser
+    const oidUser = await getUserOidByUsername(username);
+    
+    if (!oidUser) {
+      console.log(`[CLAIM REWARD] ❌ Usuario no encontrado: ${username}`);
+      return res.status(404).json({ error: 'Usuario no encontrado' });
+    }
+    
+    // Verificar si ya fue reclamado (unique constraint en combatarms_web)
+    const existingResult = await queryWeb(
       `SELECT id FROM ClaimedLevelRewards WHERE oidUser = @oidUser AND level = @level`,
       { oidUser, level }
     );
-
-    if (checkResult.recordset.length > 0) {
-      return res.status(400).json({ error: 'Esta recompensa ya fue reclamada' });
+    
+    if (existingResult.recordset.length > 0) {
+      console.log(`[CLAIM REWARD] ⚠️ Recompensa ya reclamada: oidUser=${oidUser}, level=${level}`);
+      return res.status(400).json({ 
+        error: 'Esta recompensa ya ha sido reclamada',
+        already_claimed: true 
+      });
     }
-
-    // Insertar en BD
+    
+    // Guardar SOLO en combatarms_web
+    console.log(`[CLAIM REWARD] Guardando en combatarms_web...`);
     await queryWeb(
-      `INSERT INTO ClaimedLevelRewards (oidUser, username, level, nxAmount) VALUES (@oidUser, @username, @level, @nxAmount)`,
+      `INSERT INTO ClaimedLevelRewards (oidUser, username, level, nxAmount, claimedAt)
+       VALUES (@oidUser, @username, @level, @nxAmount, GETDATE())`,
       { oidUser, username, level, nxAmount }
     );
-
-    console.log(`[REWARD] ✓ Recompensa registrada: ${username} nivel ${level}`);
-
+    console.log(`[CLAIM REWARD] ✓ Guardado en combatarms_web`);
+    
     res.json({
       success: true,
       message: `+${nxAmount} NX reclamados del Nivel ${level}!`,
+      level,
+      nxAmount,
+      oidUser
     });
-
+    
   } catch (error) {
-    console.error('Claim level reward error:', error);
-    if (error.message.includes('UNIQUE')) {
-      return res.status(400).json({ error: 'Esta recompensa ya fue reclamada' });
-    }
-    res.status(500).json({ error: 'Error al reclamar recompensa: ' + error.message });
+    console.error('[CLAIM REWARD] Error fatal:', error.message);
+    res.status(500).json({ 
+      error: 'Error al reclamar recompensa',
+      details: error.message 
+    });
   }
 });
 
