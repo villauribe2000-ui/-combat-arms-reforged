@@ -119,8 +119,14 @@ export default function LevelRewardsPage() {
         setCurrentLevel(userLevel);
 
         // Cargar recompensas reclamadas desde BD
-        const claimedFromBD = await api.getClaimedRewards(profile.username || '');
-        const claimedLevels = claimedFromBD.map((r: any) => r.level);
+        let claimedLevels = [];
+        try {
+          const claimedFromBD = await api.getClaimedRewards(profile.username || '');
+          claimedLevels = claimedFromBD.map((r: any) => r.level);
+        } catch (err) {
+          console.warn('[DEBUG] Error loading claimed rewards from BD:', err);
+          claimedLevels = [];
+        }
         setClaimedLevelRewards(claimedLevels);
 
         // Crear lista de recompensas (SOLO hasta nivel 60)
@@ -129,7 +135,7 @@ export default function LevelRewardsPage() {
 
         for (let level = 0; level <= 60; level++) {
           const isUnlocked = level <= userLevel;
-          const isClaimed = claimed.includes(level);
+          const isClaimed = claimedLevels.includes(level);
           const reward = LEVEL_REWARDS[level] || 0;
 
           rewardsList.push({
