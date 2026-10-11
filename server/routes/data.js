@@ -793,7 +793,7 @@ router.get('/birthday/:username', async (req, res) => {
     const today = new Date();
     const currentYear = today.getFullYear();
     
-    // Normalizar fechas (solo mes y día)
+    // Normalizar fechas (solo mes y día, sin hora)
     const birthMonth = birthDate.getMonth();
     const birthDay = birthDate.getDate();
     const todayMonth = today.getMonth();
@@ -802,10 +802,23 @@ router.get('/birthday/:username', async (req, res) => {
     // Verificar si es cumpleaños HOY (comparar mes y día)
     const isBirthdayToday = (birthMonth === todayMonth && birthDay === todayDay);
     
+    console.log(`[BIRTHDAY] Fecha ingresada: ${birthDate.toLocaleDateString()}`);
+    console.log(`[BIRTHDAY] Hoy: ${today.toLocaleDateString()}`);
+    console.log(`[BIRTHDAY] Comparación: mes ${birthMonth}==${todayMonth}, día ${birthDay}==${todayDay}`);
+    console.log(`[BIRTHDAY] ¿Es cumpleaños hoy? ${isBirthdayToday}`);
+    
     // Calcular próximo cumpleaños
     let nextBirthday = new Date(currentYear, birthMonth, birthDay);
-    if (nextBirthday < today) {
+    
+    // Si el cumpleaños es HOY, el próximo es en 1 año
+    if (isBirthdayToday) {
       nextBirthday = new Date(currentYear + 1, birthMonth, birthDay);
+      console.log(`[BIRTHDAY] Es hoy, próximo es: ${nextBirthday.toLocaleDateString()}`);
+    } 
+    // Si ya pasó este año, el próximo es el próximo año
+    else if (nextBirthday < today) {
+      nextBirthday = new Date(currentYear + 1, birthMonth, birthDay);
+      console.log(`[BIRTHDAY] Ya pasó, próximo es: ${nextBirthday.toLocaleDateString()}`);
     }
     
     // Calcular días restantes
