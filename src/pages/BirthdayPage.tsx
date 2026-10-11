@@ -169,7 +169,7 @@ export default function BirthdayPage() {
       <div>
         <h1 className="text-3xl font-black">🎂 Regalo de Cumpleaños</h1>
         <p className="mt-1 text-slate-400">
-          Recibe {birthdayInfo?.nxReward?.toLocaleString()} NX en tu cumpleaños especial
+          Tienes un regalo especial esperándote en tu cumpleaños 🎁
         </p>
       </div>
 
@@ -292,7 +292,7 @@ export default function BirthdayPage() {
         <div className="space-y-3 text-slate-400 text-sm">
           <p>✨ <span className="text-white">Registra tu fecha de nacimiento</span> en esta página</p>
           <p>🎂 <span className="text-white">Cuando llegue tu cumpleaños</span>, el regalo se desbloqueará automáticamente</p>
-          <p>🎁 <span className="text-white">Abre el regalo</span> para recibir {birthdayInfo?.nxReward?.toLocaleString()} NX</p>
+          <p>🎁 <span className="text-white">Abre el regalo</span> para descubrir tu sorpresa</p>
           <p>📅 <span className="text-white">Una vez al año</span>, solo puedes reclamar tu regalo en tu cumpleaños</p>
         </div>
       </div>
