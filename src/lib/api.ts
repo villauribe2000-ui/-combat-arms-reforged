@@ -193,11 +193,17 @@ class ApiClient {
   }
 
   async claimLevelReward(username: string, level: number, nxAmount: number) {
-    return await this.request<{ success: boolean; newBalance: number; nx: number }>('POST', '/wallet/claim-level-reward', {
+    const profile = JSON.parse(localStorage.getItem('profile') || '{}');
+    return await this.request<{ success: boolean; message: string }>('POST', '/claim-level-reward', {
+      oidUser: profile.id || 0,
       username,
       level,
       nxAmount,
     });
+  }
+
+  async getClaimedRewards(username: string) {
+    return await this.request<any[]>('GET', `/claimed-rewards/${username}`);
   }
 
   // Payment endpoints

@@ -118,11 +118,10 @@ export default function LevelRewardsPage() {
 
         setCurrentLevel(userLevel);
 
-        // Cargar recompensas reclamadas
-        const claimedKey = `level_rewards_${profile.username}`;
-        const claimedData = localStorage.getItem(claimedKey) || '[]';
-        const claimed = JSON.parse(claimedData);
-        setClaimedLevelRewards(claimed);
+        // Cargar recompensas reclamadas desde BD
+        const claimedFromBD = await api.getClaimedRewards(profile.username || '');
+        const claimedLevels = claimedFromBD.map((r: any) => r.level);
+        setClaimedLevelRewards(claimedLevels);
 
         // Crear lista de recompensas (SOLO hasta nivel 60)
         const rewardsList: LevelReward[] = [];
@@ -174,7 +173,7 @@ export default function LevelRewardsPage() {
       // Marcar como reclamado
       const newClaimed = [...claimedLevelRewards, level];
       setClaimedLevelRewards(newClaimed);
-      localStorage.setItem(`level_rewards_${profile?.username}`, JSON.stringify(newClaimed));
+      // Ya está guardado en BD, no necesitamos localStorage
 
       // Actualizar rewards
       setRewards(

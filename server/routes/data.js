@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { query, queryGuildDB, queryVisms, getUserOidByUsername } from '../db.js';
+import { query, queryGuildDB, queryVisms, queryWeb, getUserOidByUsername } from '../db.js';
 
 const router = Router();
 
@@ -654,5 +654,69 @@ router.get('/purchase-marketplace-status/:purchaseLogId', async (req, res) => {
   }
 });
 */
+
+// ==========================================
+// ENDPOINTS PARA RECOMPENSAS DE NIVEL
+// ==========================================
+
+// Obtener recompensas reclamadas del usuario
+router.get('/claimed-rewards/:username', async (req, res) => {
+  try {
+    const { username } = req.params;
+
+    const result = await queryWeb(
+      `SELECT level, nxAmount, claimedAt FROM ClaimedLevelRewards WHERE username = @username ORDER BY level ASC`,
+      { username }
+    );
+
+    res.json(result.recordset || []);
+  } catch (error) {
+    console.error('Get claimed rewards error:', error);
+    res.status(500).json({ error: 'Error al obtener recompensas reclamadas' });
+  }
+});
+
+// Reclamar recompensa de nivel
+router.post('/claim-level-reward', async (req, res) => {
+  try {
+    const { oidUser, username, level, nxAmount } = req.body;
+
+    if (!oidUser || !username || level === undefined || !nxAmount) {
+      return res.status(400).json({ error: 'Datos incompletos' });
+    }
+
+    console.log(`[REWARD] ${username} reclama nivel ${level} - ${nxAmount} NX`);
+
+    // Verificar que no ha sido reclamado antes
+    const checkResult = await queryWeb(
+      `SELECT id FROM ClaimedLevelRewards WHERE oidUser = @oidUser AND level = @level`,
+      { oidUser, level }
+    );
+
+    if (checkResult.recordset.length > 0) {
+      return res.status(400).json({ error: 'Esta recompensa ya fue reclamada' });
+    }
+
+    // Insertar en BD
+    await queryWeb(
+      `INSERT INTO ClaimedLevelRewards (oidUser, username, level, nxAmount) VALUES (@oidUser, @username, @level, @nxAmount)`,
+      { oidUser, username, level, nxAmount }
+    );
+
+    console.log(`[REWARD] ✓ Recompensa registrada: ${username} nivel ${level}`);
+
+    res.json({
+      success: true,
+      message: `+${nxAmount} NX reclamados del Nivel ${level}!`,
+    });
+
+  } catch (error) {
+    console.error('Claim level reward error:', error);
+    if (error.message.includes('UNIQUE')) {
+      return res.status(400).json({ error: 'Esta recompensa ya fue reclamada' });
+    }
+    res.status(500).json({ error: 'Error al reclamar recompensa: ' + error.message });
+  }
+});
 
 export default router;
