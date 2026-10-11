@@ -793,22 +793,26 @@ router.get('/birthday/:username', async (req, res) => {
     const today = new Date();
     const currentYear = today.getFullYear();
     
+    // Normalizar fechas (solo mes y día)
+    const birthMonth = birthDate.getMonth();
+    const birthDay = birthDate.getDate();
+    const todayMonth = today.getMonth();
+    const todayDay = today.getDate();
+    
+    // Verificar si es cumpleaños HOY (comparar mes y día)
+    const isBirthdayToday = (birthMonth === todayMonth && birthDay === todayDay);
+    
     // Calcular próximo cumpleaños
-    let nextBirthday = new Date(currentYear, birthDate.getMonth(), birthDate.getDate());
+    let nextBirthday = new Date(currentYear, birthMonth, birthDay);
     if (nextBirthday < today) {
-      nextBirthday = new Date(currentYear + 1, birthDate.getMonth(), birthDate.getDate());
+      nextBirthday = new Date(currentYear + 1, birthMonth, birthDay);
     }
-    
-    // Verificar si es cumpleaños HOY
-    const isBirthdayToday = 
-      today.getMonth() === birthDate.getMonth() && 
-      today.getDate() === birthDate.getDate();
-    
-    // Verificar si ya reclamó este año
-    const alreadyClaimedThisYear = birthday.lastClaimedYear === currentYear;
     
     // Calcular días restantes
     const daysUntilBirthday = Math.ceil((nextBirthday - today) / (1000 * 60 * 60 * 24));
+    
+    // Verificar si ya reclamó este año
+    const alreadyClaimedThisYear = birthday.lastClaimedYear === currentYear;
     
     console.log(`[BIRTHDAY] ✓ Registro encontrado`);
     console.log(`  - Fecha: ${birthDate.toLocaleDateString()}`);
@@ -939,10 +943,14 @@ router.post('/birthday/claim', async (req, res) => {
     const today = new Date();
     const currentYear = today.getFullYear();
     
-    // Verificar si es cumpleaños HOY
-    const isBirthdayToday = 
-      today.getMonth() === birthDate.getMonth() && 
-      today.getDate() === birthDate.getDate();
+    // Normalizar fechas (solo mes y día)
+    const birthMonth = birthDate.getMonth();
+    const birthDay = birthDate.getDate();
+    const todayMonth = today.getMonth();
+    const todayDay = today.getDate();
+    
+    // Verificar si es cumpleaños HOY (comparar mes y día)
+    const isBirthdayToday = (birthMonth === todayMonth && birthDay === todayDay);
     
     if (!isBirthdayToday) {
       console.log(`[BIRTHDAY CLAIM] ⚠️ No es cumpleaños hoy`);
