@@ -91,7 +91,7 @@ app.use((err, req, res, next) => {
 // La tabla MarketplaceListings no existe en la base de datos actual
 async function runMigrations() {
   try {
-    console.log('[MIGRATION] Migraciones deshabilitadas - ejecutar init-db.js manualmente si es necesario');
+    console.log('[MIGRATION] ✓ Migraciones deshabilitadas - ejecutar init-db.js manualmente si es necesario');
     // await initializeTables();
   } catch (error) {
     console.error('[MIGRATION] Error durante migraciones:', error.message);

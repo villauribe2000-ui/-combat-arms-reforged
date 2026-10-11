@@ -115,6 +115,27 @@ async function initializeTables() {
     `);
     console.log('   ✓ RefundRequests lista\n');
 
+    // 5. ClaimedLevelRewards
+    console.log('5️⃣ Creando tabla ClaimedLevelRewards...');
+    await queryWeb(`
+      IF OBJECT_ID('ClaimedLevelRewards', 'U') IS NULL
+      BEGIN
+        CREATE TABLE ClaimedLevelRewards (
+          id INT PRIMARY KEY IDENTITY(1,1),
+          oidUser INT NOT NULL,
+          username NVARCHAR(50) NOT NULL,
+          level INT NOT NULL,
+          nxAmount DECIMAL(10,2) NOT NULL,
+          claimedAt DATETIME DEFAULT GETDATE(),
+          UNIQUE(oidUser, level)
+        );
+        CREATE INDEX idx_claimed_rewards_username ON ClaimedLevelRewards(username);
+        CREATE INDEX idx_claimed_rewards_level ON ClaimedLevelRewards(level);
+        CREATE INDEX idx_claimed_rewards_user ON ClaimedLevelRewards(oidUser);
+      END
+    `);
+    console.log('   ✓ ClaimedLevelRewards lista\n');
+
     console.log('✅ Todas las tablas inicializadas exitosamente en combatarms_web\n');
 
   } catch (error) {
