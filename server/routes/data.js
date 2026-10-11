@@ -964,14 +964,39 @@ router.post('/birthday/claim', async (req, res) => {
     const nxAmount = birthday.nxAwarded || 30000;
     
     // Actualizar BD con fecha de reclamación
-    console.log(`[BIRTHDAY CLAIM] Guardando reclamación...`);
+    console.log(`[BIRTHDAY CLAIM] Guardando reclamación en combatarms_web...`);
     await queryWeb(
       `UPDATE BirthdayRewards 
        SET lastClaimedYear = @currentYear, lastClaimedAt = GETDATE()
        WHERE oidUser = @oidUser`,
       { oidUser, currentYear }
     );
-    console.log(`[BIRTHDAY CLAIM] ✓ Reclamación guardada`);
+    console.log(`[BIRTHDAY CLAIM] ✓ Reclamación guardada en combatarms_web`);
+    
+    // Sumar NX en VISMS
+    console.log(`[BIRTHDAY CLAIM] Sumando ${nxAmount} NX a VISMS...`);
+    try {
+      await queryVisms(
+        `UPDATE VISMS_UserList 
+         SET RealBalance = RealBalance + @nxAmount 
+         WHERE oidUser = @oidUser`,
+        { oidUser, nxAmount }
+      );
+      console.log(`[BIRTHDAY CLAIM] ✓ NX sumado en VISMS correctamente`);
+    } catch (vismsError) {
+      console.error(`[BIRTHDAY CLAIM] ❌ Error sumando NX en VISMS:`, vismsError.message);
+      // Revertir la reclamación en BD si falla VISMS
+      await queryWeb(
+        `UPDATE BirthdayRewards 
+         SET lastClaimedYear = NULL, lastClaimedAt = NULL
+         WHERE oidUser = @oidUser`,
+        { oidUser }
+      );
+      return res.status(500).json({ 
+        error: 'Error al sumar NX a tu cuenta. Intenta de nuevo.',
+        details: vismsError.message 
+      });
+    }
     
     res.json({
       success: true,
