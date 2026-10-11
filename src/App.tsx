@@ -11,6 +11,7 @@ import AdminPage from '@/pages/AdminPage';
 import WalletPage from '@/pages/WalletPage';
 import PurchaseHistoryPage from '@/pages/PurchaseHistoryPage';
 import LevelRewardsPage from '@/pages/LevelRewardsPage';
+import BirthdayPage from '@/pages/BirthdayPage';
 
 function AppContent() {
   const [page, setPage] = useState<PageId>('home');
@@ -27,6 +28,7 @@ function AppContent() {
       case 'wallet': return <WalletPage />;
       case 'purchase-history': return <PurchaseHistoryPage />;
       case 'level-rewards': return <LevelRewardsPage />;
+      case 'birthday': return <BirthdayPage />;
       default: return <HomePage onNavigate={setPage} />;
     }
   };

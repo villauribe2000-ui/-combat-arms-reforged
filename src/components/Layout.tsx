@@ -23,7 +23,7 @@ import CUFlag from '@/assets/flags/CU.png';
 import HTFlag from '@/assets/flags/HT.png';
 import {
   Gamepad2, Trophy, Store, Users, LifeBuoy, Shield, Wallet, History,
-  Menu, LogOut, User as UserIcon, Crown, LogIn,
+  Menu, LogOut, User as UserIcon, Crown, LogIn, Gift,
 } from 'lucide-react';
 
 const COUNTRIES = [
@@ -48,7 +48,7 @@ const COUNTRIES = [
   { code: 'HT', name: 'Haití', flag: HTFlag },
 ];
 
-export type PageId = 'home' | 'profile' | 'rankings' | 'store' | 'clans' | 'support' | 'admin' | 'wallet' | 'purchase-history' | 'level-rewards';
+export type PageId = 'home' | 'profile' | 'rankings' | 'store' | 'clans' | 'support' | 'admin' | 'wallet' | 'purchase-history' | 'level-rewards' | 'birthday';
 
 type NavItem = {
   id: PageId;
@@ -65,6 +65,7 @@ const NAV_ITEMS: NavItem[] = [
   { id: 'wallet', label: 'Billetera', icon: Wallet },
   { id: 'purchase-history', label: 'Historial', icon: History },
   { id: 'level-rewards', label: 'Recompensas', icon: Crown },
+  { id: 'birthday', label: 'Cumpleaños', icon: Gift },
   { id: 'support', label: 'Soporte', icon: LifeBuoy },
   { id: 'admin', label: 'Admin', icon: Shield, adminOnly: true },
 ];

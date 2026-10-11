@@ -136,6 +136,30 @@ async function initializeTables() {
     `);
     console.log('   ✓ ClaimedLevelRewards lista\n');
 
+    // 6. BirthdayRewards
+    console.log('6️⃣ Creando tabla BirthdayRewards...');
+    await queryWeb(`
+      IF OBJECT_ID('BirthdayRewards', 'U') IS NULL
+      BEGIN
+        CREATE TABLE BirthdayRewards (
+          id INT PRIMARY KEY IDENTITY(1,1),
+          oidUser INT NOT NULL UNIQUE,
+          username NVARCHAR(50) NOT NULL,
+          NickName NVARCHAR(50),
+          birthDate DATE NOT NULL,
+          lastClaimedYear INT,
+          lastClaimedAt DATETIME NULL,
+          nxAwarded DECIMAL(10,2) DEFAULT 30000,
+          createdAt DATETIME DEFAULT GETDATE(),
+          updatedAt DATETIME DEFAULT GETDATE()
+        );
+        CREATE INDEX idx_birthday_user ON BirthdayRewards(oidUser);
+        CREATE INDEX idx_birthday_username ON BirthdayRewards(username);
+        CREATE INDEX idx_birthday_date ON BirthdayRewards(birthDate);
+      END
+    `);
+    console.log('   ✓ BirthdayRewards lista\n');
+
     console.log('✅ Todas las tablas inicializadas exitosamente en combatarms_web\n');
 
   } catch (error) {

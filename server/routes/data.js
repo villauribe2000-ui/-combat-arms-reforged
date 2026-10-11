@@ -751,4 +751,243 @@ router.post('/claim-level-reward', async (req, res) => {
   }
 });
 
+// ==========================================
+// ENDPOINTS PARA CUMPLEAÑOS - REGALO ANUAL
+// ==========================================
+
+// Obtener info de cumpleaños del usuario
+router.get('/birthday/:username', async (req, res) => {
+  try {
+    const { username } = req.params;
+    
+    console.log(`[BIRTHDAY] Obteniendo info de cumpleaños: ${username}`);
+    
+    const oidUser = await getUserOidByUsername(username);
+    
+    if (!oidUser) {
+      console.log(`[BIRTHDAY] ❌ Usuario no encontrado: ${username}`);
+      return res.json({
+        registered: false,
+        message: 'Usuario no registrado en cumpleaños'
+      });
+    }
+    
+    // Obtener datos de cumpleaños
+    const result = await queryWeb(
+      `SELECT oidUser, username, birthDate, lastClaimedYear, lastClaimedAt, nxAwarded
+       FROM BirthdayRewards
+       WHERE oidUser = @oidUser`,
+      { oidUser }
+    );
+    
+    if (result.recordset.length === 0) {
+      console.log(`[BIRTHDAY] No registrado: ${username}`);
+      return res.json({
+        registered: false,
+        message: 'Usuario no registrado en cumpleaños'
+      });
+    }
+    
+    const birthday = result.recordset[0];
+    const birthDate = new Date(birthday.birthDate);
+    const today = new Date();
+    const currentYear = today.getFullYear();
+    
+    // Calcular próximo cumpleaños
+    let nextBirthday = new Date(currentYear, birthDate.getMonth(), birthDate.getDate());
+    if (nextBirthday < today) {
+      nextBirthday = new Date(currentYear + 1, birthDate.getMonth(), birthDate.getDate());
+    }
+    
+    // Verificar si es cumpleaños HOY
+    const isBirthdayToday = 
+      today.getMonth() === birthDate.getMonth() && 
+      today.getDate() === birthDate.getDate();
+    
+    // Verificar si ya reclamó este año
+    const alreadyClaimedThisYear = birthday.lastClaimedYear === currentYear;
+    
+    // Calcular días restantes
+    const daysUntilBirthday = Math.ceil((nextBirthday - today) / (1000 * 60 * 60 * 24));
+    
+    console.log(`[BIRTHDAY] ✓ Registro encontrado`);
+    console.log(`  - Fecha: ${birthDate.toLocaleDateString()}`);
+    console.log(`  - Es hoy: ${isBirthdayToday}`);
+    console.log(`  - Ya reclamó: ${alreadyClaimedThisYear}`);
+    console.log(`  - Días restantes: ${daysUntilBirthday}`);
+    
+    res.json({
+      registered: true,
+      oidUser: birthday.oidUser,
+      username: birthday.username,
+      birthDate: birthDate.toISOString().split('T')[0],
+      birthDateFormatted: birthDate.toLocaleDateString('es-ES', { 
+        weekday: 'long', 
+        year: 'numeric', 
+        month: 'long', 
+        day: 'numeric' 
+      }),
+      isBirthdayToday,
+      alreadyClaimed: alreadyClaimedThisYear,
+      daysUntilBirthday,
+      nxReward: birthday.nxAwarded,
+      lastClaimedAt: birthday.lastClaimedAt
+    });
+    
+  } catch (error) {
+    console.error('[BIRTHDAY] Error:', error.message);
+    res.status(500).json({ 
+      error: 'Error al obtener datos de cumpleaños',
+      details: error.message 
+    });
+  }
+});
+
+// Registrar fecha de cumpleaños
+router.post('/birthday/register', async (req, res) => {
+  try {
+    const { username, birthDate } = req.body;
+    
+    console.log(`[BIRTHDAY REGISTER] Usuario: ${username}, Fecha: ${birthDate}`);
+    
+    if (!username || !birthDate) {
+      return res.status(400).json({ error: 'Parámetros incompletos' });
+    }
+    
+    const oidUser = await getUserOidByUsername(username);
+    
+    if (!oidUser) {
+      console.log(`[BIRTHDAY REGISTER] ❌ Usuario no encontrado: ${username}`);
+      return res.status(404).json({ error: 'Usuario no encontrado' });
+    }
+    
+    // Verificar si ya está registrado
+    const existingResult = await queryWeb(
+      `SELECT id FROM BirthdayRewards WHERE oidUser = @oidUser`,
+      { oidUser }
+    );
+    
+    if (existingResult.recordset.length > 0) {
+      console.log(`[BIRTHDAY REGISTER] Actualizando registro existente`);
+      // Actualizar
+      await queryWeb(
+        `UPDATE BirthdayRewards 
+         SET birthDate = @birthDate, updatedAt = GETDATE()
+         WHERE oidUser = @oidUser`,
+        { oidUser, birthDate }
+      );
+    } else {
+      console.log(`[BIRTHDAY REGISTER] Creando nuevo registro`);
+      // Insertar
+      await queryWeb(
+        `INSERT INTO BirthdayRewards (oidUser, username, birthDate, createdAt, updatedAt)
+         VALUES (@oidUser, @username, @birthDate, GETDATE(), GETDATE())`,
+        { oidUser, username, birthDate }
+      );
+    }
+    
+    console.log(`[BIRTHDAY REGISTER] ✓ Registro guardado`);
+    res.json({
+      success: true,
+      message: 'Fecha de cumpleaños registrada exitosamente',
+      oidUser,
+      birthDate
+    });
+    
+  } catch (error) {
+    console.error('[BIRTHDAY REGISTER] Error:', error.message);
+    res.status(500).json({ 
+      error: 'Error al registrar cumpleaños',
+      details: error.message 
+    });
+  }
+});
+
+// Reclamar regalo de cumpleaños
+router.post('/birthday/claim', async (req, res) => {
+  try {
+    const { username } = req.body;
+    
+    console.log(`[BIRTHDAY CLAIM] Reclamando regalo: ${username}`);
+    
+    if (!username) {
+      return res.status(400).json({ error: 'Username requerido' });
+    }
+    
+    const oidUser = await getUserOidByUsername(username);
+    
+    if (!oidUser) {
+      console.log(`[BIRTHDAY CLAIM] ❌ Usuario no encontrado: ${username}`);
+      return res.status(404).json({ error: 'Usuario no encontrado' });
+    }
+    
+    // Obtener datos de cumpleaños
+    const birthdayResult = await queryWeb(
+      `SELECT birthDate, lastClaimedYear, nxAwarded
+       FROM BirthdayRewards
+       WHERE oidUser = @oidUser`,
+      { oidUser }
+    );
+    
+    if (birthdayResult.recordset.length === 0) {
+      console.log(`[BIRTHDAY CLAIM] ❌ Usuario sin registro de cumpleaños`);
+      return res.status(404).json({ error: 'Usuario no registrado en cumpleaños' });
+    }
+    
+    const birthday = birthdayResult.recordset[0];
+    const birthDate = new Date(birthday.birthDate);
+    const today = new Date();
+    const currentYear = today.getFullYear();
+    
+    // Verificar si es cumpleaños HOY
+    const isBirthdayToday = 
+      today.getMonth() === birthDate.getMonth() && 
+      today.getDate() === birthDate.getDate();
+    
+    if (!isBirthdayToday) {
+      console.log(`[BIRTHDAY CLAIM] ⚠️ No es cumpleaños hoy`);
+      return res.status(400).json({ 
+        error: 'Aún no es tu cumpleaños',
+        isBirthdayToday: false
+      });
+    }
+    
+    // Verificar si ya reclamó este año
+    if (birthday.lastClaimedYear === currentYear) {
+      console.log(`[BIRTHDAY CLAIM] ⚠️ Ya reclamó este año`);
+      return res.status(400).json({ 
+        error: 'Ya reclamaste tu regalo de cumpleaños este año',
+        alreadyClaimed: true
+      });
+    }
+    
+    const nxAmount = birthday.nxAwarded || 30000;
+    
+    // Actualizar BD con fecha de reclamación
+    console.log(`[BIRTHDAY CLAIM] Guardando reclamación...`);
+    await queryWeb(
+      `UPDATE BirthdayRewards 
+       SET lastClaimedYear = @currentYear, lastClaimedAt = GETDATE()
+       WHERE oidUser = @oidUser`,
+      { oidUser, currentYear }
+    );
+    console.log(`[BIRTHDAY CLAIM] ✓ Reclamación guardada`);
+    
+    res.json({
+      success: true,
+      message: `¡Feliz cumpleaños! Recibiste ${nxAmount.toLocaleString()} NX`,
+      nxAmount,
+      oidUser,
+      username
+    });
+    
+  } catch (error) {
+    console.error('[BIRTHDAY CLAIM] Error:', error.message);
+    res.status(500).json({ 
+      error: 'Error al reclamar regalo',
+      details: error.message 
+    });
+  }
+});
+
 export default router;

@@ -206,6 +206,24 @@ class ApiClient {
     return await this.request<any[]>('GET', `/claimed-rewards/${username}`);
   }
 
+  // Birthday endpoints
+  async getBirthdayInfo(username: string) {
+    return await this.request<any>('GET', `/birthday/${username}`);
+  }
+
+  async registerBirthday(username: string, birthDate: string) {
+    return await this.request<{ success: boolean; message: string }>('POST', '/birthday/register', {
+      username,
+      birthDate,
+    });
+  }
+
+  async claimBirthdayReward(username: string) {
+    return await this.request<{ success: boolean; message: string; nxAmount: number }>('POST', '/birthday/claim', {
+      username,
+    });
+  }
+
   // Payment endpoints
   async createPaymentRequest(oidUser: number, username: string, NickName: string, nxAmount: number, dollarAmount: number) {
     return await this.request<{ success: boolean; paymentId: number }>('POST', '/payments/request', {
