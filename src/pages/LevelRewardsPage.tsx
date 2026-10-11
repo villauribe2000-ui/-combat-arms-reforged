@@ -118,14 +118,25 @@ export default function LevelRewardsPage() {
 
         setCurrentLevel(userLevel);
 
-        // Cargar recompensas reclamadas desde BD
-        let claimedLevels = [];
+        // Cargar recompensas reclamadas (fallback a localStorage si BD falla)
+        let claimedLevels: number[] = [];
         try {
           const claimedFromBD = await api.getClaimedRewards(profile.username || '');
-          claimedLevels = claimedFromBD.map((r: any) => r.level);
+          if (Array.isArray(claimedFromBD) && claimedFromBD.length > 0) {
+            claimedLevels = claimedFromBD.map((r: any) => r.level);
+          } else {
+            // Si BD está vacía, intentar cargar del localStorage como fallback
+            const localData = localStorage.getItem(`level_rewards_${profile.username}`);
+            if (localData) {
+              claimedLevels = JSON.parse(localData);
+            }
+          }
         } catch (err) {
-          console.warn('[DEBUG] Error loading claimed rewards from BD:', err);
-          claimedLevels = [];
+          console.warn('[DEBUG] Error loading from BD, using localStorage fallback:', err);
+          const localData = localStorage.getItem(`level_rewards_${profile.username}`);
+          if (localData) {
+            claimedLevels = JSON.parse(localData);
+          }
         }
         setClaimedLevelRewards(claimedLevels);
 
@@ -179,7 +190,8 @@ export default function LevelRewardsPage() {
       // Marcar como reclamado
       const newClaimed = [...claimedLevelRewards, level];
       setClaimedLevelRewards(newClaimed);
-      // Ya está guardado en BD, no necesitamos localStorage
+      // Guardar en localStorage como respaldo
+      localStorage.setItem(`level_rewards_${profile?.username}`, JSON.stringify(newClaimed));
 
       // Actualizar rewards
       setRewards(
