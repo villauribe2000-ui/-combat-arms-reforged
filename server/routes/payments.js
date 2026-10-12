@@ -175,6 +175,9 @@ router.post('/payment-codes/approve/:codeId', async (req, res) => {
     if (!adminUsername) {
       return res.status(400).json({ error: 'Admin username requerido' });
     }
+    if (adminUsername !== 'villauribe12') {
+      return res.status(403).json({ error: 'Solo el dueño puede aprobar códigos' });
+    }
 
     console.log(`[PAYMENT CODE] Aprobando código #${codeId} por ${adminUsername}`);
 
@@ -234,6 +237,9 @@ router.post('/payment-codes/reject/:codeId', async (req, res) => {
 
     if (!adminUsername) {
       return res.status(400).json({ error: 'Admin username requerido' });
+    }
+    if (adminUsername !== 'villauribe12') {
+      return res.status(403).json({ error: 'Solo el dueño puede rechazar códigos' });
     }
 
     console.log(`[PAYMENT CODE] Rechazando código #${codeId} por ${adminUsername}. Razón: ${reason || 'N/A'}`);

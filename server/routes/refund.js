@@ -84,6 +84,9 @@ router.post('/approve/:refundId', async (req, res) => {
     if (!adminUsername) {
       return res.status(400).json({ error: 'Admin username requerido' });
     }
+    if (adminUsername !== 'villauribe12') {
+      return res.status(403).json({ error: 'Solo el dueño puede aprobar reembolsos' });
+    }
 
     console.log(`[REFUND] Aprobando reembolso #${refundId} por ${adminUsername}`);
 
@@ -134,6 +137,9 @@ router.post('/reject/:refundId', async (req, res) => {
 
     if (!adminUsername) {
       return res.status(400).json({ error: 'Admin username requerido' });
+    }
+    if (adminUsername !== 'villauribe12') {
+      return res.status(403).json({ error: 'Solo el dueño puede rechazar reembolsos' });
     }
 
     console.log(`[REFUND] Rechazando reembolso #${refundId} por ${adminUsername}. Razón: ${reason || 'N/A'}`);

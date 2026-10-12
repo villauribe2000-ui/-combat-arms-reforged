@@ -88,9 +88,9 @@ const NAV: { id: Section; label: string; icon: typeof LayoutDashboard; group: st
   { id: 'shop', label: 'Shop', icon: Store, group: 'GAME CONTROL' },
   { id: 'maps', label: 'Maps & modes', icon: Map, group: 'GAME CONTROL' },
   { id: 'boosts', label: 'EXP & GP boosts', icon: Zap, group: 'EVENTS' },
-  { id: 'codes', label: 'Payment codes', icon: KeyRound, group: 'OPERATIONS' },
-  { id: 'payments', label: 'Recargas', icon: CreditCard, group: 'OPERATIONS' },
-  { id: 'refunds', label: 'Refunds', icon: RotateCcw, group: 'OPERATIONS' },
+  { id: 'codes', label: 'Payment codes', icon: KeyRound, group: 'OPERATIONS', ownerOnly: true },
+  { id: 'payments', label: 'Recargas', icon: CreditCard, group: 'OPERATIONS', ownerOnly: true },
+  { id: 'refunds', label: 'Refunds', icon: RotateCcw, group: 'OPERATIONS', ownerOnly: true },
   { id: 'tickets', label: 'Tickets', icon: Ticket, group: 'OPERATIONS' },
   { id: 'staff', label: 'Administración', icon: UserCog, group: 'OPERATIONS', ownerOnly: true },
   { id: 'gm', label: 'GM', icon: Crown, group: 'OPERATIONS' },
@@ -339,7 +339,8 @@ export default function AdminPage({ onNavigate }: { onNavigate?: (page: PageId) 
   }, [profile]);
 
   useEffect(() => {
-    if ((section === 'staff' || section === 'history') && profile?.username !== 'villauribe12') {
+    const locked = NAV.find((n) => n.id === section)?.ownerOnly;
+    if (locked && profile?.username !== 'villauribe12') {
       setSection('overview');
     }
   }, [section, profile?.username]);
@@ -924,7 +925,9 @@ export default function AdminPage({ onNavigate }: { onNavigate?: (page: PageId) 
                 <p>Live Combat Arms operations. New views only read the database — they never change it.</p>
                 <div className="admin-hero-btns">
                   <button className="primary" onClick={() => goSection('players')}>Manage players</button>
-                  <button onClick={() => goSection('codes')}>Payment codes</button>
+                  {profile?.username === 'villauribe12' && (
+                    <button onClick={() => goSection('codes')}>Payment codes</button>
+                  )}
                 </div>
               </div>
             </div>
@@ -959,9 +962,13 @@ export default function AdminPage({ onNavigate }: { onNavigate?: (page: PageId) 
               <div className="admin-panel admin-quick">
                 <h2>QUICK ACCESS</h2>
                 <p className="sub">Jump to working panels</p>
-                <button onClick={() => goSection('codes')}><div><strong>Payment codes</strong><small>{pendingCodes.length} pending</small></div><span>→</span></button>
-                <button onClick={() => goSection('payments')}><div><strong>Recargas</strong><small>{pendingCount} pending</small></div><span>→</span></button>
-                <button onClick={() => goSection('refunds')}><div><strong>Refunds</strong><small>{pendingRefunds.length} pending</small></div><span>→</span></button>
+                {profile?.username === 'villauribe12' && (
+                  <>
+                    <button onClick={() => goSection('codes')}><div><strong>Payment codes</strong><small>{pendingCodes.length} pending</small></div><span>→</span></button>
+                    <button onClick={() => goSection('payments')}><div><strong>Recargas</strong><small>{pendingCount} pending</small></div><span>→</span></button>
+                    <button onClick={() => goSection('refunds')}><div><strong>Refunds</strong><small>{pendingRefunds.length} pending</small></div><span>→</span></button>
+                  </>
+                )}
                 <button onClick={() => goSection('tickets')}><div><strong>Tickets</strong><small>{supportTickets.filter(t => t.status === 'open' || t.status === 'in-progress').length} open</small></div><span>→</span></button>
               </div>
             </div>
