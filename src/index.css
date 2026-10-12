@@ -2,6 +2,7 @@
 @import './download-caevo.css';
 @import './auth-caevo.css';
 @import './account-caevo.css';
+@import './ranking-caevo.css';
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -67,7 +68,7 @@
 .brand-evo > span {
   position: relative;
   font-family: 'Barlow Condensed', Impact, sans-serif;
-  font-size: 31px;
+  font-size: 24px;
   font-weight: 800;
   letter-spacing: -0.7px;
   padding-bottom: 12px;
@@ -83,7 +84,7 @@
   left: 1px;
   font-family: 'Manrope', Arial, sans-serif;
   font-size: 12px;
-  letter-spacing: 4.7px;
+  letter-spacing: 3.2px;
   font-weight: 600;
   white-space: nowrap;
 }

@@ -1,313 +1,440 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { api } from '@/lib/api';
-import { Crown, Search, Trophy, X, TrendingUp, Target, Wallet } from 'lucide-react';
-import COFlag from '@/assets/flags/CO.png';
-import MXFlag from '@/assets/flags/MX.png';
-import ARFlag from '@/assets/flags/AR.png';
-import BRFlag from '@/assets/flags/BR.png';
-import CLFlag from '@/assets/flags/CL.png';
-import PEFlag from '@/assets/flags/PE.png';
-import VEFlag from '@/assets/flags/VE.png';
-import BOFlag from '@/assets/flags/BO.png';
-import DOFlag from '@/assets/flags/DO.png';
-import ECFlag from '@/assets/flags/EC.png';
-import SVFlag from '@/assets/flags/SV.png';
-import GTFlag from '@/assets/flags/GT.png';
-import HNFlag from '@/assets/flags/HN.png';
-import NIFlag from '@/assets/flags/NI.png';
-import PAFlag from '@/assets/flags/PA.png';
-import PYFlag from '@/assets/flags/PY.png';
-import UYFlag from '@/assets/flags/UY.png';
-import CUFlag from '@/assets/flags/CU.png';
-import HTFlag from '@/assets/flags/HT.png';
+import {
+  Award, ChevronLeft, ChevronRight, Crown, RefreshCw, Search, Shield, Sword, Target, Trophy, X,
+} from 'lucide-react';
 
-const COUNTRIES = [
-  { code: 'CO', name: 'Colombia', flag: COFlag },
-  { code: 'MX', name: 'México', flag: MXFlag },
-  { code: 'AR', name: 'Argentina', flag: ARFlag },
-  { code: 'BR', name: 'Brasil', flag: BRFlag },
-  { code: 'CL', name: 'Chile', flag: CLFlag },
-  { code: 'PE', name: 'Perú', flag: PEFlag },
-  { code: 'VE', name: 'Venezuela', flag: VEFlag },
-  { code: 'BO', name: 'Bolivia', flag: BOFlag },
-  { code: 'DO', name: 'República Dominicana', flag: DOFlag },
-  { code: 'EC', name: 'Ecuador', flag: ECFlag },
-  { code: 'SV', name: 'El Salvador', flag: SVFlag },
-  { code: 'GT', name: 'Guatemala', flag: GTFlag },
-  { code: 'HN', name: 'Honduras', flag: HNFlag },
-  { code: 'NI', name: 'Nicaragua', flag: NIFlag },
-  { code: 'PA', name: 'Panamá', flag: PAFlag },
-  { code: 'PY', name: 'Paraguay', flag: PYFlag },
-  { code: 'UY', name: 'Uruguay', flag: UYFlag },
-  { code: 'CU', name: 'Cuba', flag: CUFlag },
-  { code: 'HT', name: 'Haití', flag: HTFlag },
-];
+type TabId = 'exp' | 'clans' | 'kda' | 'kills' | 'wins';
 
 interface Player {
   id: number;
   username: string;
-  NickName: string;
+  NickName?: string;
+  nickname?: string;
   kills: number;
   deaths: number;
   wins: number;
   losses: number;
-  Money?: number;
-  avatar_url?: string;
-  country?: string;
-  countryFlag?: string;
+  experience?: number;
+  exp?: number;
+  level?: number;
   rank?: number;
   rankName?: string;
   isGM?: boolean;
 }
 
+interface Clan {
+  GuildID: number;
+  GuildName: string;
+  MasterCharName: string;
+  members: number;
+  stats: {
+    totalWins: number;
+    totalLosses: number;
+    exp: number;
+    points: number;
+  };
+}
+
+const PAGE_SIZE = 10;
+
+const TABS: { id: TabId; label: string; icon: typeof Award }[] = [
+  { id: 'exp', label: 'Player EXP', icon: Award },
+  { id: 'clans', label: 'Clans', icon: Shield },
+  { id: 'kda', label: 'KDA', icon: Target },
+  { id: 'kills', label: 'Kills', icon: Sword },
+  { id: 'wins', label: 'Wins', icon: Trophy },
+];
+
+function playerName(p: Player) {
+  return p.NickName || p.nickname || p.username;
+}
+
+function playerExp(p: Player) {
+  const value = Number(p.experience ?? p.exp ?? 0);
+  if (value > 0) return value;
+  return (p.wins || 0) * 100 + (p.kills || 0);
+}
+
+function playerKd(p: Player) {
+  return p.deaths > 0 ? p.kills / p.deaths : p.kills;
+}
+
+function fmt(n: number, digits = 0) {
+  return n.toLocaleString(undefined, { maximumFractionDigits: digits, minimumFractionDigits: digits });
+}
+
+function scoreFor(tab: TabId, p: Player) {
+  if (tab === 'kda') return playerKd(p);
+  if (tab === 'kills') return p.kills || 0;
+  if (tab === 'wins') return p.wins || 0;
+  return playerExp(p);
+}
+
+function scoreLabel(tab: TabId) {
+  if (tab === 'kda') return 'KDA';
+  if (tab === 'kills') return 'KILLS';
+  if (tab === 'wins') return 'WINS';
+  if (tab === 'clans') return 'CLAN EXP';
+  return 'EXP';
+}
+
 export default function RankingsPage() {
+  const [tab, setTab] = useState<TabId>('exp');
   const [players, setPlayers] = useState<Player[]>([]);
+  const [clans, setClans] = useState<Clan[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
-  const [selectedPlayer, setSelectedPlayer] = useState<Player | null>(null);
+  const [page, setPage] = useState(1);
+  const [selected, setSelected] = useState<Player | null>(null);
 
-  useEffect(() => {
-    (async () => {
-      try {
-        const data = await api.getTopPlayers(100);
-        
-        const playersWithAvatars = data.map((player: Player) => {
-          const stored = localStorage.getItem(`profile_${player.username}`);
-          const storedData = stored ? JSON.parse(stored) : {};
-          return {
-            ...player,
-            avatar_url: storedData.avatar_url,
-            country: storedData.country,
-          };
-        });
-        
-        setPlayers(playersWithAvatars);
-      } catch (error) {
-        console.error('Error fetching players:', error);
+  const load = useCallback(async (silent = false) => {
+    if (!silent) setLoading(true);
+    try {
+      const [top, clanList] = await Promise.all([
+        api.getTopPlayers(100),
+        api.getClans().catch(() => []),
+      ]);
+      setPlayers(Array.isArray(top) ? top : []);
+      setClans(Array.isArray(clanList) ? clanList : []);
+    } catch (error) {
+      console.error('Error fetching rankings:', error);
+      if (!silent) {
         setPlayers([]);
+        setClans([]);
       }
-      setLoading(false);
-    })();
+    } finally {
+      if (!silent) setLoading(false);
+    }
   }, []);
 
-  const filtered = players.filter(p => {
-    const matchSearch = (p.NickName || p.username).toLowerCase().includes(search.toLowerCase());
-    return matchSearch;
-  });
+  useEffect(() => {
+    load();
+    const id = window.setInterval(() => load(true), 30000);
+    return () => window.clearInterval(id);
+  }, [load]);
 
-  const getCountryFlag = (countryCode?: string) => {
-    if (!countryCode) return '';
-    const country = COUNTRIES.find(c => c.code === countryCode);
-    return country ? country.flag : '';
-  };
+  useEffect(() => {
+    setPage(1);
+  }, [tab, search]);
+
+  const rankedPlayers = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    const list = players
+      .filter(p => !q || playerName(p).toLowerCase().includes(q) || p.username.toLowerCase().includes(q))
+      .slice()
+      .sort((a, b) => scoreFor(tab === 'clans' ? 'exp' : tab, b) - scoreFor(tab === 'clans' ? 'exp' : tab, a));
+    return list;
+  }, [players, search, tab]);
+
+  const rankedClans = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    return clans
+      .filter(c => !q || c.GuildName.toLowerCase().includes(q) || (c.MasterCharName || '').toLowerCase().includes(q))
+      .slice()
+      .sort((a, b) => (b.stats?.exp || 0) - (a.stats?.exp || 0) || (b.stats?.points || 0) - (a.stats?.points || 0));
+  }, [clans, search]);
+
+  const isClans = tab === 'clans';
+  const total = isClans ? rankedClans.length : rankedPlayers.length;
+  const pages = Math.max(1, Math.ceil(total / PAGE_SIZE));
+  const pageSafe = Math.min(page, pages);
+  const sliceStart = (pageSafe - 1) * PAGE_SIZE;
+  const pagePlayers = rankedPlayers.slice(sliceStart, sliceStart + PAGE_SIZE);
+  const pageClans = rankedClans.slice(sliceStart, sliceStart + PAGE_SIZE);
+  const leaders = isClans ? rankedClans.slice(0, 3) : rankedPlayers.slice(0, 3);
+
+  const boardTitle = isClans ? 'CLAN LEADERBOARD' : 'PLAYER LEADERBOARD';
+  const liveNote = isClans
+    ? 'Clans ranked by EXP from live server data.'
+    : tab === 'exp'
+      ? 'Players ranked by EXP. Live data refreshes every 30 seconds.'
+      : `Players ranked by ${scoreLabel(tab)}. Live data refreshes every 30 seconds.`;
 
   return (
-    <div className="space-y-6 pb-12">
-      <div>
-        <h1 className="text-3xl font-black">Rankings</h1>
-        <p className="mt-1 text-slate-400">Los mejores jugadores de la plataforma</p>
-      </div>
-
-      {/* Podium */}
-      {filtered.length >= 3 && !search && (
-        <div className="grid grid-cols-3 gap-4 lg:gap-6">
-          <PodiumCard player={filtered[1]} place={2} className="mt-8" onClick={() => setSelectedPlayer(filtered[1])} countryFlag={getCountryFlag(filtered[1].country)} />
-          <PodiumCard player={filtered[0]} place={1} onClick={() => setSelectedPlayer(filtered[0])} countryFlag={getCountryFlag(filtered[0].country)} />
-          <PodiumCard player={filtered[2]} place={3} className="mt-12" onClick={() => setSelectedPlayer(filtered[2])} countryFlag={getCountryFlag(filtered[2].country)} />
+    <main className="inner-page page-width ranking-page">
+      <header className="page-heading">
+        <div>
+          <p className="eyebrow"><span className="tiny-square" />THE PROVING GROUND</p>
+          <h1>EARN YOUR PLACE.</h1>
+          <p className="page-heading-description">
+            Every match counts. Explore the soldiers and squads at the top of the leaderboard.
+          </p>
         </div>
-      )}
-
-      {/* Search */}
-      <div className="relative flex-1">
-        <Search className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-500" />
-        <input
-          value={search}
-          onChange={e => setSearch(e.target.value)}
-          placeholder="Buscar jugador..."
-          className="w-full rounded-xl border border-white/10 bg-[#0d1320] py-2.5 pl-11 pr-4 text-sm text-white outline-none focus:border-cyan-500/50"
-        />
-      </div>
-
-      {/* Table */}
-      <div className="overflow-hidden rounded-2xl border border-white/5 bg-[#0d1320]">
-        <div className="grid grid-cols-12 gap-2 border-b border-white/5 px-6 py-3 text-xs uppercase tracking-wider text-slate-500">
-          <div className="col-span-1">#</div>
-          <div className="col-span-5 sm:col-span-4">Personaje</div>
-          <div className="col-span-2">Kills</div>
-          <div className="col-span-2">Muertes</div>
-          <div className="col-span-2 text-right">K/D Ratio</div>
+        <div className="page-heading-aside">
+          <span className="ranking-live-badge">
+            <Trophy className="h-[15px] w-[15px]" /> Live rankings
+          </span>
         </div>
-        {loading ? (
-          <div className="px-6 py-12 text-center">
-            <div className="mx-auto h-6 w-6 animate-spin rounded-full border-2 border-cyan-500/30 border-t-cyan-400" />
-          </div>
-        ) : filtered.length === 0 ? (
-          <div className="px-6 py-12 text-center text-slate-500">
-            <Trophy className="mx-auto h-10 w-10 text-slate-600" />
-            <p className="mt-3">No se encontraron jugadores</p>
-          </div>
-        ) : (
-          filtered.map((player, i) => {
-            const kdRatio = player.deaths > 0 ? (player.kills / player.deaths).toFixed(2) : player.kills.toFixed(2);
-            const rankImage = player.isGM ? '/src/assets/ranks/RANK_GM.png' : `/src/assets/ranks/RANK_${player.rank || 0}.png`;
-            return (
-              <div 
-                key={player.id} 
-                className={`grid grid-cols-12 gap-2 px-6 py-3.5 items-center transition-colors hover:bg-white/5 cursor-pointer ${i !== filtered.length - 1 ? 'border-b border-white/5' : ''}`}
-                onClick={() => setSelectedPlayer(player)}
-              >
-                <div className="col-span-1">
-                  <span className={`flex h-8 w-8 items-center justify-center rounded-lg text-sm font-bold ${
-                    i === 0 ? 'bg-amber-500/20 text-amber-400' : i === 1 ? 'bg-slate-400/20 text-slate-300' : i === 2 ? 'bg-amber-700/20 text-amber-600' : 'bg-white/5 text-slate-400'
-                  }`}>
-                    {i < 3 ? <Crown className="h-4 w-4" /> : i + 1}
-                  </span>
-                </div>
-                <div className="col-span-5 sm:col-span-4 flex items-center gap-3">
-                  <img 
-                    src={player.isGM ? '/src/assets/ranks/RANK_GM.png' : `/src/assets/ranks/RANK_${player.rank || 0}.png`}
-                    alt="rank"
-                    className="h-9 w-9 object-contain flex-shrink-0"
-                    onError={(e) => {
-                      e.currentTarget.src = '/src/assets/ranks/RANK_0.png';
-                    }}
-                  />
-                  <div className="min-w-0 flex items-center gap-2 -mt-1">
-                    <p className="truncate text-sm font-semibold text-white">
-                      {player.NickName || player.username}
-                    </p>
-                    {getCountryFlag(player.country) && (
-                      <img src={getCountryFlag(player.country)} alt="country" className="h-5 w-7 rounded-sm flex-shrink-0 object-cover" />
-                    )}
-                  </div>
-                </div>
-                <div className="col-span-2">
-                  <span className="font-bold text-emerald-400">{player.kills.toLocaleString()}</span>
-                </div>
-                <div className="col-span-2">
-                  <span className="font-bold text-rose-400">{player.deaths.toLocaleString()}</span>
-                </div>
-                <div className="col-span-2 text-right">
-                  <span className="font-bold text-cyan-400">{kdRatio}</span>
-                </div>
-              </div>
-            );
-          })
-        )}
-      </div>
+      </header>
 
-      {/* Modal de Perfil */}
-      {selectedPlayer && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
-          <div className="relative w-full max-w-2xl rounded-3xl border border-white/10 bg-gradient-to-br from-[#0d1320] to-[#0a0e17] p-8 shadow-2xl">
-            {/* Close button */}
+      <div className="ranking-tabs" role="tablist" aria-label="Ranking category">
+        {TABS.map(item => {
+          const Icon = item.icon;
+          const active = tab === item.id;
+          return (
             <button
-              onClick={() => setSelectedPlayer(null)}
-              className="absolute right-4 top-4 rounded-lg p-2 text-slate-400 hover:bg-white/10 hover:text-white transition"
+              key={item.id}
+              type="button"
+              role="tab"
+              aria-selected={active}
+              className={`ranking-tab${active ? ' ranking-tab-active' : ''}`}
+              onClick={() => setTab(item.id)}
             >
-              <X className="h-5 w-5" />
+              <Icon size={18} />
+              {item.label}
             </button>
+          );
+        })}
+      </div>
 
-            <div className="grid grid-cols-1 gap-8 sm:grid-cols-2">
-              {/* Avatar Grande */}
-              <div className="flex flex-col items-center justify-center">
-                <div className="mb-4 h-40 w-40 flex items-center justify-center">
-                  <img 
-                    src={selectedPlayer.isGM ? '/src/assets/ranks/RANK_GM.png' : `/src/assets/ranks/RANK_${selectedPlayer.rank || 0}.png`} 
-                    alt={selectedPlayer.isGM ? "GM" : "rank"} 
-                    className="h-32 w-32 object-contain"
-                    onError={(e) => {
-                      e.currentTarget.src = '/src/assets/ranks/RANK_0.png';
-                    }}
-                  />
-                </div>
+      {loading ? (
+        <div className="ranking-loading ranking-empty">
+          <RefreshCw className="mx-auto h-8 w-8" />
+          <h3>LOADING RANKS</h3>
+          <p>Pulling live Combat Arms data.</p>
+        </div>
+      ) : (
+        <>
+          {leaders.length > 0 && !search && (
+            <div className="ranking-leaders">
+              {leaders.map((entry, i) => {
+                const place = i + 1;
+                if (isClans) {
+                  const clan = entry as Clan;
+                  return (
+                    <article key={clan.GuildID} className={`ranking-leader${place === 1 ? ' ranking-leader-1' : ''}`}>
+                      <div className="ranking-leader-top">
+                        <div className="ranking-place">
+                          {place} <span>PLACE</span>
+                        </div>
+                        {place === 1 ? <Crown size={18} /> : <Shield size={16} />}
+                      </div>
+                      <div className="ranking-leader-identity">
+                        <div className="ranking-emblem"><span>CLN</span></div>
+                        <div>
+                          <h2>{clan.GuildName}</h2>
+                          <p>{clan.MasterCharName || 'CLAN'}</p>
+                        </div>
+                      </div>
+                      <div className="ranking-leader-score">
+                        <strong>{fmt(clan.stats?.exp || 0)}</strong>
+                        <span>CLAN EXP</span>
+                      </div>
+                    </article>
+                  );
+                }
+                const player = entry as Player;
+                return (
+                  <article
+                    key={player.id}
+                    className={`ranking-leader${place === 1 ? ' ranking-leader-1' : ''}`}
+                    onClick={() => setSelected(player)}
+                    style={{ cursor: 'pointer' }}
+                  >
+                    <div className="ranking-leader-top">
+                      <div className="ranking-place">
+                        {place} <span>PLACE</span>
+                      </div>
+                      {place === 1 ? <Crown size={18} /> : <Award size={16} />}
+                    </div>
+                    <div className="ranking-leader-identity">
+                      <div className="ranking-emblem"><span>{place === 1 ? '01' : place === 2 ? '02' : '03'}</span></div>
+                      <div>
+                        <h2>{playerName(player)}</h2>
+                        <p>{player.isGM ? 'GAME MASTER' : player.rankName || 'SOLDIER'}</p>
+                      </div>
+                    </div>
+                    <div className="ranking-leader-score">
+                      <strong>{tab === 'kda' ? fmt(playerKd(player), 2) : fmt(scoreFor(tab, player))}</strong>
+                      <span>{scoreLabel(tab)}</span>
+                    </div>
+                  </article>
+                );
+              })}
+            </div>
+          )}
+
+          <section className="ranking-board">
+            <div className="ranking-toolbar">
+              <div className="ranking-board-title">
+                {isClans ? <Shield size={20} /> : <Trophy size={20} />}
+                <h2>{boardTitle}</h2>
+                <span>LIVE</span>
               </div>
-
-              {/* Detalles */}
-              <div className="space-y-6">
-                <div>
-                  <div className="flex items-center gap-4 mb-1">
-                    <h2 className="text-3xl font-black text-white">{selectedPlayer.NickName}</h2>
-                    {getCountryFlag(selectedPlayer.country) && (
-                      <img src={getCountryFlag(selectedPlayer.country)} alt="country" className="h-10 w-14 rounded-lg object-cover" />
-                    )}
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                  <StatDetail icon={Target} label="Kills" value={selectedPlayer.kills.toLocaleString()} color="text-emerald-400" />
-                  <StatDetail icon={Trophy} label="Muertes" value={selectedPlayer.deaths.toLocaleString()} color="text-rose-400" />
-                  <StatDetail icon={TrendingUp} label="K/D Ratio" value={(selectedPlayer.deaths > 0 ? (selectedPlayer.kills / selectedPlayer.deaths).toFixed(2) : selectedPlayer.kills.toFixed(2))} color="text-cyan-400" />
-                  <StatDetail icon={Wallet} label="Victorias" value={selectedPlayer.wins.toLocaleString()} color="text-blue-400" />
-                </div>
-
-                <div className="rounded-xl border border-white/10 bg-white/5 p-4">
-                  <p className="text-xs uppercase tracking-wider text-slate-500">Derrotas</p>
-                  <p className="mt-1 text-2xl font-bold text-rose-400">{selectedPlayer.losses.toLocaleString()}</p>
-                </div>
-
-                <button
-                  onClick={() => setSelectedPlayer(null)}
-                  className="w-full rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 px-6 py-3 font-semibold text-white transition-all hover:scale-105"
-                >
-                  Cerrar
+              <div className="ranking-controls">
+                <label className="ranking-search">
+                  <Search size={14} />
+                  <input
+                    value={search}
+                    onChange={e => setSearch(e.target.value)}
+                    placeholder={isClans ? 'Search clan...' : 'Search player...'}
+                  />
+                  {search && (
+                    <button type="button" className="ranking-clear-search" onClick={() => setSearch('')}>
+                      <X size={14} />
+                    </button>
+                  )}
+                </label>
+                <button type="button" className="ranking-refresh" onClick={() => load()}>
+                  <RefreshCw size={14} /> Refresh
                 </button>
               </div>
+            </div>
+
+            <div className="ranking-table-scroll">
+              {isClans ? (
+                pageClans.length === 0 ? (
+                  <div className="ranking-empty">
+                    <Shield className="mx-auto h-8 w-8" />
+                    <h3>NO CLANS YET</h3>
+                    <p>No clans match this search.</p>
+                  </div>
+                ) : (
+                  <table className="ranking-table">
+                    <thead>
+                      <tr>
+                        <th>#</th>
+                        <th>CLAN</th>
+                        <th>MASTER</th>
+                        <th>MEMBERS</th>
+                        <th className="ranking-active-column">EXP</th>
+                        <th>WINS</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {pageClans.map((clan, i) => {
+                        const rank = sliceStart + i + 1;
+                        return (
+                          <tr key={clan.GuildID}>
+                            <td>
+                              <span className={`ranking-row-position${rank <= 3 ? ' ranking-row-top' : ''}`}>
+                                {rank <= 3 && <Crown size={12} />}
+                                {rank}
+                              </span>
+                            </td>
+                            <td>
+                              <div className="ranking-row-identity">
+                                <span className="ranking-row-avatar ranking-player-emblem"><Shield size={16} /></span>
+                                <div className="ranking-row-name">
+                                  {clan.GuildName}
+                                  <small>CLAN</small>
+                                </div>
+                              </div>
+                            </td>
+                            <td>{clan.MasterCharName || '—'}</td>
+                            <td>{clan.members ?? 0}</td>
+                            <td className="ranking-active-column">{fmt(clan.stats?.exp || 0)}</td>
+                            <td>{fmt(clan.stats?.totalWins || 0)}</td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                )
+              ) : pagePlayers.length === 0 ? (
+                <div className="ranking-empty">
+                  <Trophy className="mx-auto h-8 w-8" />
+                  <h3>NO PLAYERS YET</h3>
+                  <p>No soldiers match this search.</p>
+                </div>
+              ) : (
+                <table className="ranking-table">
+                  <thead>
+                    <tr>
+                      <th>#</th>
+                      <th>PLAYER</th>
+                      <th className={tab === 'exp' ? 'ranking-active-column' : ''}>EXP</th>
+                      <th className={tab === 'kills' ? 'ranking-active-column' : ''}>KILLS</th>
+                      <th>DEATHS</th>
+                      <th className={tab === 'kda' ? 'ranking-active-column' : ''}>KDA</th>
+                      <th className={tab === 'wins' ? 'ranking-active-column' : ''}>WINS</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {pagePlayers.map((player, i) => {
+                      const rank = sliceStart + i + 1;
+                      return (
+                        <tr key={player.id} onClick={() => setSelected(player)} style={{ cursor: 'pointer' }}>
+                          <td>
+                            <span className={`ranking-row-position${rank <= 3 ? ' ranking-row-top' : ''}`}>
+                              {rank <= 3 && <Crown size={12} />}
+                              {rank}
+                            </span>
+                          </td>
+                          <td>
+                            <div className="ranking-row-identity">
+                              <span className="ranking-row-avatar ranking-player-emblem"><Award size={16} /></span>
+                              <div className="ranking-row-name">
+                                {playerName(player)}
+                                <small>{player.isGM ? 'GAME MASTER' : player.rankName || 'SOLDIER'}</small>
+                              </div>
+                            </div>
+                          </td>
+                          <td className={tab === 'exp' ? 'ranking-active-column' : ''}>{fmt(playerExp(player))}</td>
+                          <td className={tab === 'kills' ? 'ranking-active-column' : ''}>{fmt(player.kills || 0)}</td>
+                          <td>{fmt(player.deaths || 0)}</td>
+                          <td className={tab === 'kda' ? 'ranking-active-column' : ''}>{fmt(playerKd(player), 2)}</td>
+                          <td className={tab === 'wins' ? 'ranking-active-column' : ''}>{fmt(player.wins || 0)}</td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              )}
+            </div>
+
+            <div className="ranking-board-footer">
+              <p>
+                Showing <strong>{total === 0 ? 0 : sliceStart + 1}–{Math.min(sliceStart + PAGE_SIZE, total)}</strong> of <strong>{total}</strong>
+              </p>
+              <div className="ranking-pagination">
+                <button type="button" disabled={pageSafe <= 1} onClick={() => setPage(p => Math.max(1, p - 1))} aria-label="Previous">
+                  <ChevronLeft size={14} />
+                </button>
+                {Array.from({ length: pages }, (_, i) => i + 1).slice(0, 8).map(n => (
+                  <button
+                    key={n}
+                    type="button"
+                    aria-current={n === pageSafe ? 'page' : undefined}
+                    onClick={() => setPage(n)}
+                  >
+                    {n}
+                  </button>
+                ))}
+                <button type="button" disabled={pageSafe >= pages} onClick={() => setPage(p => Math.min(pages, p + 1))} aria-label="Next">
+                  <ChevronRight size={14} />
+                </button>
+              </div>
+            </div>
+          </section>
+
+          <div className="ranking-notes">
+            <p><span>NOTE</span>{liveNote}</p>
+            <p>Rankings use Combat Arms Reforged live stats.</p>
+          </div>
+        </>
+      )}
+
+      {selected && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4" onClick={() => setSelected(null)}>
+          <div className="ranking-leader ranking-leader-1 w-full max-w-md" onClick={e => e.stopPropagation()}>
+            <div className="ranking-leader-top">
+              <div className="ranking-place">{playerName(selected)} <span>SOLDIER</span></div>
+              <button type="button" className="ranking-clear-search" onClick={() => setSelected(null)}><X size={18} /></button>
+            </div>
+            <div className="ranking-leader-score">
+              <strong>{fmt(playerExp(selected))}</strong><span>EXP</span>
+            </div>
+            <div className="mt-4 grid grid-cols-2 gap-3 text-sm text-[#b8b8b8]">
+              <p>Kills <strong className="block text-white">{fmt(selected.kills || 0)}</strong></p>
+              <p>Deaths <strong className="block text-white">{fmt(selected.deaths || 0)}</strong></p>
+              <p>KDA <strong className="block text-white">{fmt(playerKd(selected), 2)}</strong></p>
+              <p>Wins <strong className="block text-white">{fmt(selected.wins || 0)}</strong></p>
             </div>
           </div>
         </div>
       )}
-    </div>
-  );
-}
-
-function PodiumCard({ player, place, className = '', onClick, countryFlag = '' }: { player: Player; place: number; className?: string; onClick: () => void; countryFlag?: string }) {
-  const kdRatio = player.deaths > 0 ? (player.kills / player.deaths).toFixed(2) : player.kills.toFixed(2);
-  const colors = {
-    1: 'from-amber-500/20 to-amber-700/5 border-amber-500/30',
-    2: 'from-slate-400/15 to-slate-600/5 border-slate-400/20',
-    3: 'from-amber-700/15 to-orange-900/5 border-amber-700/20',
-  };
-  const iconColors = { 1: 'text-amber-400', 2: 'text-slate-300', 3: 'text-amber-600' };
-  const heights = { 1: 'h-40', 2: 'h-32', 3: 'h-28' };
-
-  const rankImage = player.isGM ? '/src/assets/ranks/RANK_GM.png' : `/src/assets/ranks/RANK_${player.rank || 0}.png`;
-
-  return (
-    <div className={`flex flex-col items-center cursor-pointer ${className}`} onClick={onClick}>
-      <div className={`relative overflow-hidden rounded-2xl border bg-gradient-to-br ${colors[place as 1 | 2 | 3]} p-5 text-center transition-transform hover:scale-105`}>
-        <div className="relative mx-auto mb-3 flex h-20 w-20 items-center justify-center">
-          <img 
-            src={rankImage} 
-            alt="rank" 
-            className="h-full w-full object-contain"
-            onError={(e) => {
-              e.currentTarget.src = '/src/assets/ranks/RANK_0.png';
-            }}
-          />
-          {place === 1 && <Crown className={`absolute top-0 left-1/2 h-7 w-7 -translate-x-1/2 -translate-y-2 ${iconColors[1]}`} fill="currentColor" />}
-          {place === 2 && <Crown className={`absolute top-0 left-1/2 h-5 w-5 -translate-x-1/2 -translate-y-1 text-slate-300`} fill="currentColor" />}
-          {place === 3 && <Crown className={`absolute top-0 left-1/2 h-5 w-5 -translate-x-1/2 -translate-y-1 text-amber-600`} fill="currentColor" />}
-        </div>
-        <p className="truncate text-sm font-bold text-white">{player.NickName || player.username}</p>
-        <p className={`mt-2 text-2xl font-black ${iconColors[place as 1 | 2 | 3]}`}>{player.kills.toLocaleString()}</p>
-        <p className="text-[10px] uppercase tracking-wider text-slate-500">kills</p>
-      </div>
-      <div className={`mt-2 w-full rounded-b-xl bg-gradient-to-t ${colors[place as 1 | 2 | 3]} ${heights[place as 1 | 2 | 3]} flex items-start justify-center pt-2`}>
-        <span className={`text-4xl font-black ${iconColors[place as 1 | 2 | 3]}`}>{place}</span>
-      </div>
-    </div>
-  );
-}
-
-function StatDetail({ icon: Icon, label, value, color }: { icon: typeof Target; label: string; value: string; color: string }) {
-  return (
-    <div className="rounded-lg border border-white/10 bg-white/5 p-3">
-      <div className="flex items-center gap-2">
-        <Icon className={`h-4 w-4 ${color}`} />
-        <p className="text-xs uppercase tracking-wider text-slate-500">{label}</p>
-      </div>
-      <p className={`mt-2 text-xl font-bold ${color}`}>{value}</p>
-    </div>
+    </main>
   );
 }

@@ -39,7 +39,7 @@ type Props = {
 export default function Layout({ currentPage, onNavigate, children }: Props) {
   const { profile, loading, signOut } = useAuth();
   const [mobileOpen, setMobileOpen] = useState(false);
-  const publicPages: PageId[] = ['home', 'guide', 'download', 'signin', 'signup'];
+  const publicPages: PageId[] = ['home', 'guide', 'download', 'signin', 'signup', 'rankings'];
   const isPublic = publicPages.includes(currentPage);
   const isFullBleed = isPublic || currentPage === 'profile';
 
@@ -59,35 +59,35 @@ export default function Layout({ currentPage, onNavigate, children }: Props) {
           <button
             key={item.id}
             onClick={() => go(item.id)}
-            className={`${mobile ? 'flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left' : 'relative flex items-center gap-1.5 px-2.5 py-2'} text-[13px] font-medium tracking-wide transition-colors ${
+            className={`${mobile ? 'flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left' : 'relative flex shrink-0 items-center gap-1 px-1.5 py-2'} text-[12px] font-medium tracking-wide transition-colors ${
               active ? 'text-white' : 'text-neutral-400 hover:text-white'
             }`}
           >
-            <Icon className="h-3.5 w-3.5" />
+            <Icon className={mobile ? 'h-3.5 w-3.5' : 'hidden'} />
             {item.label}
             {!mobile && active && (
-              <span className="absolute bottom-0 left-2 right-2 h-0.5 bg-[#f5a000]" />
+              <span className="absolute bottom-0 left-1 right-1 h-0.5 bg-[#f5a000]" />
             )}
           </button>
         );
       })}
       <button
         onClick={() => go('download')}
-        className={`${mobile ? 'flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left' : 'relative flex items-center gap-1.5 px-2.5 py-2'} text-[13px] font-medium tracking-wide transition-colors ${
+        className={`${mobile ? 'flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left' : 'relative flex shrink-0 items-center gap-1 px-1.5 py-2'} text-[12px] font-medium tracking-wide transition-colors ${
           currentPage === 'download' ? 'text-white' : 'text-neutral-400 hover:text-white'
         }`}
       >
-        <Download className="h-3.5 w-3.5" />
+        <Download className={mobile ? 'h-3.5 w-3.5' : 'hidden'} />
         Download
         {!mobile && currentPage === 'download' && (
-          <span className="absolute bottom-0 left-2 right-2 h-0.5 bg-[#f5a000]" />
+          <span className="absolute bottom-0 left-1 right-1 h-0.5 bg-[#f5a000]" />
         )}
       </button>
       <a
         href={DISCORD_URL}
         target="_blank"
         rel="noopener noreferrer"
-        className={`${mobile ? 'flex w-full items-center gap-3 rounded-lg px-3 py-2.5' : 'flex items-center gap-1.5 px-2.5 py-2'} text-[13px] font-medium text-[#5865F2] transition-colors hover:text-[#7983f5]`}
+        className={`${mobile ? 'flex w-full items-center gap-3 rounded-lg px-3 py-2.5' : 'flex shrink-0 items-center gap-1 px-1.5 py-2'} text-[12px] font-medium text-[#5865F2] transition-colors hover:text-[#7983f5]`}
       >
         <img src="/caevo/discord-mark-white.svg" alt="" className="h-3.5 w-3.5" />
         Discord
@@ -98,16 +98,16 @@ export default function Layout({ currentPage, onNavigate, children }: Props) {
   return (
     <div className="min-h-screen bg-[#101010] text-[#f2f2f2]">
       <header className="sticky top-0 z-40 h-[88px] border-b border-[#333] bg-[#141414]">
-        <div className="mx-auto flex h-full max-w-[1568px] items-center gap-8 px-4 lg:px-16">
+        <div className="flex h-full w-full items-center gap-3 pl-2 pr-3 lg:gap-4 lg:pl-3 lg:pr-4">
           <button onClick={() => go('home')} className="brand-evo shrink-0">
-            <img src="/caevo/ca.ico" alt="" className="h-10 w-10 object-contain" />
+            <img src="/caevo/ca.ico" alt="" className="h-8 w-8 object-contain" />
             <span>
               COMBAT<span className="brand-arms">ARMS</span>
               <small>EVOLUTION</small>
             </span>
           </button>
 
-          <nav className="hidden min-w-0 flex-1 items-center justify-center overflow-x-auto lg:flex">
+          <nav className="hidden min-w-0 flex-1 items-center justify-start overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden lg:flex">
             <NavButtons />
           </nav>
 
