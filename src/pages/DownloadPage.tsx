@@ -2,7 +2,7 @@ import {
   ArrowDownToLine, ArrowRight, Check, ChevronRight, Cpu, Download, HardDrive, Info, Monitor, Package, Settings2, ShieldCheck, Wifi,
 } from 'lucide-react';
 
-export const CLIENT_DOWNLOAD_URL = 'https://www.mediafire.com/file/70z692y8n25zi8r/CombatArmsReforged.rar/file';
+export const CLIENT_DOWNLOAD_URL = 'https://www.mediafire.com/file/guyr0lpfza2ww69/CombatArmsEvolution-Setup.exe/file';
 
 const SPECS = [
   { icon: Cpu, name: 'Processor', sub: 'CPU', min: 'Intel Pentium III · 1 GHz+', rec: 'Intel Pentium 4 · 2.4 GHz+' },
@@ -44,7 +44,7 @@ export default function DownloadPage() {
           <p>The original battlefield. Your next chapter.</p>
           <div className="download-release-meta">
             <span>Windows installer</span>
-            <span>7.8 MB</span>
+            <span>2.64 GB</span>
             <span>.EXE</span>
           </div>
           <div className="download-buttons">
@@ -63,7 +63,7 @@ export default function DownloadPage() {
             <summary>
               <ShieldCheck size={14} /> File information
             </summary>
-            <p>CombatArmsReforged.rar</p>
+            <p>CombatArmsEvolution-Setup.exe</p>
             <span>Download source</span>
             <code>MediaFire</code>
           </details>
