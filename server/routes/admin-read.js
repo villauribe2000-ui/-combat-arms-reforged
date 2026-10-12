@@ -1074,13 +1074,43 @@ router.get('/maps', async (_req, res) => {
 });
 
 router.get('/boosts', async (_req, res) => {
+  const nowRow = await ca(`SELECT GETDATE() as now`);
+  const now = nowRow[0]?.now ? new Date(nowRow[0].now) : new Date();
+  const modes = await ca(`SELECT Mode, Name FROM CBT_GameMode`);
+  const maps = await ca(`SELECT MapID, Name FROM CBT_GameMap`);
+  const modeMap = Object.fromEntries(modes.map((m) => [m.Mode, m.Name]));
+  const mapMap = Object.fromEntries(maps.map((m) => [m.MapID, m.Name]));
   const events = await ca(`
     SELECT EventID, LobbyServerID, ModeID, MapID, EXPRate, GPRate, BeginTime, EndTime, Enable, [Desc] as description
-    FROM CBT_EventEXPGP ORDER BY BeginTime DESC`);
-  const hottime = await ca(`
-    SELECT SeqNo, EventID, RewardID, BeginTime, EndTime, Enable, DurationHour, Description, PcCafeOnly
-    FROM CBT___HottimeRegister ORDER BY BeginTime DESC`);
-  res.json({ events, hottime, source: 'CBT_EventEXPGP + CBT___HottimeRegister' });
+    FROM CBT_EventEXPGP ORDER BY EventID DESC`);
+  const data = events.map((e) => {
+    const start = e.BeginTime ? new Date(e.BeginTime) : null;
+    const end = e.EndTime ? new Date(e.EndTime) : null;
+    let status = 'ENDED';
+    if (start && end && now >= start && now <= end && Number(e.Enable) === 1) status = 'RUNNING';
+    else if (start && now < start && Number(e.Enable) === 1) status = 'SCHEDULED';
+    const modeName = e.ModeID < 0 ? 'All modes' : (modeMap[e.ModeID] || `Mode ${e.ModeID}`);
+    const mapName = e.MapID < 0 ? 'all maps' : (mapMap[e.MapID] || `Map ${e.MapID}`);
+    return {
+      ...e,
+      name: e.description || `Event ${e.EventID}`,
+      where: `${modeName} · ${mapName}`,
+      expLabel: `+${Number(e.EXPRate || 0)}`,
+      gpLabel: `x${Number(e.GPRate || 0)}`,
+      status,
+    };
+  });
+  const running = data.filter((e) => e.status === 'RUNNING');
+  const expSum = running.reduce((s, e) => s + Number(e.EXPRate || 0), 0);
+  const gpSum = running.reduce((s, e) => s + Number(e.GPRate || 0), 0);
+  res.json({
+    data,
+    running: running.length,
+    expSum,
+    gpSum,
+    serverNow: now.toISOString(),
+    source: 'CBT_EventEXPGP',
+  });
 });
 
 export default router;

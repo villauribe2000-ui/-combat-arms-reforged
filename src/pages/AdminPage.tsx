@@ -1586,29 +1586,56 @@ export default function AdminPage({ onNavigate }: { onNavigate?: (page: PageId) 
         )}
 
         {section === 'boosts' && (
-          <div className="admin-panel">
-            <div className="admin-toolbar"><h1>BOOSTS</h1><span className="admin-chip">{room.source}</span></div>
-            <p className="sub">EXP/GP events and hottime. Read only.</p>
-            <h2>EXP / GP</h2>
-            <Grid rows={room.events} cols={[
-              { key: 'EventID', label: 'ID' },
-              { key: 'EXPRate', label: 'EXP' },
-              { key: 'GPRate', label: 'GP' },
-              { key: 'Enable', label: 'ON' },
-              { key: 'BeginTime', label: 'START', fmt: dt },
-              { key: 'EndTime', label: 'END', fmt: dt },
-              { key: 'description', label: 'DESC' },
-            ]} />
-            <h2>HOTTIME</h2>
-            <Grid rows={room.hottime} cols={[
-              { key: 'EventID', label: 'ID' },
-              { key: 'Enable', label: 'ON' },
-              { key: 'DurationHour', label: 'HOURS' },
-              { key: 'BeginTime', label: 'START', fmt: dt },
-              { key: 'EndTime', label: 'END', fmt: dt },
-              { key: 'Description', label: 'DESC' },
-            ]} />
-          </div>
+          <>
+            <div className="pl-hero">
+              <div className="pl-hero-ico"><Zap /></div>
+              <div>
+                <p className="eyebrow">EVENTS / COMBAT ARMS</p>
+                <h1>EXP & GP BOOSTS</h1>
+                <p>Timed multipliers for match rewards. The lobbies reload them every minute. Game server time now: {stampSec(room.serverNow)}</p>
+              </div>
+            </div>
+            {roomLoading ? <Empty text="Leyendo boosts..." /> : (
+              <section className="ol-panel">
+                <div className="pd-card-top">
+                  <h2><Zap /> BOOSTS</h2>
+                  <span className="pd-chip">Several running boosts add up ({room.running || 0} · +{room.expSum || 0} · x{room.gpSum || 0})</span>
+                </div>
+                <table className="pl-table">
+                  <thead>
+                    <tr>
+                      <th>#</th>
+                      <th>NAME</th>
+                      <th>EXP</th>
+                      <th>GP</th>
+                      <th>WHERE</th>
+                      <th>STARTS</th>
+                      <th>ENDS</th>
+                      <th>STATUS</th>
+                      <th>ACTIONS</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {(room.data || []).length === 0 ? (
+                      <tr><td colSpan={9} className="pd-empty">No boost events.</td></tr>
+                    ) : room.data.map((e: any) => (
+                      <tr key={e.EventID}>
+                        <td>{e.EventID}</td>
+                        <td>{e.name}</td>
+                        <td>{e.expLabel}</td>
+                        <td>{e.gpLabel}</td>
+                        <td>{e.where}</td>
+                        <td className="pd-time">{stampSec(e.BeginTime)}</td>
+                        <td className="pd-time">{stampSec(e.EndTime)}</td>
+                        <td><span className={e.status === 'RUNNING' ? 'pl-status' : 'pd-left'}>{e.status}</span></td>
+                        <td className="pd-left">Read only</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </section>
+            )}
+          </>
         )}
 
         {section === 'codes' && (
