@@ -3,6 +3,7 @@
 @import './auth-caevo.css';
 @import './account-caevo.css';
 @import './ranking-caevo.css';
+@import './page-loader-caevo.css';
 @tailwind base;
 @tailwind components;
 @tailwind utilities;

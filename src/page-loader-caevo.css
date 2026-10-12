@@ -1,0 +1,20 @@
+.page-loader {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #0b0906;
+  animation: page-loader-in 0.16s ease-out;
+}
+.page-loader-art {
+  width: min(680px, 96vw);
+  height: min(680px, 96vh);
+  object-fit: contain;
+  pointer-events: none;
+}
+@keyframes page-loader-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}

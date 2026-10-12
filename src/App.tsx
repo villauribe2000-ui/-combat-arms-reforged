@@ -1,6 +1,7 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { AuthProvider } from '@/context/AuthContext';
 import Layout, { type PageId } from '@/components/Layout';
+import PageLoader from '@/components/PageLoader';
 import HomePage from '@/pages/HomePage';
 import ProfilePage from '@/pages/ProfilePage';
 import RankingsPage from '@/pages/RankingsPage';
@@ -17,31 +18,45 @@ import BirthdayPage from '@/pages/BirthdayPage';
 
 function AppContent() {
   const [page, setPage] = useState<PageId>('home');
+  const [pageLoading, setPageLoading] = useState(false);
+  const loadingTimer = useRef<ReturnType<typeof setTimeout>>();
+
+  const navigate = (id: PageId) => {
+    setPage(id);
+    setPageLoading(true);
+    window.clearTimeout(loadingTimer.current);
+    loadingTimer.current = window.setTimeout(() => setPageLoading(false), 2200);
+  };
+
+  useEffect(() => () => window.clearTimeout(loadingTimer.current), []);
 
   const renderPage = () => {
     switch (page) {
-      case 'home': return <HomePage onNavigate={setPage} />;
-      case 'profile': return <ProfilePage onNavigate={setPage} />;
+      case 'home': return <HomePage onNavigate={navigate} />;
+      case 'profile': return <ProfilePage onNavigate={navigate} />;
       case 'rankings': return <RankingsPage />;
       case 'store': return <MarketplacePage />;
       case 'guide': return <GuidePage />;
       case 'download': return <DownloadPage />;
-      case 'signin': return <AuthPage mode="signin" onNavigate={setPage} />;
-      case 'signup': return <AuthPage mode="signup" onNavigate={setPage} />;
+      case 'signin': return <AuthPage mode="signin" onNavigate={navigate} />;
+      case 'signup': return <AuthPage mode="signup" onNavigate={navigate} />;
       case 'support': return <SupportPage />;
       case 'admin': return <AdminPage />;
       case 'wallet': return <WalletPage />;
       case 'purchase-history': return <PurchaseHistoryPage />;
       case 'level-rewards': return <LevelRewardsPage />;
       case 'birthday': return <BirthdayPage />;
-      default: return <HomePage onNavigate={setPage} />;
+      default: return <HomePage onNavigate={navigate} />;
     }
   };
 
   return (
-    <Layout currentPage={page} onNavigate={setPage}>
-      {renderPage()}
-    </Layout>
+    <>
+      {pageLoading && <PageLoader />}
+      <Layout currentPage={page} onNavigate={navigate}>
+        {renderPage()}
+      </Layout>
+    </>
   );
 }
 
