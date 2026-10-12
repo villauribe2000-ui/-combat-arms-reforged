@@ -1246,7 +1246,7 @@ async function loadStaffBundle() {
       siteAdmin: flags.siteAdmin,
       webGm: flags.webGm,
       isGM: user.UserType === 1 || flags.webGm,
-      grantedBy: row.grantedBy,
+      grantedBy: /^\d+$/.test(String(row.grantedBy || '')) ? STAFF_OWNER : (row.grantedBy || STAFF_OWNER),
       grantedAt: row.grantedAt,
       monthlyAllotment,
       used,
@@ -1538,10 +1538,15 @@ router.post('/staff', async (req, res) => {
   try {
     if (!requireStaffOwner(req, res)) return;
     await ensureStaffTables();
+    const actor = staffActor(req);
     const userId = parseInt(String(req.body?.userId), 10);
     const roleName = String(req.body?.role || '').trim().slice(0, 40);
-    const grantedBy = String(req.body?.grantedByName || 'admin').slice(0, 64);
     if (!Number.isFinite(userId) || !roleName) return res.status(400).json({ error: 'invalid' });
+    let grantedById = Number(actor?.userId) || 0;
+    if (!grantedById) {
+      const owner = await ca(`SELECT TOP 1 oidUser as id FROM CBT_User WHERE strNexonID = @u`, { u: STAFF_OWNER });
+      grantedById = Number(owner[0]?.id) || 0;
+    }
     const users = await ca(`
       SELECT TOP 1 u.oidUser as id, u.strNexonID as username, u.NickName
       FROM CBT_User u WHERE u.oidUser = @id`, { id: userId });
@@ -1553,40 +1558,50 @@ router.post('/staff', async (req, res) => {
     let roleRow = (await web(`SELECT TOP 1 name, siteAdmin, isGm FROM staff_roles WHERE name = @name`, { name: roleName }))[0];
     if (!roleRow) {
       const isGm = roleName.toLowerCase() === 'gm' ? 1 : 0;
-      await queryWeb(
-        `INSERT INTO staff_roles (name, siteAdmin, isGm, createdBy) VALUES (@name, 1, @isGm, @createdBy)`,
-        { name: roleName, isGm, createdBy: grantedBy },
-      );
-      roleRow = { name: roleName, siteAdmin: 1, isGm };
+      try {
+        await queryWeb(
+          `INSERT INTO staff_roles (name, siteAdmin, isGm, createdBy) VALUES (@name, 1, @isGm, @createdBy)`,
+          { name: roleName, isGm, createdBy: grantedById },
+        );
+      } catch {
+        roleRow = { name: roleName, siteAdmin: 1, isGm };
+      }
+      roleRow = roleRow || { name: roleName, siteAdmin: 1, isGm };
     }
     const flags = roleFlags({ role: roleRow.name, siteAdmin: 1, isGm: roleRow.isGm });
+    const isGm = flags.webGm ? 1 : 0;
     const existing = await web(`SELECT TOP 1 userId FROM admin_users WHERE userId = @id`, { id: userId });
+    const full = {
+      id: userId,
+      username: user.username,
+      nickName: user.NickName || '',
+      role: flags.role,
+      siteAdmin: 1,
+      isGm,
+      grantedBy: grantedById,
+    };
     if (existing.length) {
-      await queryWeb(`
-        UPDATE admin_users
-        SET username = @username, nickName = @nickName, role = @role, siteAdmin = @siteAdmin, isGm = @isGm,
-            grantedBy = @grantedBy, grantedAt = GETDATE()
-        WHERE userId = @id`, {
-        id: userId,
-        username: user.username,
-        nickName: user.NickName || '',
-        role: flags.role,
-        siteAdmin: 1,
-        isGm: flags.webGm ? 1 : 0,
-        grantedBy,
-      });
+      try {
+        await queryWeb(`
+          UPDATE admin_users
+          SET username = @username, nickName = @nickName, role = @role, siteAdmin = @siteAdmin, isGm = @isGm,
+              grantedBy = @grantedBy, grantedAt = GETDATE()
+          WHERE userId = @id`, full);
+      } catch {
+        await queryWeb(`
+          UPDATE admin_users SET role = @role, grantedBy = @grantedBy, grantedAt = GETDATE()
+          WHERE userId = @id`, { id: userId, role: flags.role, grantedBy: grantedById });
+      }
     } else {
-      await queryWeb(`
-        INSERT INTO admin_users (userId, username, nickName, role, siteAdmin, isGm, grantedBy, grantedAt)
-        VALUES (@id, @username, @nickName, @role, @siteAdmin, @isGm, @grantedBy, GETDATE())`, {
-        id: userId,
-        username: user.username,
-        nickName: user.NickName || '',
-        role: flags.role,
-        siteAdmin: 1,
-        isGm: flags.webGm ? 1 : 0,
-        grantedBy,
-      });
+      try {
+        await queryWeb(`
+          INSERT INTO admin_users (userId, username, nickName, role, siteAdmin, isGm, grantedBy, grantedAt)
+          VALUES (@id, @username, @nickName, @role, @siteAdmin, @isGm, @grantedBy, GETDATE())`, full);
+      } catch {
+        await queryWeb(`
+          INSERT INTO admin_users (userId, role, grantedBy, grantedAt)
+          VALUES (@id, @role, @grantedBy, GETDATE())`, { id: userId, role: flags.role, grantedBy: grantedById });
+      }
     }
     res.json(await loadStaffBundle());
   } catch (e) {
