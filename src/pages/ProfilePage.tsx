@@ -1,10 +1,10 @@
 import { useEffect, useState } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { api } from '@/lib/api';
-import { rankFromExp, rankIcon } from '@/lib/ranks';
+import { rankFromExp, rankIcon, rankProgress } from '@/lib/ranks';
 import type { PageId } from '@/components/Layout';
 import {
-  ChevronRight, Eye, KeyRound, LayoutDashboard, LogOut, Mail, Shield, ShieldCheck, UserRound, Calendar, Activity, Lock, Crosshair, Target, Users,
+  ChevronRight, Eye, KeyRound, LayoutDashboard, LogOut, Mail, Shield, ShieldCheck, UserRound, Calendar, Activity, Lock, Crosshair, Target, Users, Trophy, ArrowRight,
 } from 'lucide-react';
 
 type Tab = 'overview' | 'stats' | 'logs' | '2fa' | 'password';
@@ -46,6 +46,8 @@ export default function ProfilePage({ onNavigate }: { onNavigate: (page: PageId)
   const [passwordError, setPasswordError] = useState('');
   const [passwordSuccess, setPasswordSuccess] = useState('');
   const [loadingPassword, setLoadingPassword] = useState(false);
+  const [expRank, setExpRank] = useState<number | null>(null);
+  const [playerCount, setPlayerCount] = useState(0);
 
   const name = game?.NickName || profile?.nickname || profile?.username || 'Player';
   const email = profile?.email || 'Email changes are not available yet.';
@@ -78,6 +80,16 @@ export default function ProfilePage({ onNavigate }: { onNavigate: (page: PageId)
       try {
         const dbProfile = await api.getProfile(profile.username);
         setGame({ ...dbProfile, ...storedData, nx: profile.gameCoins, gp: profile.totalBalance, Exp: dbProfile.Exp ?? dbProfile.experience ?? 0 });
+        try {
+          const top = await api.getTopPlayers(100);
+          const list = Array.isArray(top) ? [...top] : [];
+          list.sort((a, b) => Number(b.userExp ?? b.Exp ?? b.experience ?? 0) - Number(a.userExp ?? a.Exp ?? a.experience ?? 0));
+          const idx = list.findIndex(p => p.username === profile.username || p.NickName === dbProfile.NickName);
+          setExpRank(idx >= 0 ? idx + 1 : null);
+          setPlayerCount(list.length);
+        } catch {
+          setExpRank(null);
+        }
       } catch {
         setGame({ NickName: name, ...storedData, nx: profile.gameCoins, gp: profile.totalBalance, kills: 0, deaths: 0, wins: 0, losses: 0, level: profile.level || 0 });
       }
@@ -150,6 +162,8 @@ export default function ProfilePage({ onNavigate }: { onNavigate: (page: PageId)
   const winRate = wins + losses > 0 ? ((wins / (wins + losses)) * 100).toFixed(1) : '0.0';
   const assists = Number(game?.assists || 0);
   const kda = game?.deaths > 0 ? ((Number(game?.kills || 0) + assists) / game.deaths).toFixed(2) : (Number(game?.kills || 0) + assists).toFixed(2);
+  const progress = rankProgress(exp);
+  const snapshot = new Date().toLocaleString('en-GB', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
   const showPlayer = tab === 'overview' || tab === 'stats';
 
   if (showPlayer) {
@@ -231,7 +245,100 @@ export default function ProfilePage({ onNavigate }: { onNavigate: (page: PageId)
               </article>
             </div>
           </section>
+
+          <div className="player-bottom">
+            <section className="player-panel">
+              <div className="player-panel-head">
+                <div>
+                  <p>KEEP MOVING FORWARD</p>
+                  <h3>Rank progression</h3>
+                </div>
+                <ArrowRight size={16} />
+              </div>
+              <div className="player-progress-ranks">
+                <div>
+                  <img src={rankSrc} alt="" onError={e => { e.currentTarget.src = '/ranks/RANK_0.png'; }} />
+                  <small>CURRENT RANK</small>
+                  <strong>{game?.isGM || game?.UserType === 1 ? 'Game Master' : game?.rankName || `Rank ${rankLevel}`}</strong>
+                </div>
+                <ArrowRight size={18} className="player-progress-arrow" />
+                <div>
+                  {progress.complete ? (
+                    <Trophy size={28} className="text-[#df8104]" />
+                  ) : (
+                    <img src={rankIcon({ rank: progress.nextLevel, exp })} alt="" onError={e => { e.currentTarget.src = '/ranks/RANK_0.png'; }} />
+                  )}
+                  <small>TOP RANK</small>
+                  <strong>{progress.complete ? 'Highest rank reached' : `Rank ${progress.nextLevel}`}</strong>
+                </div>
+              </div>
+              <div className="player-progress-meta">
+                <span>{progress.complete ? 'Rank complete' : 'Progress to next rank'}</span>
+                <span>{progress.percent.toFixed(1)}%</span>
+              </div>
+              <div className="player-progress-bar"><i style={{ width: `${progress.percent}%` }} /></div>
+              <div className="player-progress-meta">
+                <span>{exp.toLocaleString()} total EXP</span>
+                <span>{progress.complete ? 'All ranks completed' : `${progress.nextExp.toLocaleString()} EXP needed`}</span>
+              </div>
+            </section>
+
+            <section className="player-panel">
+              <div className="player-panel-head">
+                <div>
+                  <p>AMONG THE PLAYERS</p>
+                  <h3>Leaderboard standing</h3>
+                </div>
+                <Trophy size={16} />
+              </div>
+              <div className="player-standing">
+                <strong>#{expRank ?? '—'}</strong>
+                <div>
+                  <p>EXP RANKING</p>
+                  <small>{exp.toLocaleString()} experience points{playerCount ? ` · top ${playerCount}` : ''}</small>
+                </div>
+              </div>
+              <button type="button" className="player-board-link" onClick={() => onNavigate('rankings')}>
+                View the leaderboard <ArrowRight size={14} />
+              </button>
+            </section>
+          </div>
+
+          <div className="player-notes">
+            <p>KDA = (kills + assists) / deaths. Assists include more match types than kills and deaths.</p>
+            <p>Win rate = wins / (wins + losses). Ratios without the required data appear as —.</p>
+          </div>
+          <div className="player-notes player-notes-foot">
+            <p>PUBLIC PLAYER RECORD</p>
+            <p>Profile snapshot: {snapshot}</p>
+          </div>
         </div>
+
+        <footer className="mx-auto max-w-[1440px] px-6 pb-6 pt-8 lg:px-16">
+          <div className="flex flex-col gap-6 border-t border-[#333] pt-8 md:flex-row md:items-center md:justify-between">
+            <button onClick={() => onNavigate('home')} className="brand-evo text-left">
+              <img src="/caevo/ca.ico" alt="" className="h-10 w-10 object-contain" />
+              <span>
+                COMBAT<span className="brand-arms">ARMS</span>
+                <small>EVOLUTION</small>
+              </span>
+            </button>
+            <nav className="flex flex-wrap items-center gap-5 text-[13px] text-[#b5b5b5]">
+              <button onClick={() => onNavigate('rankings')} className="hover:text-white">Rankings</button>
+              <button onClick={() => onNavigate('birthday')} className="hover:text-white">Events</button>
+              <button onClick={() => onNavigate('guide')} className="hover:text-white">Guide</button>
+              <button onClick={() => onNavigate('download')} className="hover:text-white">Download</button>
+              <a href="https://discord.gg/5EpJwAh2r6" target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1.5 text-[#5865F2] hover:text-[#7983f5]">
+                <img src="/caevo/discord-mark-white.svg" alt="" className="h-3.5 w-4" />
+                Join Discord
+              </a>
+            </nav>
+          </div>
+          <div className="mt-6 flex flex-col gap-2 border-t border-[#333] pt-4 text-[12px] text-[#777] md:flex-row md:justify-between">
+            <p>An independent fan concept. Combat Arms and its artwork belong to their respective owners.</p>
+            <span>COMBAT ARMS EVOLUTION / CA EVO</span>
+          </div>
+        </footer>
       </div>
     );
   }

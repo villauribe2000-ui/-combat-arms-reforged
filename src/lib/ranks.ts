@@ -71,6 +71,18 @@ export function rankFromExp(exp: number) {
   return 0;
 }
 
+export function rankProgress(exp: number) {
+  const current = rankFromExp(exp);
+  const cur = PATENTES.find(p => p.nivel === current) || PATENTES[0];
+  const next = PATENTES.find(p => p.nivel === current + 1);
+  if (!next || current >= 60) {
+    return { current, percent: 100, complete: true, nextLevel: 60, nextExp: cur.exp };
+  }
+  const span = Math.max(1, next.exp - cur.exp);
+  const percent = Math.max(0, Math.min(100, ((exp - cur.exp) / span) * 100));
+  return { current, percent, complete: false, nextLevel: next.nivel, nextExp: next.exp };
+}
+
 export function rankIcon(opts: { rank?: number | string | null; exp?: number; isGM?: boolean; UserType?: number }) {
   if (opts.isGM || opts.UserType === 1) return '/ranks/RANK_GM.png';
   const fromApi = Number(opts.rank);
