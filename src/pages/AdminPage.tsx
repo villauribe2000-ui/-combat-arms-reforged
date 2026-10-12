@@ -171,6 +171,14 @@ function stamp(v: any) {
   return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`;
 }
 
+function stampSec(v: any) {
+  if (!v) return '—';
+  const d = new Date(v);
+  if (Number.isNaN(d.getTime())) return '—';
+  const p = (n: number) => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}:${p(d.getSeconds())}`;
+}
+
 export default function AdminPage({ onNavigate }: { onNavigate?: (page: PageId) => void }) {
   const { profile } = useAuth();
   const [paymentCodes, setPaymentCodes] = useState<PaymentCode[]>([]);
@@ -207,6 +215,9 @@ export default function AdminPage({ onNavigate }: { onNavigate?: (page: PageId) 
   const [matchPage, setMatchPage] = useState(1);
   const [openMatch, setOpenMatch] = useState<any>(null);
   const [openPlayers, setOpenPlayers] = useState<any[]>([]);
+  const [loginQ, setLoginQ] = useState('');
+  const [loginDays, setLoginDays] = useState('7');
+  const [loginPage, setLoginPage] = useState(1);
 
   const READ_SECTIONS: Section[] = ['players', 'online', 'clans', 'shop', 'economy', 'reports', 'matches', 'logins', 'linked', 'announcements', 'maps', 'boosts'];
 
@@ -236,6 +247,14 @@ export default function AdminPage({ onNavigate }: { onNavigate?: (page: PageId) 
       .finally(() => setRoomLoading(false));
   };
 
+  const loadLogins = (page = loginPage) => {
+    setRoomLoading(true);
+    api.getAdminSection('logins', { q: loginQ, days: loginDays, page })
+      .then(setRoom)
+      .catch(() => setRoom({}))
+      .finally(() => setRoomLoading(false));
+  };
+
   useEffect(() => {
     if (section !== 'players') setPlayerId(null);
     if (section === 'players') {
@@ -246,6 +265,10 @@ export default function AdminPage({ onNavigate }: { onNavigate?: (page: PageId) 
       loadMatches(matchPage);
       return;
     }
+    if (section === 'logins') {
+      loadLogins(loginPage);
+      return;
+    }
     if (!READ_SECTIONS.includes(section)) return;
     let live = true;
     setRoomLoading(true);
@@ -254,7 +277,7 @@ export default function AdminPage({ onNavigate }: { onNavigate?: (page: PageId) 
       .catch(() => { if (live) setRoom({}); })
       .finally(() => { if (live) setRoomLoading(false); });
     return () => { live = false; };
-  }, [section, playerPage, matchPage]);
+  }, [section, playerPage, matchPage, loginPage]);
 
   const loadData = async () => {
     try {
@@ -958,23 +981,67 @@ export default function AdminPage({ onNavigate }: { onNavigate?: (page: PageId) 
         )}
 
         {section === 'logins' && (
-          <div className="admin-panel">
-            <div className="admin-toolbar"><h1>LOGINS</h1><span className="admin-chip">{room.source}</span></div>
-            <Grid rows={room.data} cols={[
-              { key: 'NickName', label: 'NICK' },
-              { key: 'username', label: 'ACCOUNT' },
-              { key: 'IP', label: 'IP' },
-              { key: 'LoginDate', label: 'LOGIN', fmt: dt },
-              { key: 'LogoutDate', label: 'LOGOUT', fmt: dt },
-              { key: 'LobbyServerNo', label: 'LOBBY' },
-            ]} />
-            <h2>LAST HARDWARE</h2>
-            <Grid rows={room.hardware} cols={[
-              { key: 'oiduser', label: 'OID' },
-              { key: 'MacAddress', label: 'MAC' },
-              { key: 'LastLoginDate', label: 'DATE', fmt: dt },
-            ]} />
-          </div>
+          <>
+            <div className="pl-hero">
+              <div className="pl-hero-ico"><LogIn /></div>
+              <div>
+                <p className="eyebrow">TRACKING / COMBAT ARMS</p>
+                <h1>LOGINS</h1>
+                <p>Lobby sessions, written when a player leaves the lobby (so someone online now appears after they log out).</p>
+              </div>
+            </div>
+            <form className="pl-filters" onSubmit={(e) => { e.preventDefault(); setLoginPage(1); loadLogins(1); }}>
+              <input
+                value={loginQ}
+                onChange={(e) => setLoginQ(e.target.value)}
+                placeholder="Player: #id, login or nickname"
+              />
+              <select value={loginDays} onChange={(e) => setLoginDays(e.target.value)}>
+                <option value="1">Last 24 hours</option>
+                <option value="7">Last 7 days</option>
+                <option value="30">Last 30 days</option>
+                <option value="90">Last 90 days</option>
+                <option value="0">All time</option>
+              </select>
+              <button className="pl-apply" type="submit">Apply</button>
+            </form>
+            <div className="pl-meta">
+              <h2>{Number(room.total || 0).toLocaleString()} SESSIONS</h2>
+              <span>Newest login first &nbsp;&nbsp; Showing {room.showingFrom || 0}–{room.showingTo || 0}</span>
+            </div>
+            {roomLoading ? <Empty text="Leyendo sesiones..." /> : (
+              <table className="pl-table">
+                <thead>
+                  <tr>
+                    <th>PLAYER</th>
+                    <th>ENTERED LOBBY</th>
+                    <th>LEFT</th>
+                    <th>STAYED</th>
+                    <th>HOW IT ENDED</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {(room.data || []).length === 0 ? (
+                    <tr><td colSpan={5} className="pd-empty">No lobby sessions in this range.</td></tr>
+                  ) : room.data.map((row: any) => (
+                    <tr key={row.id} className="pl-row" onClick={() => { setSection('players'); setPlayerId(row.oidUser); }}>
+                      <td><span className="login-nick">{row.NickName || row.username}</span></td>
+                      <td className="pd-time">{stampSec(row.LoginDate)}</td>
+                      <td className="pd-time">{stampSec(row.LogoutDate)}</td>
+                      <td>{row.stayed}</td>
+                      <td>{row.ended}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
+            {(room.total || 0) > (room.limit || 25) && (
+              <div className="pl-pager">
+                <button disabled={loginPage <= 1} onClick={() => setLoginPage((n) => Math.max(1, n - 1))}>Prev</button>
+                <button disabled={(room.showingTo || 0) >= (room.total || 0)} onClick={() => setLoginPage((n) => n + 1)}>Next</button>
+              </div>
+            )}
+          </>
         )}
 
         {section === 'linked' && (

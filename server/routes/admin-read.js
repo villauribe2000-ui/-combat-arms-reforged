@@ -516,18 +516,74 @@ router.get('/matches/room/:key', async (req, res) => {
   res.json({ players });
 });
 
-router.get('/logins', async (_req, res) => {
-  let list = await log(`
-    SELECT TOP 50 UserLoginLogSeqNo as id, oidUser, strNexonID as username, NickName, IP, LoginDate, LogoutDate, LogoutStatus, LobbyServerNo
-    FROM CBT_UserLoginLog01 ORDER BY LoginDate DESC`);
-  if (!list.length) {
-    list = await log(`
-      SELECT TOP 50 UserLoginLogSeqNo as id, oidUser, strNexonID as username, NickName, IP, LoginDate, LogoutDate, LogoutStatus, LobbyServerNo
-      FROM CBT_UserLoginLog02 ORDER BY LoginDate DESC`);
+function howLoginEnded(status, playEnd) {
+  const s = Number(status);
+  const p = Number(playEnd);
+  if (s === 1 || p === 0) return 'Logged out';
+  if (s === 12 || s === 7777) return 'Moved lobby';
+  if (s === 9) return 'Disconnected';
+  if (s === 0) return 'Connection lost';
+  return `Status ${Number.isFinite(s) ? s : '—'}`;
+}
+
+function stayLabel(seconds) {
+  const sec = Math.max(0, Number(seconds) || 0);
+  const mins = Math.floor(sec / 60);
+  return `${mins}min`;
+}
+
+router.get('/logins', async (req, res) => {
+  const q = String(req.query.q || '').trim();
+  const days = req.query.days === undefined || req.query.days === '' ? 7 : parseInt(String(req.query.days), 10);
+  const page = Math.max(1, parseInt(String(req.query.page || '1'), 10) || 1);
+  const limit = 25;
+  const offset = (page - 1) * limit;
+  const params = { offset, limit };
+  let where = '1 = 1';
+  if (Number.isFinite(days) && days > 0) {
+    where += ' AND LoginDate >= DATEADD(day, -@days, GETDATE())';
+    params.days = days;
   }
-  const mac = await ca(`
-    SELECT TOP 20 oiduser, MacAddress, LastLoginDate, HWID FROM CBT_LastLoginMacAddress ORDER BY LastLoginDate DESC`);
-  res.json({ data: list, hardware: mac, source: 'COMBATARMS_LOG.CBT_UserLoginLog + CBT_LastLoginMacAddress' });
+  if (q.startsWith('#') && /^\d+$/.test(q.slice(1))) {
+    where += ' AND oidUser = @oid';
+    params.oid = parseInt(q.slice(1), 10);
+  } else if (/^\d+$/.test(q) && q.length <= 8) {
+    where += ' AND oidUser = @oid';
+    params.oid = parseInt(q, 10);
+  } else if (q) {
+    where += ' AND (NickName LIKE @q OR strNexonID LIKE @q OR CAST(oidUser AS VARCHAR(20)) LIKE @q)';
+    params.q = `%${q}%`;
+  }
+
+  const fromTable = async (table) => {
+    const total = n(await log(`SELECT COUNT(*) as n FROM ${table} WHERE ${where}`, params));
+    const list = await log(`
+      SELECT UserLoginLogSeqNo as id, oidUser, strNexonID as username, NickName, IP,
+        LoginDate, LogoutDate, LogoutStatus, PlayEndType, LobbyServerNo,
+        DATEDIFF(second, LoginDate, LogoutDate) as staySeconds
+      FROM ${table}
+      WHERE ${where}
+      ORDER BY LoginDate DESC
+      OFFSET @offset ROWS FETCH NEXT @limit ROWS ONLY`, params);
+    return { total, list };
+  };
+
+  let result = await fromTable('CBT_UserLoginLog01');
+  if (!result.total) result = await fromTable('CBT_UserLoginLog02');
+
+  res.json({
+    data: result.list.map((row) => ({
+      ...row,
+      stayed: stayLabel(row.staySeconds),
+      ended: howLoginEnded(row.LogoutStatus, row.PlayEndType),
+    })),
+    total: result.total,
+    page,
+    limit,
+    showingFrom: result.list.length ? offset + 1 : 0,
+    showingTo: offset + result.list.length,
+    source: 'COMBATARMS_LOG.CBT_UserLoginLog01',
+  });
 });
 
 router.get('/linked', async (_req, res) => {
