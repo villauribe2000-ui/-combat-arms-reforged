@@ -86,21 +86,60 @@
   font-weight: 600;
   white-space: nowrap;
 }
-.header-pill {
+.header-auth-actions {
+  display: flex;
+  gap: 10px;
+}
+.account-button {
+  position: relative;
+  isolation: isolate;
   display: inline-flex;
   align-items: center;
-  gap: 8px;
-  min-height: 40px;
-  padding: 8px 16px;
-  border: 1px solid #c9a36a;
+  justify-content: center;
+  gap: 7px;
+  min-width: 90px;
+  min-height: 36px;
+  padding: 7px 15px;
+  border: 0;
+  border-radius: 0;
   background: transparent;
-  color: #f2f2f2;
-  font-size: 13px;
+  font-size: 0.75rem;
+  line-height: 20px;
   font-weight: 600;
-  border-radius: 999px;
+  color: #ddd4c8;
+  white-space: nowrap;
+  transition: color 0.18s, transform 0.18s, filter 0.18s;
+  filter: drop-shadow(0 4px 6px #0005);
 }
-.header-pill:hover {
-  background: rgba(223, 129, 4, 0.12);
+.account-button:after,
+.account-button:before {
+  content: "";
+  position: absolute;
+  pointer-events: none;
+  clip-path: polygon(9px 0, 100% 0, 100% calc(100% - 9px), calc(100% - 9px) 100%, 0 100%, 0 9px);
+}
+.account-button:before {
+  inset: 0;
+  z-index: -2;
+  background: linear-gradient(130deg, #bc7829, #554330 24%, #3c3329 75%, #bc7829);
+}
+.account-button:after {
+  inset: 1px;
+  z-index: -1;
+  background: linear-gradient(120deg, #30271c, #1b1916 55%, #201d18);
+  transition: opacity 0.2s;
+}
+.account-button svg {
+  color: #d99a46;
+  stroke-width: 1.7;
+}
+.account-button:hover {
+  color: #fff0d9;
+  transform: translateY(-2px);
+  filter: drop-shadow(0 3px 8px #df810426);
+}
+.account-button:hover:after {
+  opacity: 0.75;
 }
 
 ::-webkit-scrollbar {

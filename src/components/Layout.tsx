@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import {
   Trophy, Store, Users, LifeBuoy, Shield, Wallet, History,
-  Menu, LogOut, Crown, LogIn, Gift, Home, Download, BookOpen,
+  Menu, LogOut, Crown, Gift, Home, Download, BookOpen, UserRound, UserRoundPlus,
 } from 'lucide-react';
 
 export type PageId = 'home' | 'profile' | 'rankings' | 'store' | 'clans' | 'support' | 'admin' | 'wallet' | 'purchase-history' | 'level-rewards' | 'birthday' | 'guide' | 'download' | 'signin' | 'signup';
@@ -129,14 +129,14 @@ export default function Layout({ currentPage, onNavigate, children }: Props) {
                 </button>
               </>
             ) : (
-              <>
-                <button onClick={() => go('signin')} className="header-pill">
-                  <LogIn className="h-3.5 w-3.5" /> Sign in
+              <div className="header-auth-actions">
+                <button onClick={() => go('signin')} className="account-button">
+                  <UserRound className="h-3.5 w-3.5" /> Sign in
                 </button>
-                <button onClick={() => go('signup')} className="header-pill">
-                  Sign up
+                <button onClick={() => go('signup')} className="account-button">
+                  <UserRoundPlus className="h-3.5 w-3.5" /> Sign up
                 </button>
-              </>
+              </div>
             )}
             <button
               onClick={() => setMobileOpen(true)}
