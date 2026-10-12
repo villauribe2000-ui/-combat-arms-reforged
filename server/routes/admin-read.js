@@ -511,20 +511,80 @@ router.get('/shop', async (_req, res) => {
   res.json({ data: list, source: 'CBT_ProductInfo + CBT_ProductInfo_ShopView' });
 });
 
-router.get('/economy', async (_req, res) => {
-  const codes = n(await web(`SELECT COUNT(*) as n FROM PaymentCodes WHERE status = 'pending'`));
-  const refunds = n(await web(`SELECT COUNT(*) as n FROM RefundRequests WHERE status = 'pending'`));
-  const nx = await vis(`SELECT SUM(CAST(TotalBalance AS BIGINT)) as n, COUNT(*) as accounts FROM VISMS_UserList`);
-  const purchases = await vis(`
-    SELECT TOP 20 OrderID, ProductNo, TotalPrice, oid, strNexonID, IPAddress, RegDate, IsGift
-    FROM VISMS_PurchaseLog ORDER BY RegDate DESC`);
+function ymdAdd(ymd, delta) {
+  const [y, m, d] = String(ymd).split('-').map((x) => parseInt(x, 10));
+  const dt = new Date(Date.UTC(y, m - 1, d + delta));
+  return dt.toISOString().slice(0, 10);
+}
+
+router.get('/economy', async (req, res) => {
+  const days = [7, 30, 90].includes(parseInt(String(req.query.days), 10))
+    ? parseInt(String(req.query.days), 10)
+    : 30;
+  const p = { days };
+
+  const shop = (await log(`
+    SELECT
+      COUNT(*) as purchases,
+      SUM(CASE WHEN currency LIKE 'Gp%' THEN CAST(price AS BIGINT) ELSE 0 END) as gpSpent,
+      SUM(CASE WHEN currency LIKE 'Nx%' THEN CAST(price AS BIGINT) ELSE 0 END) as nxSpent
+    FROM CBT_CharacterBuyProductLog
+    WHERE loggedAt >= DATEADD(day, -@days, GETDATE())`, p))[0] || {};
+
+  const billing = (await vis(`
+    SELECT COUNT(*) as orders,
+      SUM(CAST(TotalPrice AS BIGINT)) as nx,
+      SUM(CASE WHEN IsGift = 1 THEN 1 ELSE 0 END) as gifts
+    FROM VISMS_PurchaseLog
+    WHERE RegDate >= DATEADD(day, -@days, GETDATE())`, p))[0] || {};
+
+  const heldNx = (await vis(`
+    SELECT SUM(CAST(TotalBalance AS BIGINT)) as nx,
+      COUNT(*) as accounts,
+      SUM(CASE WHEN TotalBalance > 0 THEN 1 ELSE 0 END) as withNx
+    FROM VISMS_UserList`))[0] || {};
+
+  const heldGp = (await ca(`
+    SELECT SUM(CAST(Money AS BIGINT)) as gp
+    FROM CBT_User WHERE DeleteDate IS NULL`))[0] || {};
+
+  const dailyShop = await log(`
+    SELECT CONVERT(varchar(10), loggedAt, 120) as d,
+      SUM(CASE WHEN currency LIKE 'Gp%' THEN CAST(price AS BIGINT) ELSE 0 END) as gp,
+      SUM(CASE WHEN currency LIKE 'Nx%' THEN CAST(price AS BIGINT) ELSE 0 END) as nx
+    FROM CBT_CharacterBuyProductLog
+    WHERE loggedAt >= DATEADD(day, -@days, GETDATE())
+    GROUP BY CONVERT(varchar(10), loggedAt, 120)
+    ORDER BY d`, p);
+
+  const todayRow = await log(`SELECT CONVERT(varchar(10), GETDATE(), 120) as d`);
+  const today = todayRow[0]?.d || new Date().toISOString().slice(0, 10);
+  const dayMap = Object.fromEntries(dailyShop.map((r) => [r.d, r]));
+  const daily = [];
+  for (let i = days - 1; i >= 0; i -= 1) {
+    const d = ymdAdd(today, -i);
+    const row = dayMap[d] || {};
+    daily.push({
+      t: `${d}T00:00:00.000Z`,
+      d,
+      gp: Number(row.gp || 0),
+      nx: Number(row.nx || 0),
+    });
+  }
+
   res.json({
-    pendingCodes: codes,
-    pendingRefunds: refunds,
-    nxAccounts: nx[0]?.accounts || 0,
-    nxTotal: nx[0]?.n || 0,
-    purchases,
-    source: 'combatarms_web PaymentCodes/RefundRequests + VISMS'
+    days,
+    purchases: Number(shop.purchases || 0),
+    gpSpent: Number(shop.gpSpent || 0),
+    nxSpent: Number(shop.nxSpent || 0),
+    nxOrders: Number(billing.orders || 0),
+    nxBilling: Number(billing.nx || 0),
+    nxGifts: Number(billing.gifts || 0),
+    nxHeld: Number(heldNx.nx || 0),
+    nxAccounts: Number(heldNx.withNx || 0),
+    gpHeld: Number(heldGp.gp || 0),
+    daily,
+    source: 'CBT_CharacterBuyProductLog + VISMS_PurchaseLog + VISMS_UserList + CBT_User.Money',
   });
 });
 

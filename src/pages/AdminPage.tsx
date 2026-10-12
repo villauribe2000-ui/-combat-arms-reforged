@@ -8,7 +8,7 @@ import AdminClanProfile from '@/components/AdminClanProfile';
 import {
   XCircle, Loader, RotateCcw, MessageSquare, Send,
   LayoutDashboard, Users, Radio, Shield, Store, Landmark, FileBarChart, Swords, LogIn,
-  Link2, Megaphone, Map, Zap, ArrowLeft, Ticket, KeyRound, CreditCard, ExternalLink, ChevronRight, Search, Activity, TrendingUp
+  Link2, Megaphone, Map, Zap, ArrowLeft, Ticket, KeyRound, CreditCard, ExternalLink, ChevronRight, Search, Activity, TrendingUp, Wallet, ShoppingBag, Coins
 } from 'lucide-react';
 
 interface PaymentCode {
@@ -121,6 +121,55 @@ function hourLabel(t: string) {
   return `${p(d.getMonth() + 1)}-${p(d.getDate())} ${p(d.getHours())}:00`;
 }
 
+function SpendChart({ points, color = '#df8104' }: { points: { t: string; peak: number }[]; color?: string }) {
+  if (!points?.length) return <div className="ol-empty">No spending in this range.</div>;
+  const w = 960;
+  const h = 260;
+  const pad = { l: 56, r: 18, t: 18, b: 38 };
+  const raw = Math.max(1, ...points.map((p) => Number(p.peak || 0)));
+  const max = raw <= 4 ? raw : Math.ceil(raw / 4) * 4;
+  const innerW = w - pad.l - pad.r;
+  const innerH = h - pad.t - pad.b;
+  const coords = points.map((p, i) => {
+    const x = pad.l + (points.length === 1 ? innerW / 2 : (i / (points.length - 1)) * innerW);
+    const y = pad.t + innerH - (Number(p.peak || 0) / max) * innerH;
+    return { x, y, p };
+  });
+  const line = coords.map((c) => `${c.x},${c.y}`).join(' ');
+  const last = coords[coords.length - 1];
+  const ticks = [0, Math.round(max / 2), max];
+  const step = points.length > 20 ? 6 : points.length > 10 ? 4 : 1;
+  const labels = coords.filter((_, i) => i === 0 || i === coords.length - 1 || i % step === 0);
+  const fmt = (n: number) => (n >= 1000000 ? `${(n / 1000000).toFixed(1)}M` : n >= 1000 ? `${Math.round(n / 1000)}k` : String(n));
+  return (
+    <svg className="ol-chart" viewBox={`0 0 ${w} ${h}`} preserveAspectRatio="none">
+      {ticks.map((tick) => {
+        const y = pad.t + innerH - (tick / max) * innerH;
+        return (
+          <g key={tick}>
+            <line x1={pad.l} y1={y} x2={w - pad.r} y2={y} stroke="#262626" strokeWidth="1" />
+            <text x={pad.l - 8} y={y + 4} textAnchor="end" fill="#666" fontSize="11">{fmt(tick)}</text>
+          </g>
+        );
+      })}
+      <polygon points={`${pad.l},${pad.t + innerH} ${line} ${w - pad.r},${pad.t + innerH}`} fill="url(#spFill)" />
+      <polyline points={line} fill="none" stroke={color} strokeWidth="2.4" />
+      {last && <circle cx={last.x} cy={last.y} r="4.5" fill={color} />}
+      <defs>
+        <linearGradient id="spFill" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor={color} stopOpacity="0.28" />
+          <stop offset="100%" stopColor={color} stopOpacity="0" />
+        </linearGradient>
+      </defs>
+      {labels.map((c, i) => (
+        <text key={i} x={c.x} y={h - 10} textAnchor="middle" fill="#777" fontSize="11">
+          {String(c.p.t).slice(5, 10)}
+        </text>
+      ))}
+    </svg>
+  );
+}
+
 function PeakChart({ points }: { points: { t: string; peak: number }[] }) {
   if (!points?.length) return <div className="ol-empty">No CCU samples in the last 48 hours.</div>;
   const w = 960;
@@ -228,6 +277,8 @@ export default function AdminPage({ onNavigate }: { onNavigate?: (page: PageId) 
   const [loginDays, setLoginDays] = useState('7');
   const [loginPage, setLoginPage] = useState(1);
   const [clanId, setClanId] = useState<number | null>(null);
+  const [economyDays, setEconomyDays] = useState('30');
+  const [economyCur, setEconomyCur] = useState<'gp' | 'nx'>('gp');
 
   const READ_SECTIONS: Section[] = ['players', 'online', 'clans', 'shop', 'economy', 'reports', 'matches', 'logins', 'linked', 'announcements', 'maps', 'boosts'];
 
@@ -297,6 +348,15 @@ export default function AdminPage({ onNavigate }: { onNavigate?: (page: PageId) 
       const id = setInterval(tick, 15000);
       return () => { live = false; clearInterval(id); };
     }
+    if (section === 'economy') {
+      let live = true;
+      setRoomLoading(true);
+      api.getAdminSection('economy', { days: economyDays })
+        .then((d) => { if (live) setRoom(d || {}); })
+        .catch(() => { if (live) setRoom({}); })
+        .finally(() => { if (live) setRoomLoading(false); });
+      return () => { live = false; };
+    }
     if (section === 'clans') {
       if (clanId) return;
       let live = true;
@@ -315,7 +375,7 @@ export default function AdminPage({ onNavigate }: { onNavigate?: (page: PageId) 
       .catch(() => { if (live) setRoom({}); })
       .finally(() => { if (live) setRoomLoading(false); });
     return () => { live = false; };
-  }, [section, playerPage, matchPage, loginPage, clanId]);
+  }, [section, playerPage, matchPage, loginPage, clanId, economyDays]);
 
   const loadData = async () => {
     try {
@@ -897,30 +957,76 @@ export default function AdminPage({ onNavigate }: { onNavigate?: (page: PageId) 
         )}
 
         {section === 'economy' && (
-          <div>
-            <div className="admin-stats">
-              <article><p>PENDING CODES</p><strong>{room.pendingCodes ?? pendingCodes.length}</strong></article>
-              <article><p>PENDING REFUNDS</p><strong>{room.pendingRefunds ?? pendingRefunds.length}</strong></article>
-              <article><p>NX WALLETS</p><strong>{room.nxAccounts ?? 0}</strong></article>
-              <article><p>NX TOTAL</p><strong>{Number(room.nxTotal || 0).toLocaleString()}</strong></article>
+          <>
+            <div className="pl-hero">
+              <div className="pl-hero-ico"><Landmark /></div>
+              <div>
+                <p className="eyebrow">TRACKING / COMBAT ARMS</p>
+                <h1>ECONOMY</h1>
+                <p>Shop spending and the money in players' hands.</p>
+              </div>
             </div>
-            <div className="admin-quick">
-              <button onClick={() => setSection('codes')}><div><strong>Payment codes</strong><small>combatarms_web.PaymentCodes</small></div><span>→</span></button>
-              <button onClick={() => setSection('payments')}><div><strong>Recargas</strong><small>{pendingCount} pending</small></div><span>→</span></button>
-              <button onClick={() => setSection('refunds')}><div><strong>Refunds</strong><small>combatarms_web.RefundRequests</small></div><span>→</span></button>
+            <div className="eco-tabs">
+              {[{ id: '7', label: 'Last 7 days' }, { id: '30', label: 'Last 30 days' }, { id: '90', label: 'Last 90 days' }].map((tab) => (
+                <button key={tab.id} className={economyDays === tab.id ? 'on' : ''} onClick={() => setEconomyDays(tab.id)}>{tab.label}</button>
+              ))}
             </div>
-            <div className="admin-panel">
-              <h2>VISMS PURCHASE LOG</h2>
-              <p className="sub">{room.source}</p>
-              <Grid rows={room.purchases} cols={[
-                { key: 'strNexonID', label: 'ACCOUNT' },
-                { key: 'ProductNo', label: 'PRODUCT' },
-                { key: 'TotalPrice', label: 'PRICE' },
-                { key: 'IsGift', label: 'GIFT', fmt: (v) => (v ? 'YES' : '') },
-                { key: 'RegDate', label: 'DATE', fmt: dt },
-              ]} />
-            </div>
-          </div>
+            {roomLoading ? <Empty text="Leyendo economía..." /> : (
+              <>
+                <div className="ol-kpis">
+                  <article>
+                    <p>PURCHASES</p>
+                    <strong>{Number(room.purchases || 0).toLocaleString()}</strong>
+                    <ShoppingBag />
+                  </article>
+                  <article>
+                    <p>GP SPENT</p>
+                    <strong className="ol-gold">{Number(room.gpSpent || 0).toLocaleString()}</strong>
+                    <Coins />
+                  </article>
+                  <article>
+                    <p>NX SPENT IN THE SHOP</p>
+                    <strong className="eco-nx">{Number(room.nxSpent || 0).toLocaleString()}</strong>
+                    <Wallet />
+                  </article>
+                  <article>
+                    <p>NX ORDERS (BILLING)</p>
+                    <strong>{Number(room.nxOrders || 0).toLocaleString()}</strong>
+                    <CreditCard />
+                    <small>{Number(room.nxBilling || 0).toLocaleString()} NX · {room.nxGifts || 0} gifts</small>
+                  </article>
+                  <article>
+                    <p>NX HELD BY PLAYERS</p>
+                    <strong>{Number(room.nxHeld || 0).toLocaleString()}</strong>
+                    <Wallet />
+                    <small>{room.nxAccounts || 0} players with NX</small>
+                  </article>
+                  <article>
+                    <p>GP HELD BY PLAYERS</p>
+                    <strong>{Number(room.gpHeld || 0).toLocaleString()}</strong>
+                    <Coins />
+                  </article>
+                </div>
+                <section className="ol-panel">
+                  <div className="pd-card-top">
+                    <h2>SPENDING PER DAY</h2>
+                    <div className="eco-cur">
+                      <button className={economyCur === 'gp' ? 'on' : ''} onClick={() => setEconomyCur('gp')}>GP</button>
+                      <button className={economyCur === 'nx' ? 'on nx' : ''} onClick={() => setEconomyCur('nx')}>NX</button>
+                    </div>
+                  </div>
+                  <p className="ol-peak-label">
+                    {Number((room.daily || []).slice(-1)[0]?.[economyCur] || 0).toLocaleString()}
+                    <small> {economyCur === 'gp' ? 'GP' : 'NX'} last day</small>
+                  </p>
+                  <SpendChart
+                    color={economyCur === 'gp' ? '#df8104' : '#7dcea0'}
+                    points={(room.daily || []).map((d: any) => ({ t: d.t || d.d, peak: Number(d[economyCur] || 0) }))}
+                  />
+                </section>
+              </>
+            )}
+          </>
         )}
 
         {section === 'reports' && (
