@@ -1,10 +1,11 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { api } from '@/lib/api';
 import type { PageId } from '@/components/Layout';
 import { rankIcon } from '@/lib/ranks';
 import AdminPlayerAccount from '@/components/AdminPlayerAccount';
 import AdminClanProfile from '@/components/AdminClanProfile';
+import PageLoader from '@/components/PageLoader';
 import {
   XCircle, Loader, RotateCcw, MessageSquare, Send,
   LayoutDashboard, Users, Radio, Shield, Store, Landmark, FileBarChart, Swords, LogIn,
@@ -293,8 +294,32 @@ export default function AdminPage({ onNavigate }: { onNavigate?: (page: PageId) 
   const [newRoleGm, setNewRoleGm] = useState(false);
   const [staffBusy, setStaffBusy] = useState(false);
   const [pickRole, setPickRole] = useState('ADMINISTRATOR');
+  const [navLoading, setNavLoading] = useState(true);
+  const [navLeaving, setNavLeaving] = useState(false);
+  const navTimer = useRef<ReturnType<typeof setTimeout>>();
+  const navLeaveTimer = useRef<ReturnType<typeof setTimeout>>();
 
   const READ_SECTIONS: Section[] = ['players', 'online', 'clans', 'shop', 'economy', 'reports', 'matches', 'logins', 'linked', 'announcements', 'maps', 'boosts'];
+
+  const flashLoader = () => {
+    setNavLeaving(false);
+    setNavLoading(true);
+    window.clearTimeout(navTimer.current);
+    window.clearTimeout(navLeaveTimer.current);
+  };
+
+  const goSection = (id: Section) => {
+    flashLoader();
+    setSection(id);
+    if (id === 'players') setPlayerId(null);
+    if (id === 'clans') setClanId(null);
+  };
+
+  const goPlayer = (id: number) => {
+    flashLoader();
+    setSection('players');
+    setPlayerId(id);
+  };
 
   useEffect(() => {
     if (!profile) return;
@@ -406,7 +431,10 @@ export default function AdminPage({ onNavigate }: { onNavigate?: (page: PageId) 
         .finally(() => { if (live) setRoomLoading(false); });
       return () => { live = false; };
     }
-    if (!READ_SECTIONS.includes(section)) return;
+    if (!READ_SECTIONS.includes(section)) {
+      setRoomLoading(false);
+      return;
+    }
     let live = true;
     setRoomLoading(true);
     api.getAdminSection(section)
@@ -415,6 +443,24 @@ export default function AdminPage({ onNavigate }: { onNavigate?: (page: PageId) 
       .finally(() => { if (live) setRoomLoading(false); });
     return () => { live = false; };
   }, [section, playerPage, matchPage, loginPage, clanId, economyDays]);
+
+  useEffect(() => {
+    if (!navLoading) return;
+    if (loading || roomLoading) return;
+    navTimer.current = window.setTimeout(() => {
+      setNavLeaving(true);
+      navLeaveTimer.current = window.setTimeout(() => setNavLoading(false), 220);
+    }, 850);
+    return () => {
+      window.clearTimeout(navTimer.current);
+      window.clearTimeout(navLeaveTimer.current);
+    };
+  }, [navLoading, loading, roomLoading, section, playerId, clanId]);
+
+  useEffect(() => () => {
+    window.clearTimeout(navTimer.current);
+    window.clearTimeout(navLeaveTimer.current);
+  }, []);
 
   const loadData = async () => {
     try {
@@ -694,6 +740,7 @@ export default function AdminPage({ onNavigate }: { onNavigate?: (page: PageId) 
 
   return (
     <div className="admin-shell">
+      {navLoading && <PageLoader leaving={navLeaving} />}
       <aside className="admin-side">
         <div className="admin-brand">
           <img src="/caevo/ca.ico" alt="" />
@@ -714,7 +761,7 @@ export default function AdminPage({ onNavigate }: { onNavigate?: (page: PageId) 
                 const Icon = item.icon;
                 const on = section === item.id;
                 return (
-                  <button key={item.id} className={on ? 'admin-on' : ''} onClick={() => { setSection(item.id); if (item.id === 'players') setPlayerId(null); if (item.id === 'clans') setClanId(null); }}>
+                  <button key={item.id} className={on ? 'admin-on' : ''} onClick={() => goSection(item.id)}>
                     <Icon />
                     <span>{item.label}</span>
                     {on && <ChevronRight />}
@@ -758,8 +805,8 @@ export default function AdminPage({ onNavigate }: { onNavigate?: (page: PageId) 
                 <h1>COMMAND<br /><span>CENTER</span></h1>
                 <p>Live Combat Arms operations. New views only read the database — they never change it.</p>
                 <div className="admin-hero-btns">
-                  <button className="primary" onClick={() => setSection('players')}>Manage players</button>
-                  <button onClick={() => setSection('codes')}>Payment codes</button>
+                  <button className="primary" onClick={() => goSection('players')}>Manage players</button>
+                  <button onClick={() => goSection('codes')}>Payment codes</button>
                 </div>
               </div>
             </div>
@@ -794,10 +841,10 @@ export default function AdminPage({ onNavigate }: { onNavigate?: (page: PageId) 
               <div className="admin-panel admin-quick">
                 <h2>QUICK ACCESS</h2>
                 <p className="sub">Jump to working panels</p>
-                <button onClick={() => setSection('codes')}><div><strong>Payment codes</strong><small>{pendingCodes.length} pending</small></div><span>→</span></button>
-                <button onClick={() => setSection('payments')}><div><strong>Recargas</strong><small>{pendingCount} pending</small></div><span>→</span></button>
-                <button onClick={() => setSection('refunds')}><div><strong>Refunds</strong><small>{pendingRefunds.length} pending</small></div><span>→</span></button>
-                <button onClick={() => setSection('tickets')}><div><strong>Tickets</strong><small>{supportTickets.filter(t => t.status === 'open' || t.status === 'in-progress').length} open</small></div><span>→</span></button>
+                <button onClick={() => goSection('codes')}><div><strong>Payment codes</strong><small>{pendingCodes.length} pending</small></div><span>→</span></button>
+                <button onClick={() => goSection('payments')}><div><strong>Recargas</strong><small>{pendingCount} pending</small></div><span>→</span></button>
+                <button onClick={() => goSection('refunds')}><div><strong>Refunds</strong><small>{pendingRefunds.length} pending</small></div><span>→</span></button>
+                <button onClick={() => goSection('tickets')}><div><strong>Tickets</strong><small>{supportTickets.filter(t => t.status === 'open' || t.status === 'in-progress').length} open</small></div><span>→</span></button>
               </div>
             </div>
           </>
@@ -972,7 +1019,7 @@ export default function AdminPage({ onNavigate }: { onNavigate?: (page: PageId) 
                         <tr
                           key={p.id}
                           className="pl-row"
-                          onClick={() => { setSection('players'); setPlayerId(p.id); }}
+                          onClick={() => goPlayer(p.id)}
                         >
                           <td>
                             <div className="pl-player">
@@ -1001,7 +1048,7 @@ export default function AdminPage({ onNavigate }: { onNavigate?: (page: PageId) 
           <AdminClanProfile
             id={clanId}
             onBack={() => setClanId(null)}
-            onPlayer={(pid) => { setSection('players'); setPlayerId(pid); }}
+            onPlayer={(pid) => goPlayer(pid)}
           />
         )}
 
@@ -1152,7 +1199,7 @@ export default function AdminPage({ onNavigate }: { onNavigate?: (page: PageId) 
                       {(room.purchases || []).length === 0 ? (
                         <tr><td colSpan={5} className="pd-empty">No purchases yet.</td></tr>
                       ) : room.purchases.map((p: any, i: number) => (
-                        <tr key={i} className="pl-row" onClick={() => { setSection('players'); setPlayerId(p.buyer); }}>
+                        <tr key={i} className="pl-row" onClick={() => goPlayer(p.buyer)}>
                           <td className="pd-time">{stampSec(p.loggedAt)}</td>
                           <td className="login-nick">{p.NickName}</td>
                           <td>
@@ -1270,8 +1317,8 @@ export default function AdminPage({ onNavigate }: { onNavigate?: (page: PageId) 
                 <h2>REPORT #{openReport.SeqNo || openReport.id}</h2>
                 <div className="pd-grid" style={{ marginTop: 12 }}>
                   <div><p>WHEN</p><b>{stampSec(openReport.RegDate)}</b></div>
-                  <div><p>REPORTER</p><b className="login-nick" style={{ cursor: 'pointer' }} onClick={() => { setSection('players'); setPlayerId(openReport.ReporterOiduser); }}>{openReport.reporterName}</b></div>
-                  <div><p>REPORTED</p><b className="login-nick" style={{ cursor: 'pointer' }} onClick={() => { setSection('players'); setPlayerId(openReport.TargetOiduser); }}>{openReport.reportedName}</b></div>
+                  <div><p>REPORTER</p><b className="login-nick" style={{ cursor: 'pointer' }} onClick={() => goPlayer(openReport.ReporterOiduser)}>{openReport.reporterName}</b></div>
+                  <div><p>REPORTED</p><b className="login-nick" style={{ cursor: 'pointer' }} onClick={() => goPlayer(openReport.TargetOiduser)}>{openReport.reportedName}</b></div>
                   <div><p>CATEGORY</p><b>{openReport.category}</b></div>
                   <div><p>STATUS</p><b>{String(openReport.status || 'open').toUpperCase()}</b></div>
                 </div>
@@ -1492,7 +1539,7 @@ export default function AdminPage({ onNavigate }: { onNavigate?: (page: PageId) 
                   {(room.data || []).length === 0 ? (
                     <tr><td colSpan={5} className="pd-empty">No lobby sessions in this range.</td></tr>
                   ) : room.data.map((row: any) => (
-                    <tr key={row.id} className="pl-row" onClick={() => { setSection('players'); setPlayerId(row.oidUser); }}>
+                    <tr key={row.id} className="pl-row" onClick={() => goPlayer(row.oidUser)}>
                       <td><span className="login-nick">{row.NickName || row.username}</span></td>
                       <td className="pd-time">{stampSec(row.LoginDate)}</td>
                       <td className="pd-time">{stampSec(row.LogoutDate)}</td>
