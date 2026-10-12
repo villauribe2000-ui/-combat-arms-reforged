@@ -12,14 +12,16 @@ function staffActor(req) {
   if (!token) return null;
   try {
     const decoded = jwt.verify(token, JWT_SECRET);
-    return String(decoded?.username || '');
+    const username = String(decoded?.username || '');
+    if (!username) return null;
+    return { username, userId: Number(decoded?.userId || 0) };
   } catch {
     return null;
   }
 }
 
 function requireStaffOwner(req, res) {
-  if (staffActor(req) !== STAFF_OWNER) {
+  if (staffActor(req)?.username !== STAFF_OWNER) {
     res.status(403).json({ error: 'Solo el dueño puede cambiar roles' });
     return false;
   }
@@ -1183,16 +1185,20 @@ async function giftsFor(fromUserId, limit = 80) {
     ORDER BY createdAt DESC`, { id: Number(fromUserId) });
 }
 
-async function lookupStaffByUsername(username) {
+async function lookupStaff(actor) {
+  const username = actor?.username;
+  const userId = Number(actor?.userId || 0);
   if (username === STAFF_OWNER) {
     const users = await ca(`SELECT TOP 1 oidUser as id, strNexonID as username, NickName FROM CBT_User WHERE strNexonID = @u`, { u: STAFF_OWNER });
-    const user = users[0] || { id: 0, username: STAFF_OWNER, NickName: STAFF_OWNER };
-    return { ...user, userId: user.id, webRole: 'SUPERADMIN', siteAdmin: true, webGm: false };
+    const user = users[0] || { id: userId, username: STAFF_OWNER, NickName: STAFF_OWNER };
+    return { ...user, userId: Number(user.id || userId), username: STAFF_OWNER, webRole: 'SUPERADMIN', siteAdmin: true, webGm: true };
   }
-  const row = (await web(`SELECT TOP 1 userId, username, nickName, role, siteAdmin, isGm FROM admin_users WHERE username = @u`, { u: username }))[0];
+  let row = null;
+  if (userId) row = (await web(`SELECT TOP 1 userId, username, nickName, role, siteAdmin, isGm FROM admin_users WHERE userId = @id`, { id: userId }))[0];
+  if (!row && username) row = (await web(`SELECT TOP 1 userId, username, nickName, role, siteAdmin, isGm FROM admin_users WHERE username = @u`, { u: username }))[0];
   if (!row) return null;
   const flags = roleFlags(row);
-  return { userId: Number(row.userId), username: row.username, NickName: row.nickName, ...flags };
+  return { userId: Number(row.userId), username: row.username || username, NickName: row.nickName, ...flags, siteAdmin: true };
 }
 
 async function loadStaffBundle() {
@@ -1297,9 +1303,9 @@ router.get('/staff/search', async (req, res) => {
 router.get('/staff/me', async (req, res) => {
   try {
     await ensureStaffTables();
-    const username = staffActor(req);
-    if (!username) return res.status(401).json({ error: 'login required' });
-    const me = await lookupStaffByUsername(username);
+    const actor = staffActor(req);
+    if (!actor) return res.status(401).json({ error: 'login required' });
+    const me = await lookupStaff(actor);
     if (!me) return res.status(403).json({ error: 'no staff role' });
     const quota = await getQuota(me.userId);
     const gifts = await giftsFor(me.userId, 80);
@@ -1312,9 +1318,9 @@ router.get('/staff/me', async (req, res) => {
 router.get('/staff/gifts', async (req, res) => {
   try {
     await ensureStaffTables();
-    const username = staffActor(req);
-    if (!username) return res.status(401).json({ error: 'login required' });
-    const me = await lookupStaffByUsername(username);
+    const actor = staffActor(req);
+    if (!actor) return res.status(401).json({ error: 'login required' });
+    const me = await lookupStaff(actor);
     if (!me) return res.status(403).json({ error: 'no staff role' });
     const q = String(req.query.q || '').trim();
     const params = {};
@@ -1394,12 +1400,13 @@ router.post('/staff/:userId/quota', async (req, res) => {
 router.post('/staff/gift', async (req, res) => {
   try {
     await ensureStaffTables();
-    const username = staffActor(req);
-    if (!username) return res.status(401).json({ error: 'login required' });
-    const me = await lookupStaffByUsername(username);
-    if (!me || (!me.siteAdmin && username !== STAFF_OWNER)) {
+    const actor = staffActor(req);
+    if (!actor) return res.status(401).json({ error: 'login required' });
+    const me = await lookupStaff(actor);
+    if (!me) {
       return res.status(403).json({ error: 'no staff role' });
     }
+    const username = actor.username;
     const toUserId = parseInt(String(req.body?.toUserId), 10);
     const amount = Math.floor(Number(req.body?.amount) || 0);
     if (!Number.isFinite(toUserId) || amount <= 0) return res.status(400).json({ error: 'invalid amount' });
@@ -1468,7 +1475,7 @@ router.post('/staff/roles', async (req, res) => {
     await ensureStaffTables();
     const name = String(req.body?.name || '').trim().slice(0, 40);
     if (name.length < 2) return res.status(400).json({ error: 'invalid role' });
-    const siteAdmin = req.body?.siteAdmin === false ? 0 : 1;
+    const siteAdmin = 1;
     const isGm = req.body?.isGm ? 1 : 0;
     const createdBy = String(req.body?.createdBy || 'admin').slice(0, 64);
     const existing = await web(`SELECT TOP 1 id FROM staff_roles WHERE name = @name`, { name });
@@ -1514,7 +1521,7 @@ router.post('/staff', async (req, res) => {
       );
       roleRow = { name: roleName, siteAdmin: 1, isGm };
     }
-    const flags = roleFlags({ role: roleRow.name, siteAdmin: roleRow.siteAdmin, isGm: roleRow.isGm });
+    const flags = roleFlags({ role: roleRow.name, siteAdmin: 1, isGm: roleRow.isGm });
     const existing = await web(`SELECT TOP 1 userId FROM admin_users WHERE userId = @id`, { id: userId });
     if (existing.length) {
       await queryWeb(`
@@ -1526,7 +1533,7 @@ router.post('/staff', async (req, res) => {
         username: user.username,
         nickName: user.NickName || '',
         role: flags.role,
-        siteAdmin: flags.siteAdmin ? 1 : 0,
+        siteAdmin: 1,
         isGm: flags.webGm ? 1 : 0,
         grantedBy,
       });
@@ -1538,7 +1545,7 @@ router.post('/staff', async (req, res) => {
         username: user.username,
         nickName: user.NickName || '',
         role: flags.role,
-        siteAdmin: flags.siteAdmin ? 1 : 0,
+        siteAdmin: 1,
         isGm: flags.webGm ? 1 : 0,
         grantedBy,
       });

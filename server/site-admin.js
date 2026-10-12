@@ -80,13 +80,11 @@ export async function ensureStaffTables() {
 }
 
 export function roleFlags(row) {
-  const role = String(row?.role || '').trim();
+  if (!row) return { role: null, siteAdmin: false, webGm: false };
+  const role = String(row.role || row.name || '').trim();
   const low = role.toLowerCase();
-  const webGm = on(row?.isGm) || low === 'gm';
-  const siteAdmin = row?.siteAdmin === undefined || row?.siteAdmin === null
-    ? Boolean(role)
-    : on(row.siteAdmin) || ['superadmin', 'administrator', 'admin', 'gm'].includes(low);
-  return { role: role || null, siteAdmin: Boolean(siteAdmin), webGm };
+  const webGm = on(row.isGm) || low === 'gm';
+  return { role: role || null, siteAdmin: Boolean(role), webGm };
 }
 
 export async function userIsSiteAdmin(userId, username) {
@@ -96,11 +94,13 @@ export async function userIsSiteAdmin(userId, username) {
   try {
     await ensureStaffTables();
     const result = await queryWeb(
-      `SELECT TOP 1 role, siteAdmin, isGm FROM admin_users WHERE userId = @id`,
-      { id: Number(userId) },
+      `SELECT TOP 1 role, siteAdmin, isGm FROM admin_users WHERE userId = @id OR username = @u`,
+      { id: Number(userId) || 0, u: String(username || '') },
     );
-    const flags = roleFlags(result.recordset?.[0]);
-    return { is_admin: flags.siteAdmin, webRole: flags.role, webGm: flags.webGm };
+    const row = result.recordset?.[0];
+    if (!row) return { is_admin: false, webRole: null, webGm: false };
+    const flags = roleFlags(row);
+    return { is_admin: true, webRole: flags.role, webGm: flags.webGm };
   } catch {
     return { is_admin: false, webRole: null, webGm: false };
   }

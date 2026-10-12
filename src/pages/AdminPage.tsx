@@ -292,7 +292,6 @@ export default function AdminPage({ onNavigate }: { onNavigate?: (page: PageId) 
   const [staffList, setStaffList] = useState<any[]>([]);
   const [staffRoles, setStaffRoles] = useState<any[]>([]);
   const [newRoleName, setNewRoleName] = useState('');
-  const [newRoleAdmin, setNewRoleAdmin] = useState(true);
   const [newRoleGm, setNewRoleGm] = useState(false);
   const [staffBusy, setStaffBusy] = useState(false);
   const [pickRole, setPickRole] = useState('ADMINISTRATOR');
@@ -790,7 +789,7 @@ export default function AdminPage({ onNavigate }: { onNavigate?: (page: PageId) 
     try {
       const d = await api.createAdminStaffRole({
         name,
-        siteAdmin: newRoleAdmin,
+        siteAdmin: true,
         isGm: newRoleGm,
         createdBy: profile?.username,
       });
@@ -1970,7 +1969,6 @@ export default function AdminPage({ onNavigate }: { onNavigate?: (page: PageId) 
             {canManageStaff && (
             <form className="staff-toolbar" onSubmit={createStaffRole}>
               <input value={newRoleName} onChange={(e) => setNewRoleName(e.target.value)} placeholder="Nuevo rol (MOD, GM, HELPER)" />
-              <label className="staff-switch"><input type="checkbox" checked={newRoleAdmin} onChange={(e) => setNewRoleAdmin(e.target.checked)} /><span /> Panel admin</label>
               <label className="staff-switch"><input type="checkbox" checked={newRoleGm} onChange={(e) => setNewRoleGm(e.target.checked)} /><span /> Marca GM</label>
               <button className="staff-btn staff-btn-gold" type="submit" disabled={staffBusy}>Crear rol</button>
             </form>
