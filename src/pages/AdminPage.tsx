@@ -745,11 +745,11 @@ export default function AdminPage({ onNavigate }: { onNavigate?: (page: PageId) 
     }
   };
 
-  const saveQuota = async (mode: 'add' | 'sub' | 'set') => {
+  const saveQuota = async (mode: 'add' | 'sub' | 'set' | 'clear') => {
     if (!canManageStaff || !staffOpen) return;
     const amount = Math.max(0, Math.floor(Number(String(quotaInput).replace(/[^\d]/g, '')) || 0));
-    if (amount <= 0) {
-      alert('Escribe cuánto NX quieres sumar o restar');
+    if (mode !== 'clear' && amount <= 0) {
+      alert('Escribe cuánto NX quieres poner o sumar');
       return;
     }
     setStaffBusy(true);
@@ -2029,7 +2029,7 @@ export default function AdminPage({ onNavigate }: { onNavigate?: (page: PageId) 
                 <p className="eyebrow">OPERATIONS / STAFF</p>
                 <h1>ADMINISTRACIÓN</h1>
                 <p>{canManageStaff
-                  ? 'Asigna roles, abre un staff y súmale o réstale cupo mensual de NX. El número que escribes se suma o se quita al cupo actual, no lo reemplaza.'
+                  ? 'Asigna roles, abre un staff, quítale el cupo (RESTANTE 0) o ponle / súmale NX para que pueda volver a regalar.'
                   : 'Solo lectura. Abre un staff para ver su etiqueta y su cupo. No puedes cambiar roles ni montos.'}</p>
               </div>
             </div>
@@ -2123,13 +2123,14 @@ export default function AdminPage({ onNavigate }: { onNavigate?: (page: PageId) 
                     <article><p>RESTA</p><strong>{nxFmt(staffDesk?.quota?.remaining ?? staffOpen.remaining)}</strong></article>
                   </div>
                   {canManageStaff && (
-                    <form className="staff-toolbar staff-quota-actions" onSubmit={(e) => { e.preventDefault(); saveQuota('add'); }}>
-                      <input value={quotaInput} onChange={(e) => setQuotaInput(e.target.value)} placeholder="Cantidad NX a sumar o restar" />
-                      <button className="staff-btn staff-btn-gold" type="submit" disabled={staffBusy}>Sumar cupo</button>
-                      <button className="staff-btn staff-btn-danger staff-btn-danger-sm" type="button" disabled={staffBusy} onClick={() => saveQuota('sub')}>Restar cupo</button>
+                    <form className="staff-toolbar staff-quota-actions" onSubmit={(e) => { e.preventDefault(); saveQuota('set'); }}>
+                      <input value={quotaInput} onChange={(e) => setQuotaInput(e.target.value)} placeholder="NX que le dejas de cupo" />
+                      <button className="staff-btn staff-btn-gold" type="submit" disabled={staffBusy}>Poner cupo</button>
+                      <button className="staff-btn staff-btn-gold" type="button" disabled={staffBusy} onClick={() => saveQuota('add')}>Sumar cupo</button>
+                      <button className="staff-btn staff-btn-danger staff-btn-danger-sm" type="button" disabled={staffBusy} onClick={() => saveQuota('clear')}>Quitar cupo</button>
                     </form>
                   )}
-                  <p className="staff-note">Sumar agrega NX al cupo que ya tiene. Restar se lo quita. El cupo se reinicia cada mes; si llega a 0 no puede regalar más NX.</p>
+                  <p className="staff-note">Quitar cupo deja RESTANTE en 0 (ya no puede regalar). Poner cupo le deja exactamente esa cantidad para regalar. Sumar se la agrega al restante actual.</p>
                   <h3>REGALOS DE ESTE MES</h3>
                   <div className="staff-gift-list">
                     {(staffDesk?.gifts || []).length === 0 ? <p className="staff-note">Todavía no ha regalado NX.</p> : (staffDesk.gifts || []).map((g: any) => (

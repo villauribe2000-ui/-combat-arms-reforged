@@ -1514,6 +1514,38 @@ router.get('/staff/:userId/desk', async (req, res) => {
   }
 });
 
+async function writeQuotaAllotment(quotaId, username, amount, period, updatedBy, identIds) {
+  const ids = [...new Set([quotaId, ...(identIds || [])].map(Number).filter((n) => Number.isFinite(n) && n > 0))];
+  const existing = ids.length
+    ? await web(`SELECT userId FROM staff_nx_quota WHERE userId IN (${ids.join(',')})`)
+    : [];
+  const have = new Set(existing.map((r) => Number(r.userId)));
+  for (const id of have) {
+    try {
+      await queryWeb(`
+        UPDATE staff_nx_quota
+        SET monthlyAllotment = @amount, period = @period, updatedBy = @updatedBy, updatedAt = GETDATE(), username = @username
+        WHERE userId = @id`, { id, amount, period, updatedBy, username });
+    } catch {
+      await queryWeb(`
+        UPDATE staff_nx_quota
+        SET monthlyAllotment = @amount, period = @period, updatedBy = @updatedBy, updatedAt = GETDATE()
+        WHERE userId = @id`, { id, amount, period, updatedBy });
+    }
+  }
+  if (!have.size) {
+    try {
+      await queryWeb(`
+        INSERT INTO staff_nx_quota (userId, monthlyAllotment, period, used, updatedBy, updatedAt, username)
+        VALUES (@id, @amount, @period, 0, @updatedBy, GETDATE(), @username)`, { id: quotaId, amount, period, updatedBy, username });
+    } catch {
+      await queryWeb(`
+        INSERT INTO staff_nx_quota (userId, monthlyAllotment, period, used, updatedBy, updatedAt)
+        VALUES (@id, @amount, @period, 0, @updatedBy, GETDATE())`, { id: quotaId, amount, period, updatedBy });
+    }
+  }
+}
+
 router.post('/staff/:userId/quota', async (req, res) => {
   try {
     if (!requireStaffOwner(req, res)) return;
@@ -1524,38 +1556,20 @@ router.post('/staff/:userId/quota', async (req, res) => {
     if (!Number.isFinite(userId)) return res.status(400).json({ error: 'invalid' });
     const period = await currentPeriod();
     const named = (await ca(`SELECT TOP 1 strNexonID as username FROM CBT_User WHERE oidUser = @id`, { id: userId }))[0];
-    const username = named?.username || '';
+    const fromStaff = (await web(`SELECT TOP 1 username FROM admin_users WHERE userId = @id`, { id: userId }))[0];
+    const username = named?.username || fromStaff?.username || '';
+    const ident = await staffIdentityIds(userId, username);
     const found = await getQuota(userId, username);
-    const quotaId = Number(found.userId || userId);
+    const quotaId = Number(found.userId || ident.ids[0] || userId);
+    const used = asNum(found.used);
     let amount = raw;
     if (mode === 'add') amount = Math.max(0, asNum(found.monthlyAllotment) + raw);
-    else if (mode === 'sub') amount = Math.max(0, asNum(found.monthlyAllotment) - raw);
-    const existing = await web(`SELECT TOP 1 userId FROM staff_nx_quota WHERE userId = @id`, { id: quotaId });
+    else if (mode === 'sub') amount = Math.max(used, asNum(found.monthlyAllotment) - raw);
+    else if (mode === 'clear') amount = used;
+    else amount = used + raw;
     const actor = staffActor(req);
     const updatedBy = Number(actor?.userId) || 0;
-    if (existing.length) {
-      try {
-        await queryWeb(`
-          UPDATE staff_nx_quota
-          SET monthlyAllotment = @amount, period = @period, updatedBy = @updatedBy, updatedAt = GETDATE(), username = @username
-          WHERE userId = @id`, { id: quotaId, amount, period, updatedBy, username });
-      } catch {
-        await queryWeb(`
-          UPDATE staff_nx_quota
-          SET monthlyAllotment = @amount, period = @period, updatedBy = @updatedBy, updatedAt = GETDATE()
-          WHERE userId = @id`, { id: quotaId, amount, period, updatedBy });
-      }
-    } else {
-      try {
-        await queryWeb(`
-          INSERT INTO staff_nx_quota (userId, monthlyAllotment, period, used, updatedBy, updatedAt, username)
-          VALUES (@id, @amount, @period, 0, @updatedBy, GETDATE(), @username)`, { id: quotaId, amount, period, updatedBy, username });
-      } catch {
-        await queryWeb(`
-          INSERT INTO staff_nx_quota (userId, monthlyAllotment, period, used, updatedBy, updatedAt)
-          VALUES (@id, @amount, @period, 0, @updatedBy, GETDATE())`, { id: quotaId, amount, period, updatedBy });
-      }
-    }
+    await writeQuotaAllotment(quotaId, username, amount, period, updatedBy, ident.ids);
     res.json({ ok: true, quota: await getQuota(quotaId, username), staff: (await loadStaffBundle()).staff });
   } catch (e) {
     res.status(500).json({ error: e.message });

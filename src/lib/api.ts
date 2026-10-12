@@ -209,7 +209,7 @@ class ApiClient {
     return await this.request<any>('GET', `/admin/staff/${userId}/desk`);
   }
 
-  async setAdminStaffQuota(userId: number, amount: number, mode: 'add' | 'sub' | 'set' = 'set') {
+  async setAdminStaffQuota(userId: number, amount: number, mode: 'add' | 'sub' | 'set' | 'clear' = 'set') {
     return await this.request<any>('POST', `/admin/staff/${userId}/quota`, { amount, mode });
   }
 
