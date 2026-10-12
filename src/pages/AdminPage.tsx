@@ -7,7 +7,7 @@ import AdminPlayerAccount from '@/components/AdminPlayerAccount';
 import {
   XCircle, Loader, RotateCcw, MessageSquare, Send,
   LayoutDashboard, Users, Radio, Shield, Store, Landmark, FileBarChart, Swords, LogIn,
-  Link2, Megaphone, Map, Zap, ArrowLeft, Ticket, KeyRound, CreditCard, ExternalLink
+  Link2, Megaphone, Map, Zap, ArrowLeft, Ticket, KeyRound, CreditCard, ExternalLink, ChevronRight, Search
 } from 'lucide-react';
 
 interface PaymentCode {
@@ -73,23 +73,23 @@ type Section =
   | 'codes' | 'payments' | 'refunds' | 'tickets';
 
 const NAV: { id: Section; label: string; icon: typeof LayoutDashboard; group: string }[] = [
-  { id: 'overview', label: 'Overview', icon: LayoutDashboard, group: 'CONTROL' },
-  { id: 'players', label: 'Players', icon: Users, group: 'CONTROL' },
-  { id: 'online', label: 'Online', icon: Radio, group: 'CONTROL' },
-  { id: 'clans', label: 'Clans', icon: Shield, group: 'CONTROL' },
-  { id: 'shop', label: 'Shop', icon: Store, group: 'CONTROL' },
-  { id: 'codes', label: 'Payment codes', icon: KeyRound, group: 'ECONOMY' },
-  { id: 'payments', label: 'Recargas', icon: CreditCard, group: 'ECONOMY' },
-  { id: 'refunds', label: 'Refunds', icon: RotateCcw, group: 'ECONOMY' },
-  { id: 'tickets', label: 'Tickets', icon: Ticket, group: 'ECONOMY' },
-  { id: 'economy', label: 'Economy', icon: Landmark, group: 'ECONOMY' },
-  { id: 'reports', label: 'Reports', icon: FileBarChart, group: 'ECONOMY' },
-  { id: 'matches', label: 'Matches', icon: Swords, group: 'WORLD' },
-  { id: 'logins', label: 'Logins', icon: LogIn, group: 'WORLD' },
-  { id: 'linked', label: 'Linked accounts', icon: Link2, group: 'WORLD' },
-  { id: 'announcements', label: 'Announcements', icon: Megaphone, group: 'WORLD' },
-  { id: 'maps', label: 'Maps', icon: Map, group: 'WORLD' },
-  { id: 'boosts', label: 'Boosts', icon: Zap, group: 'WORLD' },
+  { id: 'overview', label: 'Overview', icon: LayoutDashboard, group: 'CONTROL ROOM' },
+  { id: 'players', label: 'Players', icon: Users, group: 'CONTROL ROOM' },
+  { id: 'matches', label: 'Matches', icon: Swords, group: 'CONTROL ROOM' },
+  { id: 'online', label: 'Online', icon: Radio, group: 'CONTROL ROOM' },
+  { id: 'logins', label: 'Logins', icon: LogIn, group: 'TRACKING' },
+  { id: 'linked', label: 'Linked accounts', icon: Link2, group: 'TRACKING' },
+  { id: 'reports', label: 'Player reports', icon: FileBarChart, group: 'TRACKING' },
+  { id: 'clans', label: 'Clans', icon: Shield, group: 'TRACKING' },
+  { id: 'economy', label: 'Economy', icon: Landmark, group: 'TRACKING' },
+  { id: 'announcements', label: 'Announcements', icon: Megaphone, group: 'GAME CONTROL' },
+  { id: 'shop', label: 'Shop', icon: Store, group: 'GAME CONTROL' },
+  { id: 'maps', label: 'Maps & modes', icon: Map, group: 'GAME CONTROL' },
+  { id: 'boosts', label: 'EXP & GP boosts', icon: Zap, group: 'EVENTS' },
+  { id: 'codes', label: 'Payment codes', icon: KeyRound, group: 'OPERATIONS' },
+  { id: 'payments', label: 'Recargas', icon: CreditCard, group: 'OPERATIONS' },
+  { id: 'refunds', label: 'Refunds', icon: RotateCcw, group: 'OPERATIONS' },
+  { id: 'tickets', label: 'Tickets', icon: Ticket, group: 'OPERATIONS' },
 ];
 
 const ISO3: Record<string, string> = {
@@ -408,16 +408,22 @@ export default function AdminPage({ onNavigate }: { onNavigate?: (page: PageId) 
             <small>ADMIN CONSOLE</small>
           </div>
         </div>
-        <input className="admin-find" placeholder="Find a section..." value={find} onChange={(e) => setFind(e.target.value)} />
+        <div className="admin-find-wrap">
+          <Search />
+          <input className="admin-find" placeholder="Find a section..." value={find} onChange={(e) => setFind(e.target.value)} />
+        </div>
         <nav className="admin-nav">
           {groups.map(group => (
             <div key={group}>
               <p>{group}</p>
               {NAV.filter(n => n.group === group && n.label.toLowerCase().includes(q)).map(item => {
                 const Icon = item.icon;
+                const on = section === item.id;
                 return (
-                  <button key={item.id} className={section === item.id ? 'admin-on' : ''} onClick={() => { setSection(item.id); if (item.id === 'players') setPlayerId(null); }}>
-                    <Icon /> {item.label}
+                  <button key={item.id} className={on ? 'admin-on' : ''} onClick={() => { setSection(item.id); if (item.id === 'players') setPlayerId(null); }}>
+                    <Icon />
+                    <span>{item.label}</span>
+                    {on && <ChevronRight />}
                   </button>
                 );
               })}
@@ -425,7 +431,8 @@ export default function AdminPage({ onNavigate }: { onNavigate?: (page: PageId) 
           ))}
         </nav>
         <button className="admin-back" onClick={() => onNavigate?.('home')}>
-          <ArrowLeft className="mr-2 inline h-4 w-4" /> Back to website
+          <span>Back to website</span>
+          <small>Combat Arms Classic</small>
         </button>
       </aside>
 

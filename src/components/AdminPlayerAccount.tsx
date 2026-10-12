@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { api } from '@/lib/api';
 import { rankIcon, rankFromExp } from '@/lib/ranks';
 import {
-  ArrowLeft, Users, Package, Inbox, ShoppingBag, TrendingUp, UsersRound, Flag, Search, Shield,
+  ArrowLeft, Users, Package, Inbox, ShoppingBag, TrendingUp, UsersRound, Flag, Search, Shield, Swords,
 } from 'lucide-react';
 
 const ISO3: Record<string, string> = {
@@ -165,8 +165,8 @@ export default function AdminPlayerAccount({ id, onBack }: { id: number; onBack:
           <div className="pd-split">
             <section className="pd-card">
               <div className="pd-card-top">
-                <h2>RECENT MATCHES</h2>
-                <span>90 days</span>
+                <h2><Swords /> RECENT MATCHES</h2>
+                <span className="pd-chip">90 days</span>
               </div>
               <p className="sub">Open a match to review the full results</p>
               <table className="pd-table">
@@ -188,7 +188,7 @@ export default function AdminPlayerAccount({ id, onBack }: { id: number; onBack:
             </section>
             <section className="pd-card">
               <h2>NICKNAME HISTORY</h2>
-              <p className="sub">Previous names recorded for this character</p>
+              <p className="sub">Previous names recorded for this character.</p>
               {(data.nicks || []).length === 0 ? (
                 <p className="pd-note">No nickname changes.</p>
               ) : (
@@ -206,8 +206,8 @@ export default function AdminPlayerAccount({ id, onBack }: { id: number; onBack:
 
           <section className="pd-card">
             <div className="pd-card-top">
-              <h2>MODERATION HISTORY</h2>
-              <span>{(data.punishments?.length || 0) + (data.bans?.length || 0)} RECORDS</span>
+              <h2><Shield /> MODERATION HISTORY</h2>
+              <span className="pd-chip">{(data.punishments?.length || 0) + (data.bans?.length || 0)} RECORDS</span>
             </div>
             <p className="sub">Restrictions, mutes, and releases from the panel and game.</p>
             <table className="pd-table">
@@ -224,18 +224,18 @@ export default function AdminPlayerAccount({ id, onBack }: { id: number; onBack:
                         <td>{stampShort(r.endsAt)}</td>
                         <td>{r.reason}</td>
                         <td>{r.issuedByName || '—'}</td>
-                        <td>web</td>
+                        <td>Web</td>
                         <td>{r.liftedAt ? stampShort(r.liftedAt) : '—'}</td>
                       </tr>
                     ))}
                     {(data.bans || []).map((r: any, i: number) => (
                       <tr key={`b${i}`}>
                         <td>{stampShort(r.BanDate)}</td>
-                        <td>{r.BanType}</td>
+                        <td>{String(r.BanType || '').trim() || 'KICK'}</td>
                         <td>{r.BanPeriod ? `${r.BanPeriod}` : '—'}</td>
                         <td>{r.Reason}</td>
                         <td>{r.GMOidUser}</td>
-                        <td>game</td>
+                        <td>Game</td>
                         <td>—</td>
                       </tr>
                     ))}
