@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import jwt from 'jsonwebtoken';
 import { query, queryGuildDB, queryLog, queryVisms, queryWeb } from '../db.js';
-import { ensureStaffTables, roleFlags, mapDbRole } from '../site-admin.js';
+import { ensureStaffTables, roleFlags, mapDbRole, userIsSiteAdmin } from '../site-admin.js';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-change-this';
 const STAFF_OWNER = 'villauribe12';
@@ -1185,20 +1185,51 @@ async function giftsFor(fromUserId, limit = 80) {
     ORDER BY createdAt DESC`, { id: Number(fromUserId) });
 }
 
-async function lookupStaff(actor) {
-  const username = actor?.username;
+async function caUserByActor(actor) {
   const userId = Number(actor?.userId || 0);
-  if (username === STAFF_OWNER) {
-    const users = await ca(`SELECT TOP 1 oidUser as id, strNexonID as username, NickName FROM CBT_User WHERE strNexonID = @u`, { u: STAFF_OWNER });
-    const user = users[0] || { id: userId, username: STAFF_OWNER, NickName: STAFF_OWNER };
-    return { ...user, userId: Number(user.id || userId), username: STAFF_OWNER, webRole: 'SUPERADMIN', siteAdmin: true, webGm: true };
+  const username = String(actor?.username || '');
+  if (userId) {
+    const byId = await ca(`SELECT TOP 1 oidUser as id, strNexonID as username, NickName FROM CBT_User WHERE oidUser = @id`, { id: userId });
+    if (byId[0]) return byId[0];
   }
-  let row = null;
-  if (userId) row = (await web(`SELECT TOP 1 userId, username, nickName, role, siteAdmin, isGm FROM admin_users WHERE userId = @id`, { id: userId }))[0];
-  if (!row && username) row = (await web(`SELECT TOP 1 userId, username, nickName, role, siteAdmin, isGm FROM admin_users WHERE username = @u`, { u: username }))[0];
+  if (username) {
+    const byName = await ca(`SELECT TOP 1 oidUser as id, strNexonID as username, NickName FROM CBT_User WHERE strNexonID = @u`, { u: username });
+    if (byName[0]) return byName[0];
+  }
+  return null;
+}
+
+async function lookupStaff(actor) {
+  const username = String(actor?.username || '');
+  const caUser = await caUserByActor(actor);
+  const userId = Number(caUser?.id || actor?.userId || 0);
+  const uname = String(caUser?.username || username);
+  if (uname === STAFF_OWNER || username === STAFF_OWNER) {
+    return {
+      userId,
+      username: STAFF_OWNER,
+      NickName: caUser?.NickName || STAFF_OWNER,
+      webRole: 'SUPERADMIN',
+      siteAdmin: true,
+      webGm: true,
+    };
+  }
+  let row = (await web(`SELECT TOP 1 * FROM admin_users WHERE userId = @id OR username = @u`, { id: userId, u: uname }))[0];
+  if (!row && userId) {
+    row = (await web(`SELECT TOP 1 userId, role FROM admin_users WHERE userId = @id`, { id: userId }))[0];
+  }
+  if (!row && uname) {
+    row = (await web(`SELECT TOP 1 userId, role FROM admin_users WHERE username = @u`, { u: uname }))[0];
+  }
   if (!row) return null;
   const flags = roleFlags(row);
-  return { userId: Number(row.userId), username: row.username || username, NickName: row.nickName, ...flags, siteAdmin: true };
+  return {
+    userId: Number(row.userId || userId),
+    username: uname || row.username,
+    NickName: caUser?.NickName || row.nickName || row.NickName,
+    ...flags,
+    siteAdmin: true,
+  };
 }
 
 async function loadStaffBundle() {
@@ -1310,8 +1341,20 @@ router.get('/staff/me', async (req, res) => {
     await ensureStaffTables();
     const actor = staffActor(req);
     if (!actor) return res.status(401).json({ error: 'login required' });
-    const me = await lookupStaff(actor);
-    if (!me) return res.status(403).json({ error: 'no staff role' });
+    let me = await lookupStaff(actor);
+    if (!me) {
+      const site = await userIsSiteAdmin(actor.userId, actor.username);
+      if (!site.is_admin) return res.status(403).json({ error: 'no staff role' });
+      const caUser = await caUserByActor(actor);
+      me = {
+        userId: Number(caUser?.id || actor.userId || 0),
+        username: caUser?.username || actor.username,
+        NickName: caUser?.NickName,
+        webRole: site.webRole || 'STAFF',
+        siteAdmin: true,
+        webGm: site.webGm,
+      };
+    }
     const quota = await getQuota(me.userId);
     const gifts = await giftsFor(me.userId, 80);
     const unlimited = actor.username === STAFF_OWNER;

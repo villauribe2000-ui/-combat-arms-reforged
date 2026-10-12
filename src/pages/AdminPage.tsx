@@ -453,9 +453,26 @@ export default function AdminPage({ onNavigate }: { onNavigate?: (page: PageId) 
     if (section === 'gm') {
       let live = true;
       setRoomLoading(true);
+      const applyDesk = (d: any) => {
+        if (!live) return;
+        if (d?.me) setGmDesk(d);
+        else if (d?.staff) setGmDesk({ me: d.staff, quota: d.quota, gifts: d.gifts, unlimited: false });
+        else setGmDesk(d || {});
+      };
       api.getAdminStaffMe()
-        .then((d) => { if (live) setGmDesk(d || {}); })
-        .catch(() => { if (live) setGmDesk(null); })
+        .then(applyDesk)
+        .catch(async () => {
+          const uid = Number(profile?.userId || profile?.id || 0);
+          if (!uid) {
+            if (live) setGmDesk(null);
+            return;
+          }
+          try {
+            applyDesk(await api.getAdminStaffDesk(uid));
+          } catch {
+            if (live) setGmDesk(null);
+          }
+        })
         .finally(() => { if (live) setRoomLoading(false); });
       return () => { live = false; };
     }
@@ -479,7 +496,7 @@ export default function AdminPage({ onNavigate }: { onNavigate?: (page: PageId) 
       .catch(() => { if (live) setRoom({}); })
       .finally(() => { if (live) setRoomLoading(false); });
     return () => { live = false; };
-  }, [section, playerPage, matchPage, loginPage, clanId, economyDays]);
+  }, [section, playerPage, matchPage, loginPage, clanId, economyDays, profile?.userId, profile?.id]);
 
   useEffect(() => {
     if (!navLoading) return;

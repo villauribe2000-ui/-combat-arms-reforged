@@ -53,11 +53,11 @@ class ApiClient {
     const headers: Record<string, string> = {
       'Content-Type': 'application/json',
     };
-
-    if (this.token) {
-      headers.Authorization = `Bearer ${this.token}`;
+    const token = this.token || (typeof window !== 'undefined' ? localStorage.getItem('token') : null);
+    if (token) {
+      this.token = token;
+      headers.Authorization = `Bearer ${token}`;
     }
-
     return headers;
   }
 
