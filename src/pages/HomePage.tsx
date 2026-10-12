@@ -140,7 +140,7 @@ export default function HomePage({ onNavigate }: { onNavigate: (page: PageId) =>
         </div>
         <div className="mt-8 flex justify-center">
           <button
-            onClick={() => onNavigate('support')}
+            onClick={() => onNavigate('guide')}
             className="btn-evo btn-evo-outline min-h-[50px] px-6 text-[13px]"
           >
             View all game modes
@@ -272,7 +272,7 @@ export default function HomePage({ onNavigate }: { onNavigate: (page: PageId) =>
           <nav className="flex flex-wrap items-center gap-5 text-[13px] text-[#b5b5b5]">
             <button onClick={() => onNavigate('rankings')} className="hover:text-white">Rankings</button>
             <button onClick={() => onNavigate('birthday')} className="hover:text-white">Events</button>
-            <button onClick={() => onNavigate('support')} className="hover:text-white">Guide</button>
+            <button onClick={() => onNavigate('guide')} className="hover:text-white">Guide</button>
             <a href="https://www.mediafire.com/file/70z692y8n25zi8r/CombatArmsReforged.rar/file" target="_blank" rel="noopener noreferrer" className="hover:text-white">Download</a>
             <a href="https://discord.gg/5EpJwAh2r6" target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1.5 text-[#5865F2] hover:text-[#7983f5]">
               <img src="/caevo/discord-mark-white.svg" alt="" className="h-3.5 w-4" />

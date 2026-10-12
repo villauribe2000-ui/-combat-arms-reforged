@@ -3,10 +3,10 @@ import { useAuth } from '@/context/AuthContext';
 import LoginModal from '@/components/LoginModal';
 import {
   Trophy, Store, Users, LifeBuoy, Shield, Wallet, History,
-  Menu, LogOut, Crown, LogIn, Gift, Home, Download,
+  Menu, LogOut, Crown, LogIn, Gift, Home, Download, BookOpen,
 } from 'lucide-react';
 
-export type PageId = 'home' | 'profile' | 'rankings' | 'store' | 'clans' | 'support' | 'admin' | 'wallet' | 'purchase-history' | 'level-rewards' | 'birthday';
+export type PageId = 'home' | 'profile' | 'rankings' | 'store' | 'clans' | 'support' | 'admin' | 'wallet' | 'purchase-history' | 'level-rewards' | 'birthday' | 'guide';
 
 type NavItem = {
   id: PageId;
@@ -24,6 +24,7 @@ const PRIMARY_NAV: NavItem[] = [
   { id: 'purchase-history', label: 'Historial', icon: History },
   { id: 'level-rewards', label: 'Recompensas', icon: Crown },
   { id: 'birthday', label: 'Cumpleaños', icon: Gift },
+  { id: 'guide', label: 'Guide', icon: BookOpen },
   { id: 'support', label: 'Soporte', icon: LifeBuoy },
   { id: 'admin', label: 'Admin', icon: Shield, adminOnly: true },
 ];
@@ -160,12 +161,12 @@ export default function Layout({ currentPage, onNavigate, children }: Props) {
         </>
       )}
 
-      <main className={currentPage === 'home' ? 'relative' : 'relative mx-auto max-w-[1400px] px-4 py-8 lg:px-8'}>
+      <main className={currentPage === 'home' || currentPage === 'guide' ? 'relative' : 'relative mx-auto max-w-[1400px] px-4 py-8 lg:px-8'}>
         {loading ? (
           <div className="flex h-[70vh] items-center justify-center">
             <div className="h-8 w-8 animate-spin rounded-full border-2 border-[#f5a000]/30 border-t-[#f5a000]" />
           </div>
-        ) : !profile && currentPage !== 'home' ? (
+        ) : !profile && currentPage !== 'home' && currentPage !== 'guide' ? (
           <div className="flex min-h-[70vh] flex-col items-center justify-center text-center">
             <h2 className="mt-4 text-2xl font-bold">Inicia sesión para continuar</h2>
             <p className="mt-2 text-neutral-400">Crea tu cuenta o inicia sesión para acceder a esta sección</p>

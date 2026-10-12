@@ -7,6 +7,7 @@ import RankingsPage from '@/pages/RankingsPage';
 import MarketplacePage from '@/pages/MarketplacePage';
 import ClansPage from '@/pages/ClansPage';
 import SupportPage from '@/pages/SupportPage';
+import GuidePage from '@/pages/GuidePage';
 import AdminPage from '@/pages/AdminPage';
 import WalletPage from '@/pages/WalletPage';
 import PurchaseHistoryPage from '@/pages/PurchaseHistoryPage';
@@ -23,6 +24,7 @@ function AppContent() {
       case 'rankings': return <RankingsPage />;
       case 'store': return <MarketplacePage />;
       case 'clans': return <ClansPage />;
+      case 'guide': return <GuidePage />;
       case 'support': return <SupportPage />;
       case 'admin': return <AdminPage />;
       case 'wallet': return <WalletPage />;
