@@ -67,6 +67,7 @@ export async function ensureStaffTables() {
       CREATE INDEX idx_staff_nx_gifts_from ON staff_nx_gifts (fromUserId, createdAt DESC);
       CREATE INDEX idx_staff_nx_gifts_at ON staff_nx_gifts (createdAt DESC);
     END
+    IF COL_LENGTH('staff_nx_quota', 'username') IS NULL ALTER TABLE staff_nx_quota ADD username NVARCHAR(64) NULL;
     IF COL_LENGTH('staff_nx_gifts', 'message') IS NULL ALTER TABLE staff_nx_gifts ADD message NVARCHAR(300) NULL;
     IF OBJECT_ID('PaymentCodes', 'U') IS NOT NULL AND COL_LENGTH('PaymentCodes', 'note') IS NULL ALTER TABLE PaymentCodes ADD note NVARCHAR(300) NULL;
   `);

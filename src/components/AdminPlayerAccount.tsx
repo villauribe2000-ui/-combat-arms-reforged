@@ -80,14 +80,37 @@ export default function AdminPlayerAccount({ id, onBack }: { id: number; onBack:
       .then((d) => { if (live) setData(d); })
       .catch(() => { if (live) setData(null); })
       .finally(() => { if (live) setLoading(false); });
-    api.getAdminStaffMe()
-      .then((d) => { if (live) setGiftQuota(d?.quota || null); })
-      .catch(() => { if (live) setGiftQuota(null); });
+    const loadQuota = async () => {
+      try {
+        const d = await api.getAdminStaffMe();
+        if (Number(d?.quota?.monthlyAllotment || 0) > 0 || d?.unlimited) {
+          if (live) setGiftQuota(d.quota);
+          return;
+        }
+        const uid = Number(profile?.userId || profile?.id || 0);
+        if (uid) {
+          const desk = await api.getAdminStaffDesk(uid);
+          if (live) setGiftQuota(desk?.quota?.monthlyAllotment ? desk.quota : (d?.quota || desk?.quota || null));
+          return;
+        }
+        if (live) setGiftQuota(d?.quota || null);
+      } catch {
+        try {
+          const uid = Number(profile?.userId || profile?.id || 0);
+          if (!uid) throw new Error('no id');
+          const desk = await api.getAdminStaffDesk(uid);
+          if (live) setGiftQuota(desk?.quota || null);
+        } catch {
+          if (live) setGiftQuota(null);
+        }
+      }
+    };
+    loadQuota();
     api.getAdminStaffGifts()
       .then((d) => { if (live) setGiftLog((d?.gifts || []).filter((g: any) => Number(g.toUserId) === Number(id))); })
       .catch(() => { if (live) setGiftLog([]); });
     return () => { live = false; };
-  }, [id]);
+  }, [id, profile?.userId, profile?.id]);
 
   if (loading) return <div className="admin-empty">Loading player account...</div>;
   if (!data?.user) return <div className="admin-empty">Account not found. <button className="pl-apply" onClick={onBack}>Back</button></div>;
