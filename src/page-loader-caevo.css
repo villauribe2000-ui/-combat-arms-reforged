@@ -1,20 +1,179 @@
-.page-loader {
+.page-transition {
   position: fixed;
   inset: 0;
-  z-index: 200;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: #0b0906;
-  animation: page-loader-in 0.16s ease-out;
+  z-index: 1000;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  pointer-events: auto;
+  background:
+    radial-gradient(ellipse at 50% 44%, rgb(223 129 4 / 9%), transparent 46%),
+    #090a0b;
+  opacity: 1;
+  transition: opacity 0.22s ease;
 }
-.page-loader-art {
-  width: min(680px, 96vw);
-  height: min(680px, 96vh);
-  object-fit: contain;
+.page-transition[data-phase='leaving'] {
+  opacity: 0;
   pointer-events: none;
 }
-@keyframes page-loader-in {
-  from { opacity: 0; }
-  to { opacity: 1; }
+.page-transition-scan {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: repeating-linear-gradient(
+    180deg,
+    transparent 0 4px,
+    rgb(0 0 0 / 22%) 4px 5px
+  );
+  opacity: 0.55;
+  animation: transition-scan 8s linear infinite;
+}
+.page-transition-content {
+  position: relative;
+  display: flex;
+  align-items: center;
+  flex-direction: column;
+  width: min(420px, calc(100vw - 48px));
+  padding: 48px 36px 40px;
+  animation: transition-pop 0.35s ease-out;
+}
+@keyframes transition-pop {
+  from { opacity: 0; transform: scale(0.96); }
+  to { opacity: 1; transform: none; }
+}
+.page-transition-content:before,
+.page-transition-content:after,
+.page-transition-bracket-tr,
+.page-transition-bracket-bl {
+  content: '';
+  position: absolute;
+  width: 28px;
+  height: 28px;
+  border: 2px solid #df8104;
+  pointer-events: none;
+}
+.page-transition-content:before {
+  top: 0;
+  left: 0;
+  border-right: 0;
+  border-bottom: 0;
+}
+.page-transition-content:after {
+  right: 0;
+  bottom: 0;
+  border-left: 0;
+  border-top: 0;
+}
+.page-transition-bracket-tr {
+  top: 0;
+  right: 0;
+  border-left: 0;
+  border-bottom: 0;
+}
+.page-transition-bracket-bl {
+  bottom: 0;
+  left: 0;
+  border-right: 0;
+  border-top: 0;
+}
+.page-transition-emblem {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 148px;
+  height: 148px;
+  margin-bottom: 28px;
+}
+.page-transition-emblem:before {
+  content: '';
+  position: absolute;
+  inset: 14px;
+  border: 1px solid rgb(223 129 4 / 18%);
+  border-radius: 50%;
+}
+.page-transition-emblem img {
+  position: relative;
+  z-index: 1;
+  width: 92px;
+  height: 92px;
+  border-radius: 50%;
+  object-fit: cover;
+  filter: drop-shadow(0 0 20px rgb(223 129 4 / 20%));
+}
+.page-transition-orbit {
+  position: absolute;
+  inset: 0;
+  border-color: #df8104 transparent rgb(223 129 4 / 35%);
+  border-style: solid;
+  border-width: 3px;
+  border-radius: 50%;
+  animation: transition-orbit 1.8s linear infinite;
+}
+.page-transition-orbit:after {
+  content: '';
+  position: absolute;
+  inset: -6px;
+  border: 1px dashed rgb(223 129 4 / 18%);
+  border-radius: 50%;
+}
+.page-transition-wordmark {
+  color: #f1f1f1;
+  font-family: 'Barlow Condensed', Impact, sans-serif;
+  font-size: 34px;
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: 1px;
+}
+.page-transition-wordmark span {
+  color: #df8104;
+}
+.page-transition-status {
+  margin-top: 15px;
+  color: #a19b92;
+  font-size: 10px;
+  line-height: 1.4;
+  letter-spacing: 3.2px;
+  text-transform: uppercase;
+}
+.page-transition-track {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 168px;
+  height: 2px;
+  margin-top: 21px;
+  overflow: hidden;
+  background: #282016;
+}
+.page-transition-sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+.page-transition-track span {
+  display: block;
+  width: 45%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, #df8104, #f3bd70);
+  animation: transition-track 1.25s ease-in-out infinite;
+}
+@keyframes transition-orbit {
+  to { transform: rotate(1turn); }
+}
+@keyframes transition-track {
+  0% { transform: translateX(-110%); }
+  to { transform: translateX(325%); }
+}
+@keyframes transition-scan {
+  to { background-position: 0 80px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .page-transition { transition-duration: 20ms; }
+  .page-transition-orbit,
+  .page-transition-track span,
+  .page-transition-scan { animation: none; }
+  .page-transition-track span { width: 100%; opacity: 0.5; }
 }
