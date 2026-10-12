@@ -24,6 +24,10 @@ function AppContent() {
   const loadingTimer = useRef<ReturnType<typeof setTimeout>>();
   const leaveTimer = useRef<ReturnType<typeof setTimeout>>();
 
+  useEffect(() => {
+    document.title = 'Combat Arms Evolution';
+  }, []);
+
   const navigate = (id: PageId) => {
     setPage(id);
     setLeaving(false);
