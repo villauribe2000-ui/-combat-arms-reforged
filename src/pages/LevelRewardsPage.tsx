@@ -119,25 +119,15 @@ export default function LevelRewardsPage() {
 
         setCurrentLevel(userLevel);
 
-        // Cargar recompensas reclamadas (fallback a localStorage si BD falla)
         let claimedLevels: number[] = [];
         try {
           const claimedFromBD = await api.getClaimedRewards(profile.username || '');
-          if (Array.isArray(claimedFromBD) && claimedFromBD.length > 0) {
+          if (Array.isArray(claimedFromBD)) {
             claimedLevels = claimedFromBD.map((r: any) => r.level);
-          } else {
-            // Si BD está vacía, intentar cargar del localStorage como fallback
-            const localData = localStorage.getItem(`level_rewards_${profile.username}`);
-            if (localData) {
-              claimedLevels = JSON.parse(localData);
-            }
+            localStorage.removeItem(`level_rewards_${profile.username}`);
           }
         } catch (err) {
-          console.warn('[DEBUG] Error loading from BD, using localStorage fallback:', err);
-          const localData = localStorage.getItem(`level_rewards_${profile.username}`);
-          if (localData) {
-            claimedLevels = JSON.parse(localData);
-          }
+          console.warn('[DEBUG] Error loading claimed rewards:', err);
         }
         setClaimedLevelRewards(claimedLevels);
 
