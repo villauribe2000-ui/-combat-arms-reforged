@@ -1387,7 +1387,8 @@ router.post('/staff/:userId/quota', async (req, res) => {
     if (!Number.isFinite(userId)) return res.status(400).json({ error: 'invalid' });
     const period = await currentPeriod();
     const existing = await web(`SELECT TOP 1 userId FROM staff_nx_quota WHERE userId = @id`, { id: userId });
-    const updatedBy = STAFF_OWNER;
+    const actor = staffActor(req);
+    const updatedBy = Number(actor?.userId) || 0;
     if (existing.length) {
       await queryWeb(`
         UPDATE staff_nx_quota
@@ -1419,11 +1420,16 @@ router.post('/staff/gift', async (req, res) => {
     const message = String(req.body?.message || '').trim().slice(0, 300);
     if (!Number.isFinite(toUserId) || amount <= 0) return res.status(400).json({ error: 'invalid amount' });
     if (amount > 50000000) return res.status(400).json({ error: 'amount too large' });
+    let fromUserId = Number(me.userId) || Number(actor.userId) || 0;
+    if (!fromUserId) {
+      const owner = await ca(`SELECT TOP 1 oidUser as id FROM CBT_User WHERE strNexonID = @u`, { u: STAFF_OWNER });
+      fromUserId = Number(owner[0]?.id) || 0;
+    }
     const target = (await ca(`
       SELECT TOP 1 oidUser as id, strNexonID as username, NickName
       FROM CBT_User WHERE oidUser = @id AND DeleteDate IS NULL`, { id: toUserId }))[0];
     if (!target) return res.status(404).json({ error: 'player not found' });
-    const quota = await getQuota(me.userId);
+    const quota = await getQuota(fromUserId);
     const unlimited = username === STAFF_OWNER;
     if (!unlimited && (quota.monthlyAllotment <= 0 || amount > quota.remaining)) {
       return res.status(400).json({ error: 'No tienes saldo para regalar' });
@@ -1433,42 +1439,44 @@ router.post('/staff/gift', async (req, res) => {
       { nx: amount, oid: toUserId },
     );
     if (!updated?.rowsAffected?.[0]) {
-      updated = await queryVisms(
-        `UPDATE VISMS_UserList SET RealBalance = ISNULL(RealBalance, 0) + @nx WHERE strNexonID = @u`,
-        { nx: amount, u: target.username },
-      );
-    }
-    if (!updated?.rowsAffected?.[0]) {
       return res.status(500).json({ error: 'no se pudo acreditar NX en VISMS' });
     }
     const period = quota.period;
     if (!unlimited) {
-      const qrow = await web(`SELECT TOP 1 userId FROM staff_nx_quota WHERE userId = @id`, { id: me.userId });
+      const qrow = await web(`SELECT TOP 1 userId FROM staff_nx_quota WHERE userId = @id`, { id: fromUserId });
       if (qrow.length) {
         await queryWeb(`UPDATE staff_nx_quota SET used = used + @amount, period = @period WHERE userId = @id`, {
-          id: me.userId, amount, period,
+          id: fromUserId, amount, period,
         });
       } else {
         await queryWeb(`
           INSERT INTO staff_nx_quota (userId, monthlyAllotment, period, used, updatedBy, updatedAt)
-          VALUES (@id, 0, @period, @amount, @u, GETDATE())`, { id: me.userId, period, amount, u: username });
+          VALUES (@id, 0, @period, @amount, @updatedBy, GETDATE())`, { id: fromUserId, period, amount, updatedBy: fromUserId });
       }
     }
-    await queryWeb(`
-      INSERT INTO staff_nx_gifts (fromUserId, fromUsername, fromNick, fromRole, toUserId, toUsername, toNick, amount, period, message, createdAt)
-      VALUES (@fromUserId, @fromUsername, @fromNick, @fromRole, @toUserId, @toUsername, @toNick, @amount, @period, @message, GETDATE())`, {
-      fromUserId: me.userId,
-      fromUsername: me.username || username,
-      fromNick: me.NickName || me.username || username,
-      fromRole: me.webRole || (unlimited ? 'SUPERADMIN' : 'STAFF'),
-      toUserId,
-      toUsername: target.username,
-      toNick: target.NickName || target.username,
-      amount,
-      period,
-      message,
-    });
-    const giftCode = `GIFT-${me.userId}-${Date.now()}`;
+    try {
+      await queryWeb(`
+        INSERT INTO staff_nx_gifts (fromUserId, fromUsername, fromNick, fromRole, toUserId, toUsername, toNick, amount, period, message, createdAt)
+        VALUES (@fromUserId, @fromUsername, @fromNick, @fromRole, @toUserId, @toUsername, @toNick, @amount, @period, @message, GETDATE())`, {
+        fromUserId,
+        fromUsername: me.username || username,
+        fromNick: me.NickName || me.username || username,
+        fromRole: me.webRole || (unlimited ? 'SUPERADMIN' : 'STAFF'),
+        toUserId,
+        toUsername: target.username,
+        toNick: target.NickName || target.username,
+        amount,
+        period,
+        message,
+      });
+    } catch {
+      await queryWeb(`
+        INSERT INTO staff_nx_gifts (fromUserId, toUserId, amount, period, createdAt)
+        VALUES (@fromUserId, @toUserId, @amount, @period, GETDATE())`, {
+        fromUserId, toUserId, amount, period,
+      });
+    }
+    const giftCode = `GIFT-${fromUserId}-${Date.now()}`;
     try {
       await queryWeb(`
         INSERT INTO PaymentCodes (oidUser, username, NickName, paymentCode, nxAmount, dollarAmount, status, createdAt, approvedAt, approvedBy, note)
@@ -1478,7 +1486,7 @@ router.post('/staff/gift', async (req, res) => {
         NickName: target.NickName || target.username,
         paymentCode: giftCode,
         nxAmount: amount,
-        approvedBy: me.username || username,
+        approvedBy: fromUserId,
         note: message || `Regalo GM ${me.webRole || ''}`.trim(),
       });
     } catch (payErr) {
@@ -1492,7 +1500,7 @@ router.post('/staff/gift', async (req, res) => {
           NickName: target.NickName || target.username,
           paymentCode: giftCode,
           nxAmount: amount,
-          approvedBy: me.username || username,
+          approvedBy: fromUserId,
         });
       } catch (payErr2) {
         console.warn('[STAFF GIFT] PaymentCodes fallback', payErr2.message);
@@ -1500,8 +1508,8 @@ router.post('/staff/gift', async (req, res) => {
     }
     const next = unlimited
       ? { ...quota, monthlyAllotment: quota.monthlyAllotment, remaining: Number.MAX_SAFE_INTEGER, unlimited: true }
-      : await getQuota(me.userId);
-    res.json({ ok: true, quota: { ...next, unlimited }, gifts: await giftsFor(me.userId, 80) });
+      : await getQuota(fromUserId);
+    res.json({ ok: true, quota: { ...next, unlimited }, gifts: await giftsFor(fromUserId, 80) });
   } catch (e) {
     res.status(500).json({ error: e.message });
   }
