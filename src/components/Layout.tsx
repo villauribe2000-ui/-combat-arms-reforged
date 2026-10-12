@@ -6,7 +6,7 @@ import {
   Menu, LogOut, Crown, LogIn, Gift, Home, Download, BookOpen,
 } from 'lucide-react';
 
-export type PageId = 'home' | 'profile' | 'rankings' | 'store' | 'clans' | 'support' | 'admin' | 'wallet' | 'purchase-history' | 'level-rewards' | 'birthday' | 'guide';
+export type PageId = 'home' | 'profile' | 'rankings' | 'store' | 'clans' | 'support' | 'admin' | 'wallet' | 'purchase-history' | 'level-rewards' | 'birthday' | 'guide' | 'download';
 
 type NavItem = {
   id: PageId;
@@ -29,7 +29,6 @@ const PRIMARY_NAV: NavItem[] = [
   { id: 'admin', label: 'Admin', icon: Shield, adminOnly: true },
 ];
 
-const DOWNLOAD_URL = 'https://www.mediafire.com/file/70z692y8n25zi8r/CombatArmsReforged.rar/file';
 const DISCORD_URL = 'https://discord.gg/5EpJwAh2r6';
 
 type Props = {
@@ -77,15 +76,18 @@ export default function Layout({ currentPage, onNavigate, children }: Props) {
           </button>
         );
       })}
-      <a
-        href={DOWNLOAD_URL}
-        target="_blank"
-        rel="noopener noreferrer"
-        className={`${mobile ? 'flex w-full items-center gap-3 rounded-lg px-3 py-2.5' : 'flex items-center gap-1.5 px-2.5 py-2'} text-[13px] font-medium text-neutral-400 transition-colors hover:text-white`}
+      <button
+        onClick={() => go('download')}
+        className={`${mobile ? 'flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left' : 'relative flex items-center gap-1.5 px-2.5 py-2'} text-[13px] font-medium tracking-wide transition-colors ${
+          currentPage === 'download' ? 'text-white' : 'text-neutral-400 hover:text-white'
+        }`}
       >
         <Download className="h-3.5 w-3.5" />
-        Descargar
-      </a>
+        Download
+        {!mobile && currentPage === 'download' && (
+          <span className="absolute bottom-0 left-2 right-2 h-0.5 bg-[#f5a000]" />
+        )}
+      </button>
       <a
         href={DISCORD_URL}
         target="_blank"
@@ -161,12 +163,12 @@ export default function Layout({ currentPage, onNavigate, children }: Props) {
         </>
       )}
 
-      <main className={currentPage === 'home' || currentPage === 'guide' ? 'relative' : 'relative mx-auto max-w-[1400px] px-4 py-8 lg:px-8'}>
+      <main className={currentPage === 'home' || currentPage === 'guide' || currentPage === 'download' ? 'relative' : 'relative mx-auto max-w-[1400px] px-4 py-8 lg:px-8'}>
         {loading ? (
           <div className="flex h-[70vh] items-center justify-center">
             <div className="h-8 w-8 animate-spin rounded-full border-2 border-[#f5a000]/30 border-t-[#f5a000]" />
           </div>
-        ) : !profile && currentPage !== 'home' && currentPage !== 'guide' ? (
+        ) : !profile && currentPage !== 'home' && currentPage !== 'guide' && currentPage !== 'download' ? (
           <div className="flex min-h-[70vh] flex-col items-center justify-center text-center">
             <h2 className="mt-4 text-2xl font-bold">Inicia sesión para continuar</h2>
             <p className="mt-2 text-neutral-400">Crea tu cuenta o inicia sesión para acceder a esta sección</p>

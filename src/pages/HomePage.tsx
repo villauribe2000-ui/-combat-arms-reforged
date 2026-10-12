@@ -1,9 +1,6 @@
-﻿import { useState } from 'react';
-import type { PageId } from '@/components/Layout';
+﻿import type { PageId } from '@/components/Layout';
 
 export default function HomePage({ onNavigate }: { onNavigate: (page: PageId) => void }) {
-  const [showRequirements, setShowRequirements] = useState(false);
-
   return (
     <div className="bg-[#0a0a0a] pb-12">
       <section className="relative isolate flex min-h-[646px] items-center overflow-hidden bg-[#222]">
@@ -33,17 +30,12 @@ export default function HomePage({ onNavigate }: { onNavigate: (page: PageId) =>
             your squad in the Caevo community.
           </p>
           <div className="mt-8 flex flex-wrap items-center gap-3.5">
-            <a
-              href="https://www.mediafire.com/file/70z692y8n25zi8r/CombatArmsReforged.rar/file"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="btn-evo btn-evo-primary"
-            >
+            <button onClick={() => onNavigate('download')} className="btn-evo btn-evo-primary">
               <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M7 10l5 5 5-5M12 15V3" /></svg>
               Play for free
               <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 17L17 7M7 7h10v10" /></svg>
-            </a>
-            <button onClick={() => setShowRequirements(true)} className="btn-evo btn-evo-outline">
+            </button>
+            <button onClick={() => onNavigate('guide')} className="btn-evo btn-evo-outline">
               Explore the game
               <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
             </button>
@@ -149,87 +141,6 @@ export default function HomePage({ onNavigate }: { onNavigate: (page: PageId) =>
         </div>
       </section>
 
-      {/* Requirements Modal */}
-      {showRequirements && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
-          <div className="w-full max-w-4xl rounded-2xl border border-white/10 bg-[#0d1320] p-8 max-h-[90vh] overflow-y-auto">
-            <div className="flex items-center justify-between mb-6">
-              <h2 className="text-3xl font-bold text-amber-400">Requisitos del Sistema</h2>
-              <button
-                onClick={() => setShowRequirements(false)}
-                className="rounded-lg p-2 text-slate-400 hover:bg-white/5"
-              >
-                <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
-            </div>
-
-            <p className="text-slate-300 mb-8">
-              Combat Arms actualmente solo es compatible con Windows. Actualmente no hay soporte para Mac o Linux.
-            </p>
-
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead>
-                  <tr className="border-b border-white/10">
-                    <th className="px-6 py-3 text-left text-amber-400 font-semibold">Requisitos</th>
-                    <th className="px-6 py-3 text-left text-amber-400 font-semibold">Mínimo</th>
-                    <th className="px-6 py-3 text-left text-amber-400 font-semibold">Recomendado</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr className="border-b border-white/5 hover:bg-white/5">
-                    <td className="px-6 py-4 text-slate-400">S.O</td>
-                    <td className="px-6 py-4 text-white font-medium">WINDOWS 2000</td>
-                    <td className="px-6 py-4 text-white font-medium">WINDOWS XP o superior</td>
-                  </tr>
-                  <tr className="border-b border-white/5 hover:bg-white/5">
-                    <td className="px-6 py-4 text-slate-400">PROCESADOR</td>
-                    <td className="px-6 py-4 text-white font-medium">Pentium 3-1GHz+</td>
-                    <td className="px-6 py-4 text-white font-medium">Pentium 4-2.4GHz+</td>
-                  </tr>
-                  <tr className="border-b border-white/5 hover:bg-white/5">
-                    <td className="px-6 py-4 text-slate-400">MEMORIA</td>
-                    <td className="px-6 py-4 text-white font-medium">256MB RAM</td>
-                    <td className="px-6 py-4 text-white font-medium">512MB RAM</td>
-                  </tr>
-                  <tr className="border-b border-white/5 hover:bg-white/5">
-                    <td className="px-6 py-4 text-slate-400">TARJETA GRÁFICA</td>
-                    <td className="px-6 py-4 text-white font-medium">GeForce 2MX</td>
-                    <td className="px-6 py-4 text-white font-medium">GeForce FX 5600 o superior</td>
-                  </tr>
-                  <tr className="border-b border-white/5 hover:bg-white/5">
-                    <td className="px-6 py-4 text-slate-400">DIRECT X</td>
-                    <td className="px-6 py-4 text-white font-medium">Versión 9.0C o posterior</td>
-                    <td className="px-6 py-4 text-white font-medium">Versión 9.0C o posterior</td>
-                  </tr>
-                  <tr className="border-b border-white/5 hover:bg-white/5">
-                    <td className="px-6 py-4 text-slate-400">ESPACIO EN DISCO</td>
-                    <td className="px-6 py-4 text-white font-medium">2.0GB</td>
-                    <td className="px-6 py-4 text-white font-medium">2.0GB</td>
-                  </tr>
-                  <tr className="hover:bg-white/5">
-                    <td className="px-6 py-4 text-slate-400">CONEXIÓN A INTERNET</td>
-                    <td className="px-6 py-4 text-white font-medium">Cable/DSL</td>
-                    <td className="px-6 py-4 text-white font-medium">Cable/DSL o superior</td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-
-            <div className="mt-8 flex justify-end">
-              <button
-                onClick={() => setShowRequirements(false)}
-                className="rounded-xl bg-gradient-to-r from-amber-500 to-orange-600 px-8 py-3 font-semibold text-white shadow-lg shadow-amber-500/30 transition-all hover:scale-105"
-              >
-                Cerrar
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
       <section className="mx-auto flex max-w-[1440px] flex-col items-start gap-8 px-6 py-12 md:flex-row md:items-center lg:px-16">
         <div className="flex h-[92px] w-[92px] shrink-0 flex-col items-center justify-center gap-1 border border-[#df8104]/40 text-[#df8104]">
           <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1}>
@@ -273,7 +184,7 @@ export default function HomePage({ onNavigate }: { onNavigate: (page: PageId) =>
             <button onClick={() => onNavigate('rankings')} className="hover:text-white">Rankings</button>
             <button onClick={() => onNavigate('birthday')} className="hover:text-white">Events</button>
             <button onClick={() => onNavigate('guide')} className="hover:text-white">Guide</button>
-            <a href="https://www.mediafire.com/file/70z692y8n25zi8r/CombatArmsReforged.rar/file" target="_blank" rel="noopener noreferrer" className="hover:text-white">Download</a>
+            <button onClick={() => onNavigate('download')} className="hover:text-white">Download</button>
             <a href="https://discord.gg/5EpJwAh2r6" target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1.5 text-[#5865F2] hover:text-[#7983f5]">
               <img src="/caevo/discord-mark-white.svg" alt="" className="h-3.5 w-4" />
               Join Discord
