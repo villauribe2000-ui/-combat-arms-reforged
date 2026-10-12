@@ -165,31 +165,59 @@ export default function HomePage({ onNavigate }: { onNavigate: (page: PageId) =>
         </div>
       </div>
 
-      <section id="modos" className="mx-auto max-w-[1440px] px-6 py-16 lg:px-16">
-        <p className="mb-3 text-xs font-extrabold tracking-[1.7px] text-[#df8104]">CHOOSE YOUR BATTLE</p>
-        <div className="mb-8 flex flex-wrap items-end justify-between gap-4">
-          <h2 className="text-4xl font-extrabold uppercase tracking-tight lg:text-5xl">
-            Same instinct. Different battleground.
-          </h2>
-          <p className="max-w-sm text-sm text-[#c4c4c4]">
-            Go head-to-head. Survive the outbreak. Or bring the whole squad.
+      <section id="modos" className="mx-auto max-w-[1440px] px-6 py-[67px] lg:px-16">
+        <div className="mb-8 flex flex-wrap items-end justify-between gap-6">
+          <div>
+            <p className="mb-3 flex items-center gap-2 text-xs font-extrabold tracking-[1.7px] text-[#df8104]">
+              <span className="inline-block h-1.5 w-1.5 bg-[#df8104]" /> CHOOSE YOUR BATTLE
+            </p>
+            <h2 className="text-[clamp(32px,4vw,48px)] font-extrabold uppercase leading-none tracking-tight">
+              Same instinct.<br />Different battleground.
+            </h2>
+          </div>
+          <p className="max-w-sm text-sm leading-relaxed text-[#c4c4c4]">
+            Go head-to-head. Survive the outbreak.<br />Or bring the whole squad.
           </p>
         </div>
-        <div className="grid gap-5 md:grid-cols-3">
+        <div className="grid gap-[22px] md:grid-cols-3">
           {[
-            { img: '/caevo/elimination.jpg', tag: 'TEAM DEATHMATCH 01', title: 'ELIMINATION', desc: 'Two teams. One objective. Make every shot count.' },
-            { img: '/caevo/modes/quarantine-infected-combat.jpg', tag: 'SURVIVAL 02', title: 'QUARANTINE REGEN', desc: 'Hold your ground. The infected are closing in.' },
-            { img: '/caevo/modes/fireteam-desert-thunder-1.webp', tag: 'CO-OP 03', title: 'FIRETEAM', desc: 'Squad up. Take on the mission. Come back together.' },
+            { img: '/caevo/elimination.jpg', tag: 'TEAM DEATHMATCH', num: '01', title: 'ELIMINATION', desc: 'Two teams. One objective. Make every shot count.' },
+            { img: '/caevo/modes/quarantine-infected-combat.jpg', tag: 'SURVIVAL', num: '02', title: 'QUARANTINE REGEN', desc: 'Hold your ground. The infected are closing in.' },
+            { img: '/caevo/modes/fireteam-desert-thunder-1.webp', tag: 'CO-OP OPERATIONS', num: '03', title: 'FIRETEAM', desc: 'Squad up. Take on the mission. Come back together.' },
           ].map(mode => (
-            <article key={mode.title} className="overflow-hidden border border-[#333] bg-[#191919]">
-              <img src={mode.img} alt={mode.title} className="h-52 w-full object-cover" />
-              <div className="p-5">
-                <p className="text-[11px] font-bold tracking-widest text-[#df8104]">{mode.tag}</p>
-                <h3 className="mt-2 text-2xl font-extrabold uppercase">{mode.title}</h3>
-                <p className="mt-2 text-sm text-[#a0a0a0]">{mode.desc}</p>
+            <article key={mode.title} className="overflow-hidden bg-[#191919] text-left">
+              <div className="relative h-[230px]">
+                <img src={mode.img} alt="" className="h-full w-full object-cover" />
+                <div className="absolute inset-0 bg-gradient-to-t from-[#191919] via-transparent to-black/20" />
+                <span className="absolute left-3 top-3 flex items-center gap-1.5 bg-[rgba(17,17,17,0.86)] px-2.5 py-1.5 text-[12px] font-bold tracking-wide">
+                  {mode.tag}
+                </span>
+                <span className="absolute bottom-2 right-3 text-[43px] font-extrabold leading-none text-white/30" style={{ fontFamily: "'Barlow Condensed', Impact, sans-serif" }}>
+                  {mode.num}
+                </span>
+              </div>
+              <div className="px-[23px] pb-[23px] pt-[21px]">
+                <div className="flex items-start justify-between gap-2">
+                  <h3 className="text-[22px] font-extrabold uppercase leading-none">{mode.title}</h3>
+                  <svg className="h-[23px] w-[23px] shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 7h10v10M7 17L17 7" /></svg>
+                </div>
+                <p className="mt-3 min-h-[48px] text-sm text-[#a0a0a0]">{mode.desc}</p>
+                <span className="mt-5 inline-flex items-center gap-2.5 text-[14px] font-extrabold text-[#df8104]">
+                  EXPLORE MODE
+                  <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 12h14M12 5l7 7-7 7" /></svg>
+                </span>
               </div>
             </article>
           ))}
+        </div>
+        <div className="mt-8 flex justify-center">
+          <button
+            onClick={() => onNavigate('support')}
+            className="btn-evo btn-evo-outline min-h-[50px] px-6 text-[13px]"
+          >
+            View all game modes
+            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 12h14M12 5l7 7-7 7" /></svg>
+          </button>
         </div>
       </section>
 
@@ -477,28 +505,65 @@ export default function HomePage({ onNavigate }: { onNavigate: (page: PageId) =>
         </div>
       )}
 
-      {/* Footer */}
-      <footer className="border-t border-white/5 bg-[#0d1320]/50 px-6 py-8">
-        <div className="flex flex-col items-center justify-center gap-6">
-          <div className="flex gap-6">
-            <a
-              href="https://discord.gg/5EpJwAh2r6"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-2 rounded-lg bg-gradient-to-r from-indigo-600 to-purple-600 px-6 py-3 font-semibold text-white shadow-lg shadow-indigo-500/30 transition-all hover:scale-105 hover:shadow-indigo-500/50"
-            >
-              <svg className="h-5 w-5" fill="currentColor" viewBox="0 0 24 24">
-                <path d="M20.317 4.3671a19.8062 19.8062 0 00-4.885-1.515a.074.074 0 00-.079.0366c-.211.3671-.444.8426-.607 1.2182a18.27 18.27 0 00-5.487 0c-.163-.3756-.399-.8511-.61-1.2182a.077.077 0 00-.079-.0355c-1.675.289-3.29.89-4.885 1.515a.07.07 0 00-.032.0277C.533 9.046-.32 13.58.099 18.057a.082.082 0 00.031.0605c2.0946 1.5348 4.1353 2.466 6.1545 3.0823a.078.078 0 00.085-.0276c.462-.6171.873-1.266 1.226-1.9466a.076.076 0 00-.041-.1061a13.107 13.107 0 01-1.872-.892.077.077 0 01-.008-.128 10.2457 10.2457 0 00.372-.294.074.074 0 01.077-.01c3.928 1.793 8.18 1.793 12.062 0a.074.074 0 01.078.01c.12.098.246.198.373.294a.077.077 0 01-.006.127 12.299 12.299 0 01-1.873.892.076.076 0 00-.041.107c.36.699.77 1.349 1.225 1.947a.077.077 0 00.084.028c2.04-.617 4.081-1.548 6.165-3.083a.077.077 0 00.032-.0605c.504-4.944-.838-9.233-3.549-13.002a.061.061 0 00-.031-.0277zM8.02 15.3312c-1.1825 0-2.1569-.9718-2.1569-2.1771 0-1.2054.9555-2.1772 2.1569-2.1772 1.2108 0 2.1757.9718 2.1568 2.1772 0 1.2053-.9555 2.1771-2.1568 2.1771zm7.9748 0c-1.1825 0-2.1569-.9718-2.1569-2.1771 0-1.2054.9554-2.1772 2.1569-2.1772 1.2108 0 2.1757.9718 2.1568 2.1772 0 1.2053-.946 2.1771-2.1568 2.1771Z"/>
-              </svg>
-              Únete a Discord
-            </a>
-          </div>
-          <p className="text-sm text-slate-400">
-            © 2026 @Reforged. All rights reserved.
+      </div>
+
+      <section className="mx-auto flex max-w-[1440px] flex-col items-start gap-8 px-6 py-12 md:flex-row md:items-center lg:px-16">
+        <div className="flex h-[92px] w-[92px] shrink-0 flex-col items-center justify-center gap-1 border border-[#df8104]/40 text-[#df8104]">
+          <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1}>
+            <circle cx="12" cy="12" r="10" /><circle cx="12" cy="12" r="6" /><circle cx="12" cy="12" r="2" />
+          </svg>
+          <span className="text-[11px] font-bold tracking-widest">CA / 08</span>
+        </div>
+        <div className="flex-1">
+          <p className="text-xs font-extrabold tracking-[1.7px] text-[#df8104]">THE NEXT MATCH IS BETTER TOGETHER</p>
+          <h2 className="mt-2 text-[clamp(28px,3.5vw,42px)] font-extrabold uppercase leading-none">
+            Old friends. New rivals.
+          </h2>
+          <p className="mt-3 max-w-xl text-sm leading-relaxed text-[#c4c4c4]">
+            Some games stay with you. So do the people you play them with.
+            Reconnect with the Combat Arms Evolution community — also known as CA Evo or CA Evolution.
           </p>
         </div>
+        <a
+          href="https://discord.gg/5EpJwAh2r6"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="inline-flex min-h-[50px] shrink-0 items-center gap-2 bg-[#5865F2] px-6 text-[14px] font-extrabold uppercase tracking-wide text-white"
+          style={{ clipPath: 'polygon(0 0, calc(100% - 10px) 0, 100% 10px, 100% 100%, 10px 100%, 0 calc(100% - 10px))' }}
+        >
+          <img src="/caevo/discord-mark-white.svg" alt="" className="h-[18px] w-6" />
+          Join Discord
+          <svg className="h-[18px] w-[18px]" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 7h10v10M7 17L17 7" /></svg>
+        </a>
+      </section>
+
+      <footer className="mx-auto max-w-[1440px] px-6 pb-6 pt-8 lg:px-16">
+        <div className="flex flex-col gap-6 border-t border-[#333] pt-8 md:flex-row md:items-center md:justify-between">
+          <button onClick={() => onNavigate('home')} className="brand-evo text-left">
+            <img src="/caevo/ca.ico" alt="" className="h-10 w-10 object-contain" />
+            <span>
+              COMBAT<span className="brand-arms">ARMS</span>
+              <small>EVOLUTION</small>
+            </span>
+          </button>
+          <nav className="flex flex-wrap items-center gap-5 text-[13px] text-[#b5b5b5]">
+            <button onClick={() => onNavigate('rankings')} className="hover:text-white">Rankings</button>
+            <button onClick={() => onNavigate('birthday')} className="hover:text-white">Events</button>
+            <button onClick={() => onNavigate('support')} className="hover:text-white">Guide</button>
+            <a href="https://www.mediafire.com/file/70z692y8n25zi8r/CombatArmsReforged.rar/file" target="_blank" rel="noopener noreferrer" className="hover:text-white">Download</a>
+            <a href="https://discord.gg/5EpJwAh2r6" target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1.5 text-[#5865F2] hover:text-[#7983f5]">
+              <img src="/caevo/discord-mark-white.svg" alt="" className="h-3.5 w-4" />
+              Join Discord
+            </a>
+            <span>Sign in</span>
+            <span>Sign up</span>
+          </nav>
+        </div>
+        <div className="mt-6 flex flex-col gap-2 border-t border-[#333] pt-4 text-[12px] text-[#777] md:flex-row md:justify-between">
+          <p>An independent fan concept. Combat Arms and its artwork belong to their respective owners.</p>
+          <span>COMBAT ARMS EVOLUTION / CA EVO</span>
+        </div>
       </footer>
-      </div>
     </div>
   );
 }
