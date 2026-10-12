@@ -502,194 +502,148 @@ export default function WalletPage() {
         )}
       </section>
 
-      {/* Recompensas por Recarga */}
-      <div className="rounded-2xl border border-white/5 bg-[#0d1320] p-6">
-        <h2 className="mb-2 flex items-center gap-2 text-lg font-bold">
-          <Gift className="h-5 w-5 text-purple-400" /> Recompensas por Recarga
-        </h2>
-        <p className="text-sm text-slate-400 mb-4">Recarga una de las 3 recargas más caras y reclama tu bono</p>
-        
-        {/* Resumen de compras este mes */}
-        <div className="mb-6 p-4 rounded-xl bg-cyan-500/10 border border-cyan-500/30">
-          <p className="text-xs text-slate-400 mb-3">RESUMEN DE COMPRAS ESTE MES</p>
-          <div className="grid gap-4 md:grid-cols-3">
+      <section className="charge-rewards">
+        <h2><Gift size={18} /> Recompensas por Recarga</h2>
+        <p>Recarga una de las 3 recargas más caras y reclama tu bono</p>
+
+        <div className="charge-summary">
+          <p className="charge-kicker">RESUMEN DE COMPRAS ESTE MES</p>
+          <div className="charge-summary-grid">
             <div>
-              <p className="text-sm text-slate-400">Total recargado</p>
-              <p className="text-2xl font-bold text-cyan-400">{nxPurchases.reduce((sum, p) => sum + p.coins, 0).toLocaleString()}</p>
-              <p className="text-xs text-slate-500">NX</p>
+              <p>Total recargado</p>
+              <strong>{nxPurchases.reduce((sum, p) => sum + p.coins, 0).toLocaleString()}</strong>
+              <small>NX</small>
             </div>
             <div>
-              <p className="text-sm text-slate-400">Compras realizadas</p>
-              <p className="text-2xl font-bold text-cyan-400">{nxPurchases.length}</p>
-              <p className="text-xs text-slate-500">transacciones</p>
+              <p>Compras realizadas</p>
+              <strong>{nxPurchases.length}</strong>
+              <small>transacciones</small>
             </div>
             <div>
-              <p className="text-sm text-slate-400">Recompensas disponibles</p>
-              <p className="text-2xl font-bold text-emerald-400">{rewards.filter(r => nxPurchases.some(p => p.packageId === r.packageId) && !claimedRewards.includes(r.packageId)).length}</p>
-              <p className="text-xs text-slate-500">por reclamar</p>
+              <p>Recompensas disponibles</p>
+              <strong>{rewards.filter(r => nxPurchases.some(p => p.packageId === r.packageId) && !claimedRewards.includes(r.packageId)).length}</strong>
+              <small>por reclamar</small>
             </div>
           </div>
         </div>
 
-        {/* Progreso hacia cada recompensa */}
-        <div className="mb-6 p-4 rounded-xl bg-slate-900/30 border border-slate-700/50">
-          <p className="text-xs text-slate-400 mb-3 font-semibold">PROGRESO HACIA RECOMPENSAS</p>
-          <div className="space-y-3">
-            {rewards.map((reward) => {
-              const hasPurchased = nxPurchases.some(p => p.packageId === reward.packageId);
-              const totalSpentThisMonth = nxPurchases.reduce((sum, p) => sum + p.coins, 0);
-              const percentToGoal = Math.min((totalSpentThisMonth / reward.coins) * 100, 100);
-              
-              return (
-                <div key={reward.packageId}>
-                  <div className="flex items-center justify-between mb-1">
-                    <p className="text-sm text-slate-300">
-                      <span className="font-semibold">{reward.coins.toLocaleString()} NX</span>
-                      {hasPurchased && <span className="text-emerald-400 ml-2">✓ Desbloqueado</span>}
-                    </p>
-                    <p className="text-xs text-slate-400">
-                      {totalSpentThisMonth.toLocaleString()} / {reward.coins.toLocaleString()}
-                    </p>
-                  </div>
-                  <div className="w-full h-2 rounded-full bg-slate-700/50 overflow-hidden border border-slate-600/50">
-                    <div 
-                      className={`h-full transition-all duration-300 ${
-                        hasPurchased 
-                          ? 'bg-emerald-500' 
-                          : percentToGoal > 0 
-                          ? 'bg-cyan-500' 
-                          : 'bg-slate-700'
-                      }`}
-                      style={{ width: `${percentToGoal}%` }}
-                    />
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-
-        {/* Contador de reinicio */}
-        <div className="mb-6 p-4 rounded-xl bg-purple-500/10 border border-purple-500/30">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-xs text-slate-400">Próximo reinicio en:</p>
-              <p className="text-lg font-bold text-purple-400 font-mono">{timeUntilReset}</p>
-            </div>
-            <div className="text-right">
-              <p className="text-xs text-slate-400">Todas las recompensas se reinician</p>
-              <p className="text-sm font-semibold text-purple-300">el 1º de cada mes</p>
-            </div>
-          </div>
-        </div>
-
-        <div className="grid gap-4 md:grid-cols-3">
-          {rewards.map((reward) => {
-            const isClaimed = claimedRewards.includes(reward.packageId);
-            
-            // Verificar si el usuario ha comprado EXACTAMENTE esta cantidad
-            // Para pagos aprobados (packageId 0), buscar coins exactos
-            const hasPurchased = nxPurchases.some(p => 
-              (p.packageId === reward.packageId && p.packageId > 0) ||
-              (p.packageId === 0 && p.coins === reward.coins)
-            );
-            
+        <div className="charge-progress">
+          <p className="charge-kicker">PROGRESO HACIA RECOMPENSAS</p>
+          {rewards.map(reward => {
+            const hasPurchased = nxPurchases.some(p => p.packageId === reward.packageId);
+            const totalSpentThisMonth = nxPurchases.reduce((sum, p) => sum + p.coins, 0);
+            const percentToGoal = Math.min((totalSpentThisMonth / reward.coins) * 100, 100);
             return (
-              <div key={reward.packageId} className={`rounded-xl border p-4 transition ${
-                isClaimed 
-                  ? 'border-slate-700 bg-slate-900/20' 
-                  : hasPurchased
-                  ? 'border-purple-500/50 bg-gradient-to-br from-purple-500/20 to-purple-600/10'
-                  : 'border-slate-700/50 bg-slate-900/20 opacity-60'
-              }`}>
-                <div className="mb-3">
-                  <p className="text-sm text-slate-400">Recarga</p>
-                  <p className="text-2xl font-bold text-purple-400">{reward.coins.toLocaleString()}</p>
-                  <p className="text-xs text-slate-400">NX</p>
+              <div key={reward.packageId} className="mb-3 last:mb-0">
+                <div className="mb-1 flex items-center justify-between text-sm">
+                  <span>
+                    {reward.coins.toLocaleString()} NX
+                    {hasPurchased && <span className="ml-2 text-[#ed9622]">✓ Desbloqueado</span>}
+                  </span>
+                  <span className="text-[#888]">{totalSpentThisMonth.toLocaleString()} / {reward.coins.toLocaleString()}</span>
                 </div>
-                <div className="mb-4 p-3 rounded-lg bg-white/5 border border-white/10">
-                  <p className="text-sm text-slate-300">
-                    Bono: <span className="font-bold text-emerald-400">+{reward.bonus}</span> NX
-                  </p>
+                <div className={`charge-bar${hasPurchased ? ' charge-bar-done' : ''}`}>
+                  <i style={{ width: `${percentToGoal}%` }} />
                 </div>
-                <button
-                  onClick={() => handleClaimReward(reward.packageId, reward.bonus)}
-                  disabled={isClaimed || !hasPurchased}
-                  title={!hasPurchased ? 'Debes comprar esta cantidad primero' : ''}
-                  className={`w-full py-2 rounded-lg font-semibold transition ${
-                    isClaimed
-                      ? 'bg-slate-700/20 text-slate-400 cursor-default'
-                      : !hasPurchased
-                      ? 'bg-slate-700/20 text-slate-500 cursor-not-allowed'
-                      : 'bg-purple-500/20 text-purple-400 hover:bg-purple-500/30'
-                  }`}
-                >
-                  {isClaimed ? '✓ Reclamado' : !hasPurchased ? 'Compra primero' : 'Reclamar'}
-                </button>
               </div>
             );
           })}
         </div>
-      </div>
 
-      {/* Modal de Código de Pago */}
+        <div className="charge-reset">
+          <div>
+            <p className="charge-kicker">PRÓXIMO REINICIO EN</p>
+            <strong>{timeUntilReset}</strong>
+          </div>
+          <div className="text-right text-sm text-[#888]">
+            <p>Todas las recompensas se reinician</p>
+            <p className="font-semibold text-[#e6aa55]">el 1º de cada mes</p>
+          </div>
+        </div>
+
+        <div className="charge-reward-grid">
+          {rewards.map(reward => {
+            const isClaimed = claimedRewards.includes(reward.packageId);
+            const hasPurchased = nxPurchases.some(p =>
+              (p.packageId === reward.packageId && p.packageId > 0) ||
+              (p.packageId === 0 && p.coins === reward.coins)
+            );
+            return (
+              <article
+                key={reward.packageId}
+                className={`charge-reward${isClaimed ? ' charge-reward-off' : hasPurchased ? ' charge-reward-ready' : ' charge-reward-off'}`}
+              >
+                <em>Recarga</em>
+                <strong>{reward.coins.toLocaleString()}</strong>
+                <em>NX</em>
+                <div className="charge-reward-bonus">
+                  Bono: <b>+{reward.bonus.toLocaleString()}</b> NX
+                </div>
+                <button
+                  type="button"
+                  className="charge-claim"
+                  onClick={() => handleClaimReward(reward.packageId, reward.bonus)}
+                  disabled={isClaimed || !hasPurchased}
+                  title={!hasPurchased ? 'Debes comprar esta cantidad primero' : ''}
+                >
+                  {isClaimed ? 'Reclamado' : !hasPurchased ? 'Compra primero' : 'Reclamar'}
+                </button>
+              </article>
+            );
+          })}
+        </div>
+      </section>
+
       {showProofModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80">
-          <div className="w-full max-w-md rounded-2xl border border-white/10 bg-[#0d1320] p-6 shadow-2xl">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-bold text-white">Confirmar Pago</h2>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4">
+          <div className="charge-modal">
+            <div className="mb-4 flex items-center justify-between">
+              <h2>Confirmar Pago</h2>
               <button
+                type="button"
+                className="charge-paid"
                 onClick={() => {
                   setShowProofModal(false);
                   setPaymentCode('');
                   setSelectedProofPackage(null);
                 }}
-                className="text-slate-400 hover:text-white"
               >
                 <X className="h-5 w-5" />
               </button>
             </div>
-
             {selectedProofPackage && (
-              <div className="mb-4 p-3 rounded-lg bg-purple-500/10 border border-purple-500/20">
-                <p className="text-sm text-slate-300">
-                  <span className="font-semibold text-purple-400">{selectedProofPackage.coins.toLocaleString()} NX</span>
-                  {' '}por{' '}
-                  <span className="font-semibold text-emerald-400">${selectedProofPackage.price.toFixed(2)}</span>
-                </p>
+              <div className="charge-reward-bonus mb-4">
+                <b>{selectedProofPackage.coins.toLocaleString()} NX</b> por ${selectedProofPackage.price.toFixed(2)}
               </div>
             )}
-
-            <div className="mb-4">
-              <label className="block mb-2">
-                <p className="text-sm font-semibold text-slate-300 mb-2">Código de Transacción</p>
-                <input
-                  type="text"
-                  placeholder="Ej: TXN-ABC123XYZ"
-                  value={paymentCode}
-                  onChange={(e) => setPaymentCode(e.target.value)}
-                  maxLength={100}
-                  className="w-full px-4 py-3 rounded-lg bg-white/5 border border-white/10 text-white placeholder-slate-500 focus:outline-none focus:border-blue-400 transition"
-                />
-                <p className="text-xs text-slate-500 mt-2">Ingresa el código que recibiste de PayPal</p>
-              </label>
-            </div>
-
-            <div className="flex gap-3">
+            <label>
+              <span className="charge-kicker">CÓDIGO DE TRANSACCIÓN</span>
+              <input
+                type="text"
+                placeholder="Ej: TXN-ABC123XYZ"
+                value={paymentCode}
+                onChange={e => setPaymentCode(e.target.value)}
+                maxLength={100}
+              />
+            </label>
+            <p className="mt-2 mb-4 text-xs text-[#888]">Ingresa el código que recibiste de PayPal</p>
+            <div className="charge-actions">
               <button
+                type="button"
+                className="charge-paid"
                 onClick={() => {
                   setShowProofModal(false);
                   setPaymentCode('');
                   setSelectedProofPackage(null);
                 }}
-                className="flex-1 px-4 py-2 rounded-lg bg-slate-700/20 text-slate-300 hover:bg-slate-700/30 transition font-semibold"
               >
                 Cancelar
               </button>
               <button
+                type="button"
+                className="charge-review"
                 onClick={handleSubmitPaymentCode}
                 disabled={!paymentCode.trim() || submittingCode}
-                className="flex-1 px-4 py-2 rounded-lg bg-blue-500/20 text-blue-400 hover:bg-blue-500/30 transition font-semibold disabled:opacity-50"
               >
                 {submittingCode ? 'Enviando...' : 'Enviar Código'}
               </button>

@@ -71,6 +71,44 @@
 .charge-extra{margin-top:22px;display:grid;gap:14px}
 .charge-card{background:#171717;border:1px solid #303030;border-radius:4px;padding:20px}
 .charge-card h3{font-size:16px;margin-bottom:12px}
+.charge-rewards{margin-top:22px;border:1px solid #303030;border-radius:4px;background:#171717;padding:22px}
+.charge-rewards>h2{font-size:20px;display:flex;align-items:center;gap:8px;margin-bottom:6px}
+.charge-rewards>h2 svg{color:#df8104}
+.charge-rewards>p{color:#8a8a8a;font-size:13px;margin-bottom:18px}
+.charge-summary,.charge-progress,.charge-reset{border:1px solid #303030;border-radius:4px;padding:16px 18px;margin-bottom:14px;background:#191919}
+.charge-summary p,.charge-progress p,.charge-reset p{color:#888}
+.charge-kicker{font-size:10px;letter-spacing:1px;font-weight:800;color:#8a8a8a;margin-bottom:12px}
+.charge-summary-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px}
+.charge-summary-grid strong{display:block;margin-top:4px;font-size:26px;color:#ed9622;font-family:var(--font-heading),Impact,sans-serif}
+.charge-summary-grid small{color:#777;font-size:11px}
+.charge-bar{width:100%;height:6px;background:#242018;border:1px solid #353024;overflow:hidden;margin-top:6px}
+.charge-bar>i{display:block;height:100%;background:#df8104}
+.charge-bar-done>i{background:#c48a32}
+.charge-reset{display:flex;justify-content:space-between;align-items:center;gap:16px;border-color:#3d3324;background:#df81040a}
+.charge-reset strong{display:block;margin-top:4px;color:#e6aa55;font-family:ui-monospace,monospace;font-size:18px}
+.charge-reward-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.charge-reward{
+  padding:16px 14px;background:#191919;border:1px solid #303030;border-radius:4px
+}
+.charge-reward-ready{border-color:#986220;background:linear-gradient(#df810412,#191919)}
+.charge-reward-off{opacity:.55}
+.charge-reward em{display:block;font-style:normal;font-size:11px;color:#888;font-weight:700}
+.charge-reward strong{display:block;font-size:28px;line-height:1;margin:4px 0 2px;font-family:var(--font-heading),Impact,sans-serif}
+.charge-reward-bonus{margin:12px 0;padding:10px 12px;border:1px solid #303030;background:#111;font-size:13px;color:#b8b8b8}
+.charge-reward-bonus b{color:#ed9622}
+.charge-claim{
+  width:100%;min-height:40px;border:1px solid #463824;background:#1b1813;color:#d8a25c;font-size:12px;font-weight:700
+}
+.charge-claim:not(:disabled):hover{border-color:#df8104;color:#f1b669}
+.charge-claim:disabled{opacity:.5;cursor:not-allowed}
+.charge-modal{width:100%;max-width:420px;background:#171717;border:1px solid #303030;border-radius:4px;padding:22px}
+.charge-modal h2{font-size:22px}
+.charge-modal input{width:100%;height:44px;background:#111;border:1px solid #343434;color:#eee;padding:0 12px;margin-top:8px}
+.charge-modal input:focus{outline:none;border-color:#df8104}
+@media (max-width:760px){
+  .charge-summary-grid,.charge-reward-grid{grid-template-columns:1fr}
+  .charge-reset{flex-direction:column;align-items:flex-start}
+}
 @media (max-width:1100px){
   .charge-layout{grid-template-columns:1fr}
   .charge-packages{grid-template-columns:repeat(3,minmax(0,1fr))}
