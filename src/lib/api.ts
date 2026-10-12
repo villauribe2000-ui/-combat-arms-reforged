@@ -145,17 +145,12 @@ class ApiClient {
   }
 
   async getAdminOverview() {
-    return await this.request<{
-      onlineNow: number;
-      matchesRecorded: number;
-      newAccountsToday: number;
-      newAccounts7: number;
-      characters: number;
-      banned: number;
-      clans: number;
-      latest: any[];
-      onlineList: any[];
-    }>('GET', '/admin/overview');
+    return await this.request<any>('GET', '/admin/overview');
+  }
+
+  async getAdminSection(section: string, q?: string) {
+    const url = q ? `/admin/${section}?q=${encodeURIComponent(q)}` : `/admin/${section}`;
+    return await this.request<any>('GET', url);
   }
 
   async getClans(search?: string) {

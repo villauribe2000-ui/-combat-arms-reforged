@@ -62,7 +62,7 @@
 .admin-subtabs{display:flex;gap:6px;border-bottom:1px solid #333;margin-bottom:16px}
 .admin-subtabs button{border:0;background:transparent;color:#888;padding:12px 14px;font-weight:800;font-size:12px}
 .admin-subtabs button.admin-on{color:#ed9622;box-shadow:inset 0 -3px #df8104}
-.admin-stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-bottom:14px}
+.admin-stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin-bottom:14px}
 .admin-stats article{background:#171717;border:1px solid #303030;padding:16px}
 .admin-stats p{font-size:10px;letter-spacing:1px;color:#888;font-weight:800}
 .admin-stats strong{display:block;margin-top:8px;font-size:28px;font-family:var(--font-heading),Impact,sans-serif}

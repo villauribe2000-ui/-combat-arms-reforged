@@ -112,11 +112,11 @@ export default function AdminPage({ onNavigate }: { onNavigate?: (page: PageId) 
   const [section, setSection] = useState<Section>('overview');
   const [find, setFind] = useState('');
   const [overview, setOverview] = useState<any>(null);
-  const [players, setPlayers] = useState<any[]>([]);
-  const [clans, setClans] = useState<any[]>([]);
-  const [products, setProducts] = useState<any[]>([]);
-  const [modes, setModes] = useState<any[]>([]);
+  const [room, setRoom] = useState<any>({});
+  const [roomLoading, setRoomLoading] = useState(false);
   const [clock, setClock] = useState(new Date());
+
+  const READ_SECTIONS: Section[] = ['players', 'online', 'clans', 'shop', 'economy', 'reports', 'matches', 'logins', 'linked', 'announcements', 'maps', 'boosts'];
 
   useEffect(() => {
     if (!profile) return;
@@ -128,34 +128,57 @@ export default function AdminPage({ onNavigate }: { onNavigate?: (page: PageId) 
     return () => clearInterval(t);
   }, []);
 
+  useEffect(() => {
+    if (!READ_SECTIONS.includes(section)) return;
+    let live = true;
+    setRoomLoading(true);
+    const q = section === 'players' ? find : undefined;
+    api.getAdminSection(section, q)
+      .then((d) => { if (live) setRoom(d || {}); })
+      .catch(() => { if (live) setRoom({}); })
+      .finally(() => { if (live) setRoomLoading(false); });
+    return () => { live = false; };
+  }, [section]);
+
   const loadData = async () => {
     try {
       setLoading(true);
-      const [codeData, paymentData, refundData, ticketData, ov, pl, cl, pr, gm] = await Promise.all([
+      const [codeData, paymentData, refundData, ticketData, ov] = await Promise.all([
         api.getPendingPaymentCodes().catch(() => []),
         api.getPendingPayments().catch(() => []),
         api.getPendingRefunds().catch(() => []),
         api.getAllTickets().catch(() => []),
         api.getAdminOverview().catch(() => null),
-        api.getPlayers(1, 40).catch(() => ({ data: [] })),
-        api.getClans().catch(() => []),
-        api.getProducts().catch(() => []),
-        api.getTournaments().catch(() => []),
       ]);
       setPaymentCodes(codeData || []);
       setPayments(paymentData || []);
       setRefunds(refundData || []);
       setSupportTickets(ticketData || []);
       setOverview(ov);
-      setPlayers(pl?.data || []);
-      setClans(Array.isArray(cl) ? cl : []);
-      setProducts(Array.isArray(pr) ? pr : []);
-      setModes(Array.isArray(gm) ? gm : []);
     } catch (error) {
       console.error('[ADMIN] Error loading data:', error);
     } finally {
       setLoading(false);
     }
+  };
+
+  const dt = (v: any) => (v ? new Date(v).toLocaleString('es') : '—');
+  const Empty = ({ text }: { text: string }) => <div className="admin-empty">{text}</div>;
+  const Grid = ({ rows, cols }: { rows: any[]; cols: { key: string; label: string; fmt?: (v: any, r: any) => any }[] }) => {
+    if (roomLoading) return <Empty text="Leyendo SQL..." />;
+    if (!rows?.length) return <Empty text="Sin filas en esta consulta (solo lectura)." />;
+    return (
+      <table className="admin-table">
+        <thead><tr>{cols.map((c) => <th key={c.key}>{c.label}</th>)}</tr></thead>
+        <tbody>
+          {rows.map((r, i) => (
+            <tr key={r.id ?? r.oidUser ?? r.ProductID ?? r.MapID ?? r.discord_id ?? i}>
+              {cols.map((c) => <td key={c.key}>{c.fmt ? c.fmt(r[c.key], r) : (r[c.key] ?? '—')}</td>)}
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    );
   };
 
   const handleApprove = async (paymentId: number) => {
@@ -327,8 +350,6 @@ export default function AdminPage({ onNavigate }: { onNavigate?: (page: PageId) 
   const latest = overview?.latest || [];
   const onlineList = overview?.onlineList || [];
 
-  const Empty = ({ text }: { text: string }) => <div className="admin-empty">{text}</div>;
-
   return (
     <div className="admin-shell">
       <aside className="admin-side">
@@ -427,154 +448,258 @@ export default function AdminPage({ onNavigate }: { onNavigate?: (page: PageId) 
 
         {section === 'players' && (
           <div className="admin-panel">
-            <div className="admin-toolbar"><h1>PLAYERS</h1></div>
-            <p className="sub">Existing player list — SELECT only.</p>
-            {loading ? <Empty text="Loading..." /> : players.length === 0 ? <Empty text="No players returned" /> : (
-              <table className="admin-table">
-                <thead><tr><th>NICK</th><th>ACCOUNT</th><th>KILLS</th><th>WINS</th><th>EXP</th></tr></thead>
-                <tbody>
-                  {players.map((p: any) => (
-                    <tr key={p.id || p.username}>
-                      <td>{p.NickName}</td>
-                      <td>{p.username}</td>
-                      <td>{p.kills ?? p.KillCnt ?? 0}</td>
-                      <td>{p.wins ?? p.WinCnt ?? 0}</td>
-                      <td>{p.userExp ?? p.Exp ?? 0}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            )}
+            <div className="admin-toolbar">
+              <h1>PLAYERS</h1>
+              <button className="admin-chip" onClick={() => {
+                setRoomLoading(true);
+                api.getAdminSection('players', find).then(setRoom).catch(() => setRoom({})).finally(() => setRoomLoading(false));
+              }}>Search Find</button>
+            </div>
+            <p className="sub">CBT_User — nick, EXP, kills, last login. Search uses Find in the sidebar.</p>
+            <Grid rows={room.data} cols={[
+              { key: 'NickName', label: 'NICK' },
+              { key: 'username', label: 'ACCOUNT' },
+              { key: 'Exp', label: 'EXP' },
+              { key: 'kills', label: 'KILLS' },
+              { key: 'wins', label: 'WINS' },
+              { key: 'Status', label: 'STATUS', fmt: (v) => (v === 1 ? 'ONLINE' : 'OFFLINE') },
+              { key: 'lastLoginDate', label: 'LAST LOGIN', fmt: dt },
+            ]} />
           </div>
         )}
 
         {section === 'online' && (
           <div className="admin-panel">
-            <div className="admin-toolbar"><h1>ONLINE</h1><span className="admin-chip">{overview?.onlineNow ?? 0} now</span></div>
-            {onlineList.length === 0 ? <Empty text="Nobody online (Status = 1) or column unavailable." /> : (
-              <table className="admin-table">
-                <thead><tr><th>NICK</th><th>ACCOUNT</th><th>KILLS</th></tr></thead>
-                <tbody>
-                  {onlineList.map((u: any) => (
-                    <tr key={u.id}><td>{u.NickName}</td><td>{u.username}</td><td>{u.kills}</td></tr>
-                  ))}
-                </tbody>
-              </table>
-            )}
+            <div className="admin-toolbar">
+              <h1>ONLINE</h1>
+              <span className="admin-chip">{room.data?.length || 0} Status=1</span>
+            </div>
+            <p className="sub">{room.source}{room.concurrent ? ` · CCU ${room.concurrent.Total_UserCnt} @ ${dt(room.concurrent.CreateDate)}` : ''}</p>
+            <Grid rows={room.data} cols={[
+              { key: 'NickName', label: 'NICK' },
+              { key: 'username', label: 'ACCOUNT' },
+              { key: 'kills', label: 'KILLS' },
+              { key: 'Exp', label: 'EXP' },
+              { key: 'lastLoginDate', label: 'LOGIN', fmt: dt },
+            ]} />
           </div>
         )}
 
         {section === 'clans' && (
           <div className="admin-panel">
-            <div className="admin-toolbar"><h1>CLANS</h1></div>
-            {clans.length === 0 ? <Empty text="No clans returned from GuildMaster." /> : (
-              <table className="admin-table">
-                <thead><tr><th>CLAN</th><th>ID</th></tr></thead>
-                <tbody>
-                  {clans.map((c: any, i: number) => (
-                    <tr key={c.GuildID || c.id || i}>
-                      <td>{c.GuildName || c.name || JSON.stringify(c).slice(0, 80)}</td>
-                      <td>{c.GuildID || c.id || '—'}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            )}
+            <div className="admin-toolbar"><h1>CLANS</h1><span className="admin-chip">{room.source}</span></div>
+            <Grid rows={room.data} cols={[
+              { key: 'strName', label: 'CLAN' },
+              { key: 'strID', label: 'TAG' },
+              { key: 'dn_strCharacterName_master', label: 'MASTER' },
+              { key: 'dn_n4TotalRegularMember', label: 'MEMBERS' },
+              { key: 'dateCreated', label: 'CREATED', fmt: dt },
+              { key: 'strNotice', label: 'NOTICE' },
+            ]} />
           </div>
         )}
 
         {section === 'shop' && (
           <div className="admin-panel">
-            <div className="admin-toolbar"><h1>SHOP</h1></div>
-            {products.length === 0 ? <Empty text="No store products returned." /> : (
-              <table className="admin-table">
-                <thead><tr><th>ITEM</th><th>NX</th><th>CATEGORY</th></tr></thead>
-                <tbody>
-                  {products.map((p: any, i: number) => (
-                    <tr key={p.id || i}>
-                      <td>{p.name || p.productName || p.Name}</td>
-                      <td>{p.price ?? p.nx ?? p.NX ?? '—'}</td>
-                      <td>{p.category || p.Category || '—'}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            )}
+            <div className="admin-toolbar"><h1>SHOP</h1><span className="admin-chip">{room.source}</span></div>
+            <Grid rows={room.data} cols={[
+              { key: 'ProductID', label: 'ID' },
+              { key: 'ProductName', label: 'ITEM' },
+              { key: 'Price', label: 'PRICE' },
+              { key: 'SalePrice', label: 'SALE' },
+              { key: 'BonusGP', label: 'GP' },
+              { key: 'ShopView', label: 'VIEW' },
+            ]} />
           </div>
         )}
 
         {section === 'economy' && (
           <div>
             <div className="admin-stats">
-              <article><p>CODES</p><strong>{pendingCodes.length}</strong></article>
-              <article><p>RECARGAS</p><strong>{pendingCount}</strong></article>
-              <article><p>REFUNDS</p><strong>{pendingRefunds.length}</strong></article>
+              <article><p>PENDING CODES</p><strong>{room.pendingCodes ?? pendingCodes.length}</strong></article>
+              <article><p>PENDING REFUNDS</p><strong>{room.pendingRefunds ?? pendingRefunds.length}</strong></article>
+              <article><p>NX WALLETS</p><strong>{room.nxAccounts ?? 0}</strong></article>
+              <article><p>NX TOTAL</p><strong>{Number(room.nxTotal || 0).toLocaleString()}</strong></article>
             </div>
             <div className="admin-quick">
-              <button onClick={() => setSection('codes')}><div><strong>Open payment codes</strong><small>Approve / reject existing requests</small></div><span>→</span></button>
-              <button onClick={() => setSection('payments')}><div><strong>Open recargas</strong><small>Existing payment queue</small></div><span>→</span></button>
+              <button onClick={() => setSection('codes')}><div><strong>Payment codes</strong><small>combatarms_web.PaymentCodes</small></div><span>→</span></button>
+              <button onClick={() => setSection('payments')}><div><strong>Recargas</strong><small>{pendingCount} pending</small></div><span>→</span></button>
+              <button onClick={() => setSection('refunds')}><div><strong>Refunds</strong><small>combatarms_web.RefundRequests</small></div><span>→</span></button>
+            </div>
+            <div className="admin-panel">
+              <h2>VISMS PURCHASE LOG</h2>
+              <p className="sub">{room.source}</p>
+              <Grid rows={room.purchases} cols={[
+                { key: 'strNexonID', label: 'ACCOUNT' },
+                { key: 'ProductNo', label: 'PRODUCT' },
+                { key: 'TotalPrice', label: 'PRICE' },
+                { key: 'IsGift', label: 'GIFT', fmt: (v) => (v ? 'YES' : '') },
+                { key: 'RegDate', label: 'DATE', fmt: dt },
+              ]} />
             </div>
           </div>
         )}
 
         {section === 'reports' && (
-          <div className="admin-quick">
-            <button onClick={() => setSection('refunds')}><div><strong>Refund queue</strong><small>{pendingRefunds.length} pending</small></div><span>→</span></button>
-            <button onClick={() => setSection('tickets')}><div><strong>Support tickets</strong><small>{supportTickets.length} total</small></div><span>→</span></button>
+          <div className="admin-panel">
+            <div className="admin-toolbar"><h1>REPORTS</h1><span className="admin-chip">{room.source}</span></div>
+            <p className="sub">In-game reports, web reviews, punishments. Tickets remain in Tickets.</p>
+            <h2>IN-GAME</h2>
+            <Grid rows={room.ingame} cols={[
+              { key: 'TargetNickName', label: 'TARGET' },
+              { key: 'Message', label: 'MESSAGE' },
+              { key: 'MainCategory', label: 'CAT' },
+              { key: 'RegDate', label: 'DATE', fmt: dt },
+            ]} />
+            <h2>PUNISHMENTS</h2>
+            <Grid rows={room.punishments} cols={[
+              { key: 'nickname', label: 'NICK' },
+              { key: 'type', label: 'TYPE' },
+              { key: 'reason', label: 'REASON' },
+              { key: 'issuedByName', label: 'BY' },
+              { key: 'createdAt', label: 'DATE', fmt: dt },
+            ]} />
+            <h2>REVIEWS</h2>
+            <Grid rows={room.reviews} cols={[
+              { key: 'reportSeq', label: 'SEQ' },
+              { key: 'status', label: 'STATUS' },
+              { key: 'note', label: 'NOTE' },
+              { key: 'reviewedByName', label: 'REVIEWER' },
+            ]} />
           </div>
         )}
 
         {section === 'matches' && (
           <div className="admin-panel">
-            <div className="admin-toolbar"><h1>MATCHES</h1></div>
-            <p className="sub">Recorded results: {overview?.matchesRecorded ?? 0}. Modes from CBT_GameMode. No match writes.</p>
-            {modes.length === 0 ? <Empty text="No game modes returned." /> : (
-              <table className="admin-table">
-                <thead><tr><th>MODE</th></tr></thead>
-                <tbody>
-                  {modes.map((m: any, i: number) => (
-                    <tr key={i}><td>{m.GameModeName || m.Name || m.name || JSON.stringify(m).slice(0, 120)}</td></tr>
-                  ))}
-                </tbody>
-              </table>
-            )}
+            <div className="admin-toolbar"><h1>MATCHES</h1><span className="admin-chip">{room.source}</span></div>
+            <p className="sub">Last rooms and player results from COMBATARMS_LOG.</p>
+            <h2>ROOMS</h2>
+            <Grid rows={room.rooms} cols={[
+              { key: 'RoomName', label: 'ROOM' },
+              { key: 'MapNo', label: 'MAP' },
+              { key: 'GameType', label: 'TYPE' },
+              { key: 'PlayerCnt', label: 'PLAYERS' },
+              { key: 'StartDate', label: 'START', fmt: dt },
+              { key: 'PlayTime', label: 'SEC' },
+            ]} />
+            <h2>PLAYER RESULTS</h2>
+            <Grid rows={room.games} cols={[
+              { key: 'NickName', label: 'NICK' },
+              { key: 'KillCnt', label: 'K' },
+              { key: 'DeadCnt', label: 'D' },
+              { key: 'MapNo', label: 'MAP' },
+              { key: 'WinType', label: 'WIN' },
+              { key: 'EndDate', label: 'END', fmt: dt },
+            ]} />
           </div>
         )}
 
         {section === 'logins' && (
           <div className="admin-panel">
-            <div className="admin-toolbar"><h1>LOGINS</h1></div>
-            <p className="sub">There is no login-history table in use. Showing account CreateDate instead — read only.</p>
-            {latest.length === 0 ? <Empty text="No registration rows." /> : (
-              <table className="admin-table">
-                <thead><tr><th>ACCOUNT</th><th>CREATED</th></tr></thead>
-                <tbody>
-                  {latest.map((u: any) => (
-                    <tr key={u.id}><td>{u.username}</td><td>{u.CreateDate ? new Date(u.CreateDate).toLocaleString('es') : '—'}</td></tr>
-                  ))}
-                </tbody>
-              </table>
-            )}
+            <div className="admin-toolbar"><h1>LOGINS</h1><span className="admin-chip">{room.source}</span></div>
+            <Grid rows={room.data} cols={[
+              { key: 'NickName', label: 'NICK' },
+              { key: 'username', label: 'ACCOUNT' },
+              { key: 'IP', label: 'IP' },
+              { key: 'LoginDate', label: 'LOGIN', fmt: dt },
+              { key: 'LogoutDate', label: 'LOGOUT', fmt: dt },
+              { key: 'LobbyServerNo', label: 'LOBBY' },
+            ]} />
+            <h2>LAST HARDWARE</h2>
+            <Grid rows={room.hardware} cols={[
+              { key: 'oiduser', label: 'OID' },
+              { key: 'MacAddress', label: 'MAC' },
+              { key: 'LastLoginDate', label: 'DATE', fmt: dt },
+            ]} />
           </div>
         )}
 
-        {section === 'linked' && <Empty text="No linked-account table is connected. SQL was not modified to add one." />}
-        {section === 'announcements' && <Empty text="No announcements table is connected. SQL was not modified to add one." />}
-        {section === 'boosts' && <Empty text="No boosts table is connected. SQL was not modified to add one." />}
+        {section === 'linked' && (
+          <div className="admin-panel">
+            <div className="admin-toolbar"><h1>LINKED ACCOUNTS</h1><span className="admin-chip">{room.source}</span></div>
+            <h2>DISCORD</h2>
+            <Grid rows={room.discord} cols={[
+              { key: 'NickName', label: 'NICK' },
+              { key: 'username', label: 'ACCOUNT' },
+              { key: 'discord_id', label: 'DISCORD' },
+              { key: 'data_vinculo', label: 'LINKED', fmt: dt },
+            ]} />
+            <h2>2FA ENABLED</h2>
+            <Grid rows={room.twofa} cols={[
+              { key: 'userId', label: 'USER' },
+              { key: 'version', label: 'VER' },
+              { key: 'enabledAt', label: 'SINCE', fmt: dt },
+            ]} />
+            <h2>PARTNER</h2>
+            <Grid rows={room.partners} cols={[
+              { key: 'oiduser', label: 'OID' },
+              { key: 'PartnerCode', label: 'CODE' },
+              { key: 'RegDate', label: 'DATE', fmt: dt },
+            ]} />
+          </div>
+        )}
+
+        {section === 'announcements' && (
+          <div className="admin-panel">
+            <div className="admin-toolbar"><h1>ANNOUNCEMENTS</h1><span className="admin-chip">{room.source}</span></div>
+            <p className="sub">In-game advertise ticker. Read only — not edited from the web.</p>
+            <Grid rows={room.ticker} cols={[
+              { key: 'ADMessageNo', label: '#' },
+              { key: 'ADMessage', label: 'MESSAGE' },
+              { key: 'Enable', label: 'ON' },
+              { key: 'ADURL', label: 'URL' },
+            ]} />
+            <h2>MESSAGE SETS</h2>
+            <Grid rows={room.messages} cols={[
+              { key: 'Message', label: 'MESSAGE' },
+              { key: 'Enable', label: 'ON' },
+              { key: 'ViewDate', label: 'DATE', fmt: dt },
+            ]} />
+          </div>
+        )}
 
         {section === 'maps' && (
           <div className="admin-panel">
-            <div className="admin-toolbar"><h1>MAPS / MODES</h1></div>
-            {modes.length === 0 ? <Empty text="No maps/modes returned from CBT_GameMode." /> : (
-              <table className="admin-table">
-                <thead><tr><th>ENTRY</th></tr></thead>
-                <tbody>
-                  {modes.map((m: any, i: number) => (
-                    <tr key={i}><td>{JSON.stringify(m)}</td></tr>
-                  ))}
-                </tbody>
-              </table>
-            )}
+            <div className="admin-toolbar"><h1>MAPS</h1><span className="admin-chip">{room.source}</span></div>
+            <h2>OPEN ROTATION</h2>
+            <Grid rows={room.open} cols={[
+              { key: 'MapName', label: 'MAP' },
+              { key: 'ModeName', label: 'MODE' },
+              { key: 'Enable', label: 'ON' },
+              { key: 'IsOfficial', label: 'OFFICIAL' },
+              { key: 'ClearanceLevel', label: 'LVL' },
+            ]} />
+            <h2>ALL MAPS</h2>
+            <Grid rows={room.maps} cols={[
+              { key: 'MapID', label: 'ID' },
+              { key: 'Name', label: 'NAME' },
+            ]} />
+          </div>
+        )}
+
+        {section === 'boosts' && (
+          <div className="admin-panel">
+            <div className="admin-toolbar"><h1>BOOSTS</h1><span className="admin-chip">{room.source}</span></div>
+            <p className="sub">EXP/GP events and hottime. Read only.</p>
+            <h2>EXP / GP</h2>
+            <Grid rows={room.events} cols={[
+              { key: 'EventID', label: 'ID' },
+              { key: 'EXPRate', label: 'EXP' },
+              { key: 'GPRate', label: 'GP' },
+              { key: 'Enable', label: 'ON' },
+              { key: 'BeginTime', label: 'START', fmt: dt },
+              { key: 'EndTime', label: 'END', fmt: dt },
+              { key: 'description', label: 'DESC' },
+            ]} />
+            <h2>HOTTIME</h2>
+            <Grid rows={room.hottime} cols={[
+              { key: 'EventID', label: 'ID' },
+              { key: 'Enable', label: 'ON' },
+              { key: 'DurationHour', label: 'HOURS' },
+              { key: 'BeginTime', label: 'START', fmt: dt },
+              { key: 'EndTime', label: 'END', fmt: dt },
+              { key: 'Description', label: 'DESC' },
+            ]} />
           </div>
         )}
 

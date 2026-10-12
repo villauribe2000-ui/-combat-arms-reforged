@@ -15,6 +15,7 @@ import refundRoutes from './routes/refund.js';
 import supportRoutes from './routes/support.js';
 import marketplaceRoutes from './routes/marketplace.js';
 import combatarmsWebRoutes from './routes/combatarms-web.js';
+import adminReadRoutes from './routes/admin-read.js';
 // import birthdayRoutes from './routes/birthdays.js';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -66,6 +67,7 @@ app.use('/src/assets', express.static(path.join(__dirname, '../src/assets')));
 // Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/auth-combatarms', authCombatarmsRoutes);
+app.use('/api/admin', adminReadRoutes);
 app.use('/api', dataRoutes);
 app.use('/api/wallet', walletRoutes);
 app.use('/api/payments', paymentsRoutes);
