@@ -9,7 +9,7 @@ import PageLoader from '@/components/PageLoader';
 import {
   XCircle, Loader, RotateCcw, MessageSquare, Send,
   LayoutDashboard, Users, Radio, Shield, Store, Landmark, FileBarChart, Swords, LogIn,
-  Link2, Megaphone, Map, Zap, ArrowLeft, Ticket, KeyRound, CreditCard, ExternalLink, ChevronRight, Search, Activity, TrendingUp, Wallet, ShoppingBag, Coins, Flag, Check, Star, UserCog
+  Link2, Megaphone, Map, Zap, ArrowLeft, Ticket, KeyRound, CreditCard, ExternalLink, ChevronRight, Search, Activity, TrendingUp, Wallet, ShoppingBag, Coins, Flag, Check, Star, UserCog, Crown, History, X
 } from 'lucide-react';
 
 interface PaymentCode {
@@ -72,7 +72,7 @@ interface TicketMessage {
 type Section =
   | 'overview' | 'players' | 'online' | 'clans' | 'shop' | 'economy' | 'reports'
   | 'matches' | 'logins' | 'linked' | 'announcements' | 'maps' | 'boosts'
-  | 'codes' | 'payments' | 'refunds' | 'tickets' | 'staff';
+  | 'codes' | 'payments' | 'refunds' | 'tickets' | 'staff' | 'gm' | 'history';
 
 const NAV: { id: Section; label: string; icon: typeof LayoutDashboard; group: string }[] = [
   { id: 'overview', label: 'Overview', icon: LayoutDashboard, group: 'CONTROL ROOM' },
@@ -93,6 +93,8 @@ const NAV: { id: Section; label: string; icon: typeof LayoutDashboard; group: st
   { id: 'refunds', label: 'Refunds', icon: RotateCcw, group: 'OPERATIONS' },
   { id: 'tickets', label: 'Tickets', icon: Ticket, group: 'OPERATIONS' },
   { id: 'staff', label: 'Administración', icon: UserCog, group: 'OPERATIONS' },
+  { id: 'gm', label: 'GM', icon: Crown, group: 'OPERATIONS' },
+  { id: 'history', label: 'Historial', icon: History, group: 'OPERATIONS' },
 ];
 
 const ISO3: Record<string, string> = {
@@ -294,6 +296,15 @@ export default function AdminPage({ onNavigate }: { onNavigate?: (page: PageId) 
   const [newRoleGm, setNewRoleGm] = useState(false);
   const [staffBusy, setStaffBusy] = useState(false);
   const [pickRole, setPickRole] = useState('ADMINISTRATOR');
+  const [staffOpen, setStaffOpen] = useState<any>(null);
+  const [staffDesk, setStaffDesk] = useState<any>(null);
+  const [quotaInput, setQuotaInput] = useState('');
+  const [gmDesk, setGmDesk] = useState<any>(null);
+  const [gmQ, setGmQ] = useState('');
+  const [gmHits, setGmHits] = useState<any[]>([]);
+  const [gmAmount, setGmAmount] = useState('');
+  const [giftHistory, setGiftHistory] = useState<any[]>([]);
+  const [histQ, setHistQ] = useState('');
   const [navLoading, setNavLoading] = useState(true);
   const [navLeaving, setNavLeaving] = useState(false);
   const navTimer = useRef<ReturnType<typeof setTimeout>>();
@@ -428,6 +439,24 @@ export default function AdminPage({ onNavigate }: { onNavigate?: (page: PageId) 
         .catch(() => {
           if (live) { setStaffList([]); setStaffRoles([]); }
         })
+        .finally(() => { if (live) setRoomLoading(false); });
+      return () => { live = false; };
+    }
+    if (section === 'gm') {
+      let live = true;
+      setRoomLoading(true);
+      api.getAdminStaffMe()
+        .then((d) => { if (live) setGmDesk(d || {}); })
+        .catch(() => { if (live) setGmDesk(null); })
+        .finally(() => { if (live) setRoomLoading(false); });
+      return () => { live = false; };
+    }
+    if (section === 'history') {
+      let live = true;
+      setRoomLoading(true);
+      api.getAdminStaffGifts()
+        .then((d) => { if (live) setGiftHistory(d.gifts || []); })
+        .catch(() => { if (live) setGiftHistory([]); })
         .finally(() => { if (live) setRoomLoading(false); });
       return () => { live = false; };
     }
@@ -679,6 +708,78 @@ export default function AdminPage({ onNavigate }: { onNavigate?: (page: PageId) 
       setStaffBusy(false);
     }
   };
+
+  const openStaffDesk = async (p: any) => {
+    setStaffOpen(p);
+    setQuotaInput(String(p.monthlyAllotment || 0));
+    try {
+      const d = await api.getAdminStaffDesk(p.userId);
+      setStaffDesk(d);
+      setQuotaInput(String(d.quota?.monthlyAllotment || 0));
+    } catch {
+      setStaffDesk({ staff: p, quota: p, gifts: [] });
+    }
+  };
+
+  const saveQuota = async () => {
+    if (!canManageStaff || !staffOpen) return;
+    const amount = Math.max(0, Math.floor(Number(String(quotaInput).replace(/[^\d]/g, '')) || 0));
+    setStaffBusy(true);
+    try {
+      const d = await api.setAdminStaffQuota(staffOpen.userId, amount);
+      if (d.staff) setStaffList(d.staff);
+      setStaffDesk((prev: any) => ({ ...(prev || {}), quota: d.quota }));
+    } catch (err: any) {
+      alert(err?.message || 'No se pudo guardar el cupo');
+    } finally {
+      setStaffBusy(false);
+    }
+  };
+
+  const searchGmPlayers = async (e?: React.FormEvent) => {
+    e?.preventDefault();
+    const q = gmQ.trim();
+    if (q.length < 2) { setGmHits([]); return; }
+    setStaffBusy(true);
+    try {
+      const d = await api.searchAdminStaff(q);
+      setGmHits(d.data || []);
+    } catch {
+      setGmHits([]);
+    } finally {
+      setStaffBusy(false);
+    }
+  };
+
+  const sendGmGift = async (toUserId: number) => {
+    const amount = Math.floor(Number(String(gmAmount).replace(/[^\d]/g, '')) || 0);
+    if (amount <= 0) return;
+    setStaffBusy(true);
+    try {
+      const d = await api.giftAdminNx(toUserId, amount);
+      setGmDesk((prev: any) => ({ ...(prev || {}), quota: d.quota, gifts: d.gifts }));
+      setGmAmount('');
+    } catch (err: any) {
+      alert(err?.message || 'No se pudo enviar NX');
+    } finally {
+      setStaffBusy(false);
+    }
+  };
+
+  const searchHistory = async (e?: React.FormEvent) => {
+    e?.preventDefault();
+    setStaffBusy(true);
+    try {
+      const d = await api.getAdminStaffGifts(histQ.trim() || undefined);
+      setGiftHistory(d.gifts || []);
+    } catch {
+      setGiftHistory([]);
+    } finally {
+      setStaffBusy(false);
+    }
+  };
+
+  const nxFmt = (v: any) => Number(v || 0).toLocaleString();
 
   const createStaffRole = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -1862,118 +1963,230 @@ export default function AdminPage({ onNavigate }: { onNavigate?: (page: PageId) 
                 <p className="eyebrow">OPERATIONS / STAFF</p>
                 <h1>ADMINISTRACIÓN</h1>
                 <p>{canManageStaff
-                  ? 'Solo tú puedes crear roles y asignarlos. El resto del staff ve esta lista en solo lectura.'
-                  : 'Solo lectura. Puedes ver el staff, pero no crear roles ni asignar a nadie.'}</p>
+                  ? 'Asigna roles, abre un staff para cargarle cupo mensual de NX y revisa a quién ha regalado.'
+                  : 'Solo lectura. Abre un staff para ver su etiqueta y su cupo. No puedes cambiar roles ni montos.'}</p>
               </div>
             </div>
             {canManageStaff && (
-            <form className="pl-filters" onSubmit={createStaffRole}>
-              <input value={newRoleName} onChange={(e) => setNewRoleName(e.target.value)} placeholder="Nuevo rol (ej. MOD, GM, HELPER)" />
-              <label className="staff-check"><input type="checkbox" checked={newRoleAdmin} onChange={(e) => setNewRoleAdmin(e.target.checked)} /> Panel admin</label>
-              <label className="staff-check"><input type="checkbox" checked={newRoleGm} onChange={(e) => setNewRoleGm(e.target.checked)} /> Marca GM</label>
-              <button className="pl-apply" type="submit" disabled={staffBusy}>Crear rol</button>
+            <form className="staff-toolbar" onSubmit={createStaffRole}>
+              <input value={newRoleName} onChange={(e) => setNewRoleName(e.target.value)} placeholder="Nuevo rol (MOD, GM, HELPER)" />
+              <label className="staff-switch"><input type="checkbox" checked={newRoleAdmin} onChange={(e) => setNewRoleAdmin(e.target.checked)} /><span /> Panel admin</label>
+              <label className="staff-switch"><input type="checkbox" checked={newRoleGm} onChange={(e) => setNewRoleGm(e.target.checked)} /><span /> Marca GM</label>
+              <button className="staff-btn staff-btn-gold" type="submit" disabled={staffBusy}>Crear rol</button>
             </form>
             )}
-            <form className="pl-filters" onSubmit={searchStaffPlayers}>
+            <form className="staff-toolbar" onSubmit={searchStaffPlayers}>
               <input value={staffQ} onChange={(e) => setStaffQ(e.target.value)} placeholder="Buscar nick, usuario, email o #oid" />
               {canManageStaff && (
               <select value={pickRole} onChange={(e) => setPickRole(e.target.value)}>
                 {(staffRoles.length ? staffRoles : [{ name: 'ADMINISTRATOR' }, { name: 'GM' }, { name: 'SUPERADMIN' }]).map((r: any) => (
-                  <option key={r.name} value={r.name}>{r.name}{r.isGm ? ' · GM' : ''}{r.siteAdmin ? ' · ADMIN' : ''}</option>
+                  <option key={r.name} value={r.name}>{r.name}</option>
                 ))}
               </select>
               )}
-              <button className="pl-apply" type="submit" disabled={staffBusy}>Buscar</button>
+              <button className="staff-btn staff-btn-gold" type="submit" disabled={staffBusy}>Buscar</button>
             </form>
-            {staffBusy && roomLoading ? <Empty text="Leyendo jugadores..." /> : null}
-            <div className="pl-meta">
-              <h2>BUSCAR JUGADORES</h2>
-              <span>{staffHits.length} resultados{canManageStaff ? ` · rol a asignar: ${pickRole}` : ' · solo lectura'}</span>
-            </div>
-            <table className="pl-table">
-              <thead>
-                <tr>
-                  <th>PLAYER</th>
-                  <th>EMAIL</th>
-                  <th>ROL ACTUAL</th>
-                  {canManageStaff && <th>ACTIONS</th>}
-                </tr>
-              </thead>
-              <tbody>
-                {staffHits.length === 0 ? (
-                  <tr><td colSpan={canManageStaff ? 4 : 3} style={{ color: '#777', padding: 28 }}>Busca un jugador para ver su rol.</td></tr>
-                ) : staffHits.map((p: any) => (
-                  <tr key={p.id}>
-                    <td>
-                      <div className="pl-player">
-                        <img src={rankIcon({ exp: p.Exp, UserType: p.UserType })} alt="" onError={(e) => { e.currentTarget.src = '/ranks/RANK_0.png'; }} />
-                        <div>
-                          <b>{p.isGM ? `[GM]${p.NickName || p.username}` : (p.NickName || p.username)}</b>
-                          <small>{p.username}_ #{p.id}</small>
-                        </div>
+            {staffHits.length > 0 && (
+              <div className="staff-results">
+                {staffHits.map((p: any) => (
+                  <article key={p.id} className="staff-card">
+                    <div className="pl-player">
+                      <img src={rankIcon({ exp: p.Exp, UserType: p.UserType })} alt="" onError={(e) => { e.currentTarget.src = '/ranks/RANK_0.png'; }} />
+                      <div>
+                        <b>{p.NickName || p.username}</b>
+                        <small>{p.username} · #{p.id}</small>
                       </div>
-                    </td>
-                    <td className="pl-mail">{p.email || '—'}</td>
-                    <td>
-                      <div className="pl-roles">
-                        {p.webRole ? <span className="pl-pill pl-pill-admin">{String(p.webRole).toUpperCase()}</span> : <span className="pl-pill pl-pill-player">PLAYER</span>}
-                        {(p.isGM || p.webGm) && String(p.webRole || '').toLowerCase() !== 'gm' && <span className="pl-pill pl-pill-gm">GM</span>}
-                      </div>
-                    </td>
+                    </div>
+                    <div className="pl-roles">
+                      {p.webRole ? <span className="pl-pill pl-pill-admin">{String(p.webRole).toUpperCase()}</span> : <span className="pl-pill pl-pill-player">PLAYER</span>}
+                    </div>
                     {canManageStaff && (
-                    <td>
-                      <button className="pl-apply" type="button" disabled={staffBusy} onClick={() => assignStaff(p.id, pickRole)}>Asignar {pickRole}</button>
-                    </td>
+                      <button className="staff-btn staff-btn-gold" type="button" disabled={staffBusy} onClick={() => assignStaff(p.id, pickRole)}>Asignar {pickRole}</button>
                     )}
-                  </tr>
+                  </article>
                 ))}
-              </tbody>
-            </table>
-            <div className="pl-meta" style={{ marginTop: 28 }}>
+              </div>
+            )}
+            <div className="pl-meta" style={{ marginTop: 10 }}>
               <h2>STAFF ACTIVO</h2>
-              <span>{staffList.length} cuentas en combatarms_web.admin_users</span>
+              <span>Pulsa una ficha para ver cupo NX y regalos</span>
             </div>
             {roomLoading ? <Empty text="Leyendo staff..." /> : (
+              <div className="staff-results">
+                {staffList.length === 0 ? <Empty text="Aún no hay roles asignados." /> : staffList.map((p: any) => (
+                  <button type="button" key={p.userId} className="staff-card staff-card-btn" onClick={() => openStaffDesk(p)}>
+                    <div className="pl-player">
+                      <div>
+                        <b>{p.NickName || p.username}</b>
+                        <small>{p.username} · #{p.userId}</small>
+                      </div>
+                    </div>
+                    <div className="pl-roles">
+                      <span className={String(p.webRole || '').toLowerCase() === 'superadmin' ? 'pl-pill pl-pill-super' : (p.webGm ? 'pl-pill pl-pill-gm' : 'pl-pill pl-pill-admin')}>
+                        {String(p.webRole || 'STAFF').toUpperCase()}
+                      </span>
+                    </div>
+                    <div className="staff-quota-chip">
+                      <small>CUPO / RESTANTE</small>
+                      <strong>{nxFmt(p.remaining)} <span>/ {nxFmt(p.monthlyAllotment)}</span></strong>
+                    </div>
+                    <ChevronRight className="staff-card-go" />
+                  </button>
+                ))}
+              </div>
+            )}
+            {staffOpen && (
+              <div className="staff-drawer-bg" onClick={() => { setStaffOpen(null); setStaffDesk(null); }}>
+                <aside className="staff-drawer" onClick={(e) => e.stopPropagation()}>
+                  <header>
+                    <div>
+                      <p className="eyebrow">STAFF DESK</p>
+                      <h2>{staffOpen.NickName || staffOpen.username}</h2>
+                      <small>{staffOpen.username} · #{staffOpen.userId}</small>
+                    </div>
+                    <button className="staff-btn staff-btn-ghost" type="button" onClick={() => { setStaffOpen(null); setStaffDesk(null); }}><X /></button>
+                  </header>
+                  <div className="pl-roles" style={{ margin: '8px 0 16px' }}>
+                    <span className={String((staffDesk?.staff || staffOpen).webRole || '').toLowerCase() === 'superadmin' ? 'pl-pill pl-pill-super' : 'pl-pill pl-pill-admin'}>
+                      {String((staffDesk?.staff || staffOpen).webRole || 'STAFF').toUpperCase()}
+                    </span>
+                    {(staffDesk?.staff || staffOpen).webGm && <span className="pl-pill pl-pill-gm">GM</span>}
+                  </div>
+                  <div className="staff-metrics">
+                    <article><p>ASIGNADO / MES</p><strong>{nxFmt(staffDesk?.quota?.monthlyAllotment ?? staffOpen.monthlyAllotment)}</strong></article>
+                    <article><p>USADO</p><strong>{nxFmt(staffDesk?.quota?.used ?? staffOpen.used)}</strong></article>
+                    <article><p>RESTA</p><strong>{nxFmt(staffDesk?.quota?.remaining ?? staffOpen.remaining)}</strong></article>
+                  </div>
+                  {canManageStaff && (
+                    <form className="staff-toolbar" onSubmit={(e) => { e.preventDefault(); saveQuota(); }}>
+                      <input value={quotaInput} onChange={(e) => setQuotaInput(e.target.value)} placeholder="Cupo mensual NX" />
+                      <button className="staff-btn staff-btn-gold" type="submit" disabled={staffBusy}>Guardar cupo</button>
+                    </form>
+                  )}
+                  <p className="staff-note">El cupo se reinicia cada mes. Si llega a 0, este staff no puede regalar más NX.</p>
+                  <h3>REGALOS DE ESTE MES</h3>
+                  <div className="staff-gift-list">
+                    {(staffDesk?.gifts || []).length === 0 ? <p className="staff-note">Todavía no ha regalado NX.</p> : (staffDesk.gifts || []).map((g: any) => (
+                      <div key={g.id} className="staff-gift-row">
+                        <div>
+                          <b>{g.toNick || g.toUsername}</b>
+                          <small>{g.toUsername} · {stamp(g.createdAt)}</small>
+                        </div>
+                        <strong>{nxFmt(g.amount)} NX</strong>
+                      </div>
+                    ))}
+                  </div>
+                  {canManageStaff && staffOpen.username !== 'villauribe12' && (
+                    <button className="staff-btn staff-btn-danger" type="button" disabled={staffBusy} onClick={() => { removeStaff(staffOpen.userId); setStaffOpen(null); }}>Quitar rol</button>
+                  )}
+                </aside>
+              </div>
+            )}
+          </>
+        )}
+
+        {section === 'gm' && (
+          <>
+            <div className="pl-hero">
+              <div className="pl-hero-ico"><Crown /></div>
+              <div>
+                <p className="eyebrow">OPERATIONS / GM</p>
+                <h1>GM</h1>
+                <p>Tu etiqueta y el NX que puedes regalar este mes. Busca un jugador y envía desde tu cupo.</p>
+              </div>
+            </div>
+            {roomLoading ? <Empty text="Cargando cupo..." /> : !gmDesk?.me ? <Empty text="No tienes un rol de staff asignado." /> : (
+              <>
+                <div className="staff-metrics">
+                  <article>
+                    <p>TU ETIQUETA</p>
+                    <strong style={{ fontSize: 22 }}>{String(gmDesk.me.webRole || 'STAFF').toUpperCase()}</strong>
+                  </article>
+                  <article><p>CUPO DEL MES</p><strong>{nxFmt(gmDesk.quota?.monthlyAllotment)}</strong></article>
+                  <article><p>YA REGALADO</p><strong>{nxFmt(gmDesk.quota?.used)}</strong></article>
+                  <article><p>TE QUEDA</p><strong>{nxFmt(gmDesk.quota?.remaining)}</strong></article>
+                </div>
+                <form className="staff-toolbar" onSubmit={searchGmPlayers}>
+                  <input value={gmQ} onChange={(e) => setGmQ(e.target.value)} placeholder="Jugador que recibe NX" />
+                  <input value={gmAmount} onChange={(e) => setGmAmount(e.target.value)} placeholder="Cantidad NX" style={{ minWidth: 140, flex: '0 0 160px' }} />
+                  <button className="staff-btn staff-btn-gold" type="submit" disabled={staffBusy}>Buscar</button>
+                </form>
+                <div className="staff-results">
+                  {gmHits.map((p: any) => (
+                    <article key={p.id} className="staff-card">
+                      <div className="pl-player">
+                        <div>
+                          <b>{p.NickName || p.username}</b>
+                          <small>{p.username} · #{p.id}</small>
+                        </div>
+                      </div>
+                      <button className="staff-btn staff-btn-gold" type="button" disabled={staffBusy || (!(gmDesk.me.username === 'villauribe12') && Number(gmDesk.quota?.remaining || 0) <= 0)} onClick={() => sendGmGift(p.id)}>
+                        Regalar {gmAmount || '0'} NX
+                      </button>
+                    </article>
+                  ))}
+                </div>
+                <div className="pl-meta" style={{ marginTop: 18 }}>
+                  <h2>TUS REGALOS</h2>
+                  <span>A quién enviaste NX este periodo</span>
+                </div>
+                <div className="staff-gift-list">
+                  {(gmDesk.gifts || []).length === 0 ? <p className="staff-note">Aún no has regalado NX.</p> : (gmDesk.gifts || []).map((g: any) => (
+                    <div key={g.id} className="staff-gift-row">
+                      <div>
+                        <b>{g.toNick || g.toUsername}</b>
+                        <small>{g.toUsername} · {stamp(g.createdAt)}</small>
+                      </div>
+                      <strong>{nxFmt(g.amount)} NX</strong>
+                    </div>
+                  ))}
+                </div>
+              </>
+            )}
+          </>
+        )}
+
+        {section === 'history' && (
+          <>
+            <div className="pl-hero">
+              <div className="pl-hero-ico"><History /></div>
+              <div>
+                <p className="eyebrow">OPERATIONS / LOG</p>
+                <h1>HISTORIAL</h1>
+                <p>Todo lo que cada GM o administrador ha regalado: a quién, cuánto y con qué etiqueta.</p>
+              </div>
+            </div>
+            <form className="staff-toolbar" onSubmit={searchHistory}>
+              <input value={histQ} onChange={(e) => setHistQ(e.target.value)} placeholder="Filtrar por GM o jugador" />
+              <button className="staff-btn staff-btn-gold" type="submit" disabled={staffBusy}>Filtrar</button>
+            </form>
+            {roomLoading ? <Empty text="Leyendo historial..." /> : (
               <table className="pl-table">
                 <thead>
                   <tr>
-                    <th>PLAYER</th>
-                    <th>ROLE</th>
-                    <th>GRANTED BY</th>
-                    {canManageStaff && <th>ACTIONS</th>}
+                    <th>CUÁNDO</th>
+                    <th>GM / ADMIN</th>
+                    <th>ETIQUETA</th>
+                    <th>JUGADOR</th>
+                    <th>NX</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {staffList.length === 0 ? (
-                    <tr><td colSpan={canManageStaff ? 4 : 3} style={{ color: '#777', padding: 28 }}>Aún no hay roles asignados.</td></tr>
-                  ) : staffList.map((p: any) => (
-                    <tr key={p.userId}>
+                  {giftHistory.length === 0 ? (
+                    <tr><td colSpan={5} style={{ color: '#777', padding: 28 }}>Todavía no hay regalos registrados.</td></tr>
+                  ) : giftHistory.map((g: any) => (
+                    <tr key={g.id}>
+                      <td>{stamp(g.createdAt)}</td>
                       <td>
-                        <div className="pl-player">
-                          <div>
-                            <b>{p.isGM ? `[GM]${p.NickName || p.username}` : (p.NickName || p.username)}</b>
-                            <small>{p.username}_ #{p.userId}</small>
-                          </div>
-                        </div>
+                        <b>{g.fromNick || g.fromUsername}</b>
+                        <div style={{ color: '#888', fontSize: 11 }}>{g.fromUsername}</div>
                       </td>
+                      <td><span className="pl-pill pl-pill-admin">{String(g.fromRole || 'STAFF').toUpperCase()}</span></td>
                       <td>
-                        <div className="pl-roles">
-                          <span className={String(p.webRole || '').toLowerCase() === 'superadmin' ? 'pl-pill pl-pill-super' : 'pl-pill pl-pill-admin'}>
-                            {String(p.webRole || '').toUpperCase()}
-                          </span>
-                          {p.webGm && String(p.webRole || '').toLowerCase() !== 'gm' && <span className="pl-pill pl-pill-gm">GM</span>}
-                        </div>
+                        <b>{g.toNick || g.toUsername}</b>
+                        <div style={{ color: '#888', fontSize: 11 }}>{g.toUsername}</div>
                       </td>
-                      <td>{p.grantedBy || '—'} · {stamp(p.grantedAt)}</td>
-                      {canManageStaff && (
-                      <td>
-                        {p.username === 'villauribe12' ? (
-                          <span className="pl-pill pl-pill-super">LOCKED</span>
-                        ) : (
-                          <button className="admin-no" type="button" disabled={staffBusy} onClick={() => removeStaff(p.userId)}>Quitar</button>
-                        )}
-                      </td>
-                      )}
+                      <td><strong>{nxFmt(g.amount)}</strong></td>
                     </tr>
                   ))}
                 </tbody>

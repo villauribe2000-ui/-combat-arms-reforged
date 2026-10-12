@@ -188,6 +188,27 @@ class ApiClient {
     return await this.request<any>('POST', '/admin/staff/roles', body);
   }
 
+  async getAdminStaffDesk(userId: number) {
+    return await this.request<any>('GET', `/admin/staff/${userId}/desk`);
+  }
+
+  async setAdminStaffQuota(userId: number, amount: number) {
+    return await this.request<any>('POST', `/admin/staff/${userId}/quota`, { amount });
+  }
+
+  async getAdminStaffMe() {
+    return await this.request<any>('GET', '/admin/staff/me');
+  }
+
+  async giftAdminNx(toUserId: number, amount: number) {
+    return await this.request<any>('POST', '/admin/staff/gift', { toUserId, amount });
+  }
+
+  async getAdminStaffGifts(q?: string) {
+    const qs = q ? `?q=${encodeURIComponent(q)}` : '';
+    return await this.request<any>('GET', `/admin/staff/gifts${qs}`);
+  }
+
   async getAdminSection(section: string, params?: Record<string, string | number | undefined> | string) {
     const query = new URLSearchParams();
     if (typeof params === 'string') {

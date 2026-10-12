@@ -37,6 +37,35 @@ export async function ensureStaffTables() {
     IF COL_LENGTH('admin_users', 'isGm') IS NULL ALTER TABLE admin_users ADD isGm BIT NOT NULL CONSTRAINT DF_admin_users_isGm2 DEFAULT (0);
     IF COL_LENGTH('admin_users', 'username') IS NULL ALTER TABLE admin_users ADD username NVARCHAR(64) NULL;
     IF COL_LENGTH('admin_users', 'nickName') IS NULL ALTER TABLE admin_users ADD nickName NVARCHAR(64) NULL;
+    IF OBJECT_ID('staff_nx_quota', 'U') IS NULL
+    BEGIN
+      CREATE TABLE staff_nx_quota (
+        userId INT NOT NULL PRIMARY KEY,
+        monthlyAllotment BIGINT NOT NULL CONSTRAINT DF_staff_nx_allot DEFAULT (0),
+        period CHAR(7) NOT NULL CONSTRAINT DF_staff_nx_period DEFAULT (''),
+        used BIGINT NOT NULL CONSTRAINT DF_staff_nx_used DEFAULT (0),
+        updatedBy NVARCHAR(64) NULL,
+        updatedAt DATETIME NOT NULL CONSTRAINT DF_staff_nx_updated DEFAULT (GETDATE())
+      );
+    END
+    IF OBJECT_ID('staff_nx_gifts', 'U') IS NULL
+    BEGIN
+      CREATE TABLE staff_nx_gifts (
+        id INT IDENTITY(1,1) PRIMARY KEY,
+        fromUserId INT NOT NULL,
+        fromUsername NVARCHAR(64) NULL,
+        fromNick NVARCHAR(64) NULL,
+        fromRole NVARCHAR(40) NULL,
+        toUserId INT NOT NULL,
+        toUsername NVARCHAR(64) NULL,
+        toNick NVARCHAR(64) NULL,
+        amount BIGINT NOT NULL,
+        period CHAR(7) NOT NULL,
+        createdAt DATETIME NOT NULL CONSTRAINT DF_staff_nx_gifts_at DEFAULT (GETDATE())
+      );
+      CREATE INDEX idx_staff_nx_gifts_from ON staff_nx_gifts (fromUserId, createdAt DESC);
+      CREATE INDEX idx_staff_nx_gifts_at ON staff_nx_gifts (createdAt DESC);
+    END
   `);
   const roles = await queryWeb(`SELECT COUNT(*) as n FROM staff_roles`);
   if (!Number(roles.recordset?.[0]?.n)) {

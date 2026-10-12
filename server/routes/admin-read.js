@@ -1150,6 +1150,51 @@ router.get('/boosts', async (_req, res) => {
   });
 });
 
+async function currentPeriod() {
+  const row = (await web(`SELECT CONVERT(char(7), GETDATE(), 126) as p`))[0];
+  if (row?.p) return String(row.p).slice(0, 7);
+  const d = new Date();
+  return `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, '0')}`;
+}
+
+async function getQuota(userId) {
+  const period = await currentPeriod();
+  const id = Number(userId);
+  let row = (await web(`SELECT userId, monthlyAllotment, period, used FROM staff_nx_quota WHERE userId = @id`, { id }))[0];
+  if (!row) {
+    return { userId: id, monthlyAllotment: 0, used: 0, remaining: 0, period };
+  }
+  if (String(row.period || '') !== period) {
+    await queryWeb(`UPDATE staff_nx_quota SET used = 0, period = @period WHERE userId = @id`, { id, period });
+    row.used = 0;
+    row.period = period;
+  }
+  const monthlyAllotment = Number(row.monthlyAllotment || 0);
+  const used = Number(row.used || 0);
+  return { userId: id, monthlyAllotment, used, remaining: Math.max(0, monthlyAllotment - used), period };
+}
+
+async function giftsFor(fromUserId, limit = 80) {
+  return web(`
+    SELECT TOP (${Number(limit) || 80}) id, fromUserId, fromUsername, fromNick, fromRole,
+      toUserId, toUsername, toNick, amount, period, createdAt
+    FROM staff_nx_gifts
+    WHERE fromUserId = @id
+    ORDER BY createdAt DESC`, { id: Number(fromUserId) });
+}
+
+async function lookupStaffByUsername(username) {
+  if (username === STAFF_OWNER) {
+    const users = await ca(`SELECT TOP 1 oidUser as id, strNexonID as username, NickName FROM CBT_User WHERE strNexonID = @u`, { u: STAFF_OWNER });
+    const user = users[0] || { id: 0, username: STAFF_OWNER, NickName: STAFF_OWNER };
+    return { ...user, userId: user.id, webRole: 'SUPERADMIN', siteAdmin: true, webGm: false };
+  }
+  const row = (await web(`SELECT TOP 1 userId, username, nickName, role, siteAdmin, isGm FROM admin_users WHERE username = @u`, { u: username }))[0];
+  if (!row) return null;
+  const flags = roleFlags(row);
+  return { userId: Number(row.userId), username: row.username, NickName: row.nickName, ...flags };
+}
+
 async function loadStaffBundle() {
   await ensureStaffTables();
   const roles = await web(`SELECT id, name, siteAdmin, isGm, createdBy, createdAt FROM staff_roles ORDER BY name`);
@@ -1167,10 +1212,24 @@ async function loadStaffBundle() {
       WHERE u.oidUser IN (${ids.join(',')})`);
   }
   const byId = Object.fromEntries(users.map((u) => [Number(u.id), u]));
-  const staff = staffRows.map((row) => {
+  const quotas = ids.length
+    ? await web(`SELECT userId, monthlyAllotment, period, used FROM staff_nx_quota WHERE userId IN (${ids.join(',')})`)
+    : [];
+  const period = await currentPeriod();
+  const quotaMap = {};
+  for (const q of quotas) quotaMap[Number(q.userId)] = q;
+  const staff = [];
+  for (const row of staffRows) {
     const flags = roleFlags(row);
     const user = byId[Number(row.userId)] || {};
-    return {
+    let q = quotaMap[Number(row.userId)];
+    if (q && String(q.period || '') !== period) {
+      await queryWeb(`UPDATE staff_nx_quota SET used = 0, period = @period WHERE userId = @id`, { id: Number(row.userId), period });
+      q = { ...q, used: 0, period };
+    }
+    const monthlyAllotment = Number(q?.monthlyAllotment || 0);
+    const used = Number(q?.used || 0);
+    staff.push({
       userId: Number(row.userId),
       username: user.username || row.username,
       NickName: user.NickName || row.nickName,
@@ -1183,9 +1242,13 @@ async function loadStaffBundle() {
       isGM: user.UserType === 1 || flags.webGm,
       grantedBy: row.grantedBy,
       grantedAt: row.grantedAt,
-    };
-  });
-  return { staff, roles: roles.map((r) => ({ ...r, siteAdmin: roleFlags({ ...r, role: r.name }).siteAdmin, isGm: roleFlags({ ...r, role: r.name, isGm: r.isGm }).webGm })) };
+      monthlyAllotment,
+      used,
+      remaining: Math.max(0, monthlyAllotment - used),
+      period,
+    });
+  }
+  return { staff, roles: roles.map((r) => ({ ...r, siteAdmin: roleFlags({ ...r, role: r.name }).siteAdmin, isGm: roleFlags({ ...r, role: r.name, isGm: r.isGm }).webGm })), period };
 }
 
 router.get('/staff', async (_req, res) => {
@@ -1229,6 +1292,174 @@ router.get('/staff/search', async (req, res) => {
       return { ...p, webRole: flags.role, webGm: flags.webGm, siteAdmin: flags.siteAdmin, isGM: p.UserType === 1 || flags.webGm };
     }),
   });
+});
+
+router.get('/staff/me', async (req, res) => {
+  try {
+    await ensureStaffTables();
+    const username = staffActor(req);
+    if (!username) return res.status(401).json({ error: 'login required' });
+    const me = await lookupStaffByUsername(username);
+    if (!me) return res.status(403).json({ error: 'no staff role' });
+    const quota = await getQuota(me.userId);
+    const gifts = await giftsFor(me.userId, 80);
+    res.json({ me, quota, gifts, period: quota.period });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+router.get('/staff/gifts', async (req, res) => {
+  try {
+    await ensureStaffTables();
+    const username = staffActor(req);
+    if (!username) return res.status(401).json({ error: 'login required' });
+    const me = await lookupStaffByUsername(username);
+    if (!me) return res.status(403).json({ error: 'no staff role' });
+    const q = String(req.query.q || '').trim();
+    const params = {};
+    let where = '1=1';
+    if (q) {
+      where += ` AND (fromUsername LIKE @q OR fromNick LIKE @q OR toUsername LIKE @q OR toNick LIKE @q)`;
+      params.q = `%${q}%`;
+    }
+    const gifts = await web(`
+      SELECT TOP 200 id, fromUserId, fromUsername, fromNick, fromRole,
+        toUserId, toUsername, toNick, amount, period, createdAt
+      FROM staff_nx_gifts
+      WHERE ${where}
+      ORDER BY createdAt DESC`, params);
+    res.json({ gifts, period: await currentPeriod() });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+router.get('/staff/:userId/desk', async (req, res) => {
+  try {
+    await ensureStaffTables();
+    const userId = parseInt(req.params.userId, 10);
+    if (!Number.isFinite(userId)) return res.status(400).json({ error: 'invalid' });
+    const row = (await web(`SELECT TOP 1 userId, username, nickName, role, siteAdmin, isGm, grantedBy, grantedAt FROM admin_users WHERE userId = @id`, { id: userId }))[0];
+    if (!row) return res.status(404).json({ error: 'not staff' });
+    const flags = roleFlags(row);
+    const user = (await ca(`SELECT TOP 1 oidUser as id, strNexonID as username, NickName FROM CBT_User WHERE oidUser = @id`, { id: userId }))[0] || {};
+    const quota = await getQuota(userId);
+    const gifts = await giftsFor(userId, 80);
+    res.json({
+      staff: {
+        userId,
+        username: user.username || row.username,
+        NickName: user.NickName || row.nickName,
+        webRole: flags.role,
+        webGm: flags.webGm,
+        siteAdmin: flags.siteAdmin,
+        grantedBy: row.grantedBy,
+        grantedAt: row.grantedAt,
+      },
+      quota,
+      gifts,
+    });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+router.post('/staff/:userId/quota', async (req, res) => {
+  try {
+    if (!requireStaffOwner(req, res)) return;
+    await ensureStaffTables();
+    const userId = parseInt(req.params.userId, 10);
+    const amount = Math.max(0, Math.floor(Number(req.body?.amount) || 0));
+    if (!Number.isFinite(userId)) return res.status(400).json({ error: 'invalid' });
+    const period = await currentPeriod();
+    const existing = await web(`SELECT TOP 1 userId FROM staff_nx_quota WHERE userId = @id`, { id: userId });
+    const updatedBy = STAFF_OWNER;
+    if (existing.length) {
+      await queryWeb(`
+        UPDATE staff_nx_quota
+        SET monthlyAllotment = @amount, period = @period, updatedBy = @updatedBy, updatedAt = GETDATE()
+        WHERE userId = @id`, { id: userId, amount, period, updatedBy });
+    } else {
+      await queryWeb(`
+        INSERT INTO staff_nx_quota (userId, monthlyAllotment, period, used, updatedBy, updatedAt)
+        VALUES (@id, @amount, @period, 0, @updatedBy, GETDATE())`, { id: userId, amount, period, updatedBy });
+    }
+    res.json({ ok: true, quota: await getQuota(userId), staff: (await loadStaffBundle()).staff });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+router.post('/staff/gift', async (req, res) => {
+  try {
+    await ensureStaffTables();
+    const username = staffActor(req);
+    if (!username) return res.status(401).json({ error: 'login required' });
+    const me = await lookupStaffByUsername(username);
+    if (!me || (!me.siteAdmin && username !== STAFF_OWNER)) {
+      return res.status(403).json({ error: 'no staff role' });
+    }
+    const toUserId = parseInt(String(req.body?.toUserId), 10);
+    const amount = Math.floor(Number(req.body?.amount) || 0);
+    if (!Number.isFinite(toUserId) || amount <= 0) return res.status(400).json({ error: 'invalid amount' });
+    if (amount > 50000000) return res.status(400).json({ error: 'amount too large' });
+    const target = (await ca(`
+      SELECT TOP 1 oidUser as id, strNexonID as username, NickName
+      FROM CBT_User WHERE oidUser = @id AND DeleteDate IS NULL`, { id: toUserId }))[0];
+    if (!target) return res.status(404).json({ error: 'player not found' });
+    const quota = await getQuota(me.userId);
+    const unlimited = username === STAFF_OWNER;
+    if (!unlimited && quota.monthlyAllotment <= 0) {
+      return res.status(400).json({ error: 'sin cupo mensual' });
+    }
+    if (!unlimited && amount > quota.remaining) {
+      return res.status(400).json({ error: `cupo insuficiente. Quedan ${quota.remaining} NX` });
+    }
+    let updated = await queryVisms(
+      `UPDATE VISMS_UserList SET RealBalance = ISNULL(RealBalance, 0) + @nx WHERE oid = @oid`,
+      { nx: amount, oid: toUserId },
+    );
+    if (!updated?.rowsAffected?.[0]) {
+      updated = await queryVisms(
+        `UPDATE VISMS_UserList SET RealBalance = ISNULL(RealBalance, 0) + @nx WHERE strNexonID = @u`,
+        { nx: amount, u: target.username },
+      );
+    }
+    if (!updated?.rowsAffected?.[0]) {
+      return res.status(500).json({ error: 'no se pudo acreditar NX en VISMS' });
+    }
+    const period = quota.period;
+    if (!unlimited) {
+      const qrow = await web(`SELECT TOP 1 userId FROM staff_nx_quota WHERE userId = @id`, { id: me.userId });
+      if (qrow.length) {
+        await queryWeb(`UPDATE staff_nx_quota SET used = used + @amount, period = @period WHERE userId = @id`, {
+          id: me.userId, amount, period,
+        });
+      } else {
+        await queryWeb(`
+          INSERT INTO staff_nx_quota (userId, monthlyAllotment, period, used, updatedBy, updatedAt)
+          VALUES (@id, 0, @period, @amount, @u, GETDATE())`, { id: me.userId, period, amount, u: username });
+      }
+    }
+    await queryWeb(`
+      INSERT INTO staff_nx_gifts (fromUserId, fromUsername, fromNick, fromRole, toUserId, toUsername, toNick, amount, period, createdAt)
+      VALUES (@fromUserId, @fromUsername, @fromNick, @fromRole, @toUserId, @toUsername, @toNick, @amount, @period, GETDATE())`, {
+      fromUserId: me.userId,
+      fromUsername: me.username || username,
+      fromNick: me.NickName || me.username || username,
+      fromRole: me.webRole || (unlimited ? 'SUPERADMIN' : 'STAFF'),
+      toUserId,
+      toUsername: target.username,
+      toNick: target.NickName || target.username,
+      amount,
+      period,
+    });
+    const next = unlimited ? quota : await getQuota(me.userId);
+    res.json({ ok: true, quota: next, gifts: await giftsFor(me.userId, 80) });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
 });
 
 router.post('/staff/roles', async (req, res) => {
