@@ -23,6 +23,22 @@ function stamp(v: any) {
   return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}:${p(d.getSeconds())}`;
 }
 
+function isPermanent(v: any) {
+  if (!v) return true;
+  const d = new Date(v);
+  return Number.isNaN(d.getTime()) || d.getFullYear() >= 2499;
+}
+
+function usesLeft(row: any) {
+  const count = Number(row.remaincount);
+  if (!Number.isFinite(count) || count <= 0) return '—';
+  return String(count);
+}
+
+function itemTitle(row: any) {
+  return String(row.Name || row.ProductName || 'Unknown item').trim();
+}
+
 function stampShort(v: any) {
   if (!v) return '—';
   const d = new Date(v);
@@ -249,19 +265,40 @@ export default function AdminPlayerAccount({ id, onBack }: { id: number; onBack:
 
       {tab === 'inventory' && (
         <section className="pd-card">
-          <h2>INVENTORY</h2>
-          <p className="sub">CBT_UserInventory — read only</p>
-          <table className="pd-table">
-            <thead><tr><th>ITEM</th><th>NO</th><th>PRODUCT</th><th>START</th><th>END</th><th>QTY</th></tr></thead>
+          <div className="pd-card-top">
+            <h2><Package /> PLAYER INVENTORY</h2>
+          </div>
+          <p className="sub">
+            {Number(data.inventoryStats?.active || 0)} active items
+            {Number(data.inventoryStats?.expired || 0) ? ` · ${data.inventoryStats.expired} expired` : ''}
+            {Number(data.inventoryStats?.total || 0) ? ` · ${data.inventoryStats.total} total` : ''}
+          </p>
+          <table className="pd-table inv-table">
+            <thead>
+              <tr>
+                <th>ITEM</th>
+                <th>SINCE</th>
+                <th>EXPIRES</th>
+                <th>USES LEFT</th>
+              </tr>
+            </thead>
             <tbody>
-              {(data.inventory || []).length === 0 ? <tr><td colSpan={6} className="pd-empty">Empty inventory.</td></tr> : data.inventory.map((i: any) => (
+              {(data.inventory || []).length === 0 ? (
+                <tr><td colSpan={4} className="pd-empty">Empty inventory.</td></tr>
+              ) : data.inventory.map((i: any) => (
                 <tr key={i.InventorySeqNo}>
-                  <td>{i.Name || '—'}</td>
-                  <td>{i.ItemNo}</td>
-                  <td>{i.ProductID}</td>
-                  <td>{stampShort(i.StartDate)}</td>
-                  <td>{stampShort(i.EndDate)}</td>
-                  <td>{i.remaincount}</td>
+                  <td>
+                    <div className="inv-item">
+                      <span className={`inv-thumb g${i.ItemGrade || 0}`}>{String(itemTitle(i)).slice(0, 1)}</span>
+                      <span>
+                        <b>{itemTitle(i)}</b>
+                        <small>Item #{i.ItemNo}</small>
+                      </span>
+                    </div>
+                  </td>
+                  <td className="pd-time">{stamp(i.StartDate)}</td>
+                  <td className="pd-time">{isPermanent(i.EndDate) ? '—' : stamp(i.EndDate)}</td>
+                  <td>{usesLeft(i)}</td>
                 </tr>
               ))}
             </tbody>
@@ -271,17 +308,31 @@ export default function AdminPlayerAccount({ id, onBack }: { id: number; onBack:
 
       {tab === 'inbox' && (
         <section className="pd-card">
-          <h2>INBOX</h2>
-          <p className="sub">CBT_UserStore gifts and inbox items</p>
-          <table className="pd-table">
-            <thead><tr><th>FROM</th><th>PRODUCT</th><th>MESSAGE</th><th>RECEIVED</th></tr></thead>
+          <div className="pd-card-top">
+            <h2><Inbox /> PLAYER INBOX</h2>
+            <span className="pd-chip">{(data.inbox || []).length} ITEMS</span>
+          </div>
+          <p className="sub">Gifts and mailbox items from CBT_UserStore.</p>
+          <table className="pd-table inv-table">
+            <thead><tr><th>ITEM</th><th>FROM</th><th>STATUS</th><th>RECEIVED</th><th>EXPIRES</th></tr></thead>
             <tbody>
-              {(data.inbox || []).length === 0 ? <tr><td colSpan={4} className="pd-empty">Inbox is empty.</td></tr> : data.inbox.map((i: any) => (
+              {(data.inbox || []).length === 0 ? (
+                <tr><td colSpan={5} className="pd-empty">Inbox is empty.</td></tr>
+              ) : data.inbox.map((i: any) => (
                 <tr key={i.UserStoreSeqNo}>
-                  <td>{i.SendNickname || '—'}</td>
-                  <td>{i.ProductID}</td>
-                  <td>{i.Message || '—'}</td>
-                  <td>{stampShort(i.RecvDate)}</td>
+                  <td>
+                    <div className="inv-item">
+                      <span className="inv-thumb">{String(i.ProductName || i.ProductID || 'P').slice(0, 1)}</span>
+                      <span>
+                        <b>{i.ProductName || `Product #${i.ProductID}`}</b>
+                        <small>{i.Message || `Product #${i.ProductID}`}</small>
+                      </span>
+                    </div>
+                  </td>
+                  <td>{i.SendNickname || 'System'}</td>
+                  <td>{Number(i.ConfirmType) === 1 ? 'CLAIMED' : 'PENDING'}</td>
+                  <td className="pd-time">{stamp(i.RecvDate)}</td>
+                  <td className="pd-time">{isPermanent(i.enddate) ? '—' : stamp(i.enddate)}</td>
                 </tr>
               ))}
             </tbody>
@@ -291,18 +342,26 @@ export default function AdminPlayerAccount({ id, onBack }: { id: number; onBack:
 
       {tab === 'purchases' && (
         <section className="pd-card">
-          <h2>PURCHASES</h2>
-          <p className="sub">VISMS_PurchaseLog</p>
+          <div className="pd-card-top">
+            <h2><ShoppingBag /> PURCHASE HISTORY</h2>
+            <span className="pd-chip">{(data.purchases || []).length} ORDERS</span>
+          </div>
+          <p className="sub">NX shop orders from VISMS_PurchaseLog.</p>
           <table className="pd-table">
             <thead><tr><th>ORDER</th><th>PRODUCT</th><th>PRICE</th><th>GIFT</th><th>DATE</th></tr></thead>
             <tbody>
-              {(data.purchases || []).length === 0 ? <tr><td colSpan={5} className="pd-empty">No purchases.</td></tr> : data.purchases.map((i: any, n: number) => (
+              {(data.purchases || []).length === 0 ? (
+                <tr><td colSpan={5} className="pd-empty">No purchases.</td></tr>
+              ) : data.purchases.map((i: any, n: number) => (
                 <tr key={i.OrderID || n}>
                   <td>{i.OrderID}</td>
-                  <td>{i.ProductNo}</td>
-                  <td>{i.TotalPrice}</td>
-                  <td>{i.IsGift ? 'YES' : ''}</td>
-                  <td>{stampShort(i.RegDate)}</td>
+                  <td>
+                    <b>{i.ProductName || `Product #${i.ProductNo}`}</b>
+                    <small style={{ display: 'block', color: '#888' }}>#{i.ProductNo}</small>
+                  </td>
+                  <td>{Number(i.TotalPrice || 0).toLocaleString()} NX</td>
+                  <td>{i.IsGift ? 'YES' : '—'}</td>
+                  <td className="pd-time">{stamp(i.RegDate)}</td>
                 </tr>
               ))}
             </tbody>
@@ -311,25 +370,48 @@ export default function AdminPlayerAccount({ id, onBack }: { id: number; onBack:
       )}
 
       {tab === 'progress' && (
-        <section className="pd-card">
-          <h2>PROGRESS</h2>
-          <div className="pd-grid">
-            <div><p>KILLS</p><b>{u.KillCnt || 0}</b></div>
-            <div><p>DEATHS</p><b>{u.DeadCnt || 0}</b></div>
-            <div><p>WINS</p><b>{u.WinCnt || 0}</b></div>
-            <div><p>LOSSES</p><b>{u.LoseCnt || 0}</b></div>
-            <div><p>HEADSHOTS</p><b>{u.HeadShotCnt || 0}</b></div>
-            <div><p>ROUNDS</p><b>{u.PlayRoundCnt || 0}</b></div>
-            <div><p>USED NX</p><b>{u.usedNX || 0}</b></div>
-            <div><p>RANK</p><b>{rankLabel}</b></div>
-          </div>
-        </section>
+        <>
+          <section className="pd-card">
+            <h2><TrendingUp /> COMBAT RECORD</h2>
+            <p className="sub">Lifetime stats from CBT_User.</p>
+            <div className="pd-grid">
+              <div><p>RANK</p><b>{rankLabel}</b></div>
+              <div><p>EXP</p><b>{Number(u.Exp || 0).toLocaleString()}</b></div>
+              <div><p>KILLS</p><b>{Number(u.KillCnt || 0).toLocaleString()}</b></div>
+              <div><p>DEATHS</p><b>{Number(u.DeadCnt || 0).toLocaleString()}</b></div>
+              <div><p>WINS</p><b>{Number(u.WinCnt || 0).toLocaleString()}</b></div>
+              <div><p>LOSSES</p><b>{Number(u.LoseCnt || 0).toLocaleString()}</b></div>
+              <div><p>HEADSHOTS</p><b>{Number(u.HeadShotCnt || 0).toLocaleString()}</b></div>
+              <div><p>ROUNDS</p><b>{Number(u.PlayRoundCnt || 0).toLocaleString()}</b></div>
+              <div><p>USED NX</p><b>{Number(u.usedNX || 0).toLocaleString()}</b></div>
+              <div><p>K/D</p><b>{u.DeadCnt ? (Number(u.KillCnt || 0) / Number(u.DeadCnt)).toFixed(2) : Number(u.KillCnt || 0).toFixed(2)}</b></div>
+            </div>
+          </section>
+          <section className="pd-card">
+            <h2>MODE DETAILS</h2>
+            <p className="sub">Extra stats from CBT_UserDetailInfo.</p>
+            {!data.detail ? (
+              <p className="pd-note">No extra mode stats for this account.</p>
+            ) : (
+              <div className="pd-grid">
+                <div><p>CO-OP KILLS</p><b>{data.detail.CoopKill || 0}</b></div>
+                <div><p>CO-OP DEATHS</p><b>{data.detail.CoopDead || 0}</b></div>
+                <div><p>CO-OP WINS</p><b>{data.detail.CoopSuccess || 0}</b></div>
+                <div><p>CO-OP PLAYS</p><b>{data.detail.CoopPlayNum || 0}</b></div>
+                <div><p>QUARANTINE PLAYS</p><b>{data.detail.QuaRanTinePlayNum || 0}</b></div>
+                <div><p>HUMAN KILLS</p><b>{data.detail.HumanKillCnt || 0}</b></div>
+                <div><p>INFECTED KILLS</p><b>{data.detail.InfectKillCnt || 0}</b></div>
+                <div><p>SPY KILLS</p><b>{data.detail.SpyKillCnt || 0}</b></div>
+              </div>
+            )}
+          </section>
+        </>
       )}
 
       {tab === 'friends' && (
         <div className="pd-split">
           <section className="pd-card">
-            <h2>CLAN</h2>
+            <h2><UsersRound /> CLAN</h2>
             {data.clan ? (
               <div className="pd-grid">
                 <div><p>NAME</p><b>{data.clan.strName}</b></div>
@@ -341,11 +423,12 @@ export default function AdminPlayerAccount({ id, onBack }: { id: number; onBack:
           </section>
           <section className="pd-card">
             <h2>FRIENDS</h2>
+            <p className="sub">{(data.friends || []).length} messenger friends</p>
             <table className="pd-table">
               <thead><tr><th>NICK</th><th>ACCOUNT</th><th>SINCE</th></tr></thead>
               <tbody>
                 {(data.friends || []).length === 0 ? <tr><td colSpan={3} className="pd-empty">No friends listed.</td></tr> : data.friends.map((f: any) => (
-                  <tr key={f.oidFriend}><td>{f.NickName}</td><td>{f.username}</td><td>{stampShort(f.RegDate)}</td></tr>
+                  <tr key={f.oidFriend}><td>{f.NickName || '—'}</td><td>{f.username || f.oidFriend}</td><td className="pd-time">{stamp(f.RegDate)}</td></tr>
                 ))}
               </tbody>
             </table>
@@ -354,23 +437,59 @@ export default function AdminPlayerAccount({ id, onBack }: { id: number; onBack:
       )}
 
       {tab === 'reports' && (
-        <section className="pd-card">
-          <h2>REPORTS</h2>
-          <p className="sub">CBT_UserReportCommon — as target or reporter</p>
-          <table className="pd-table">
-            <thead><tr><th>DATE</th><th>TARGET</th><th>MESSAGE</th><th>CAT</th></tr></thead>
-            <tbody>
-              {(data.reports || []).length === 0 ? <tr><td colSpan={4} className="pd-empty">No reports.</td></tr> : data.reports.map((r: any) => (
-                <tr key={r.SeqNo}>
-                  <td>{stampShort(r.RegDate)}</td>
-                  <td>{r.TargetNickName}</td>
-                  <td>{r.Message}</td>
-                  <td>{r.MainCategory}/{r.SubCategory}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </section>
+        <>
+          <section className="pd-card">
+            <div className="pd-card-top">
+              <h2><Flag /> REPORTS</h2>
+              <span className="pd-chip">{(data.reports || []).length} RECORDS</span>
+            </div>
+            <p className="sub">Reports involving this account as target or reporter.</p>
+            <table className="pd-table">
+              <thead><tr><th>DATE</th><th>TARGET</th><th>MESSAGE</th><th>CAT</th></tr></thead>
+              <tbody>
+                {(data.reports || []).length === 0 ? (
+                  <tr><td colSpan={4} className="pd-empty">No reports.</td></tr>
+                ) : data.reports.map((r: any) => (
+                  <tr key={r.SeqNo}>
+                    <td className="pd-time">{stamp(r.RegDate)}</td>
+                    <td>{r.TargetNickName}</td>
+                    <td>{r.Message}</td>
+                    <td>{r.MainCategory}/{r.SubCategory}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </section>
+          <section className="pd-card">
+            <div className="pd-card-top">
+              <h2>KICKS</h2>
+              <span className="pd-chip">{(data.kicks || []).length} LOGS</span>
+            </div>
+            <p className="sub">Kick history from CBT_CharacterKickedLog.</p>
+            {data.kickCounts && (
+              <div className="pd-grid" style={{ marginBottom: 16 }}>
+                <div><p>NO MANNER</p><b>{data.kickCounts.nomanercnt || 0}</b></div>
+                <div><p>BUG PLAY</p><b>{data.kickCounts.bugplaycnt || 0}</b></div>
+                <div><p>DEFAMATION</p><b>{data.kickCounts.defamationcnt || 0}</b></div>
+                <div><p>HACK</p><b>{data.kickCounts.hackprogramusecnt || 0}</b></div>
+              </div>
+            )}
+            <table className="pd-table">
+              <thead><tr><th>DATE</th><th>REASON</th><th>FORFEITED</th></tr></thead>
+              <tbody>
+                {(data.kicks || []).length === 0 ? (
+                  <tr><td colSpan={3} className="pd-empty">No kick logs.</td></tr>
+                ) : data.kicks.map((k: any) => (
+                  <tr key={k.logId}>
+                    <td className="pd-time">{stamp(k.loggedAt)}</td>
+                    <td>{k.kickReason}</td>
+                    <td>{k.forfeited ? 'YES' : '—'}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </section>
+        </>
       )}
     </div>
   );

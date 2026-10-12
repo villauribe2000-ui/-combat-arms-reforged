@@ -183,6 +183,15 @@
 .pd-win{color:#7dcea0;font-weight:800;font-size:11px;letter-spacing:.8px}
 .pd-left{color:#8a8a8a;font-weight:800;font-size:11px;letter-spacing:.8px}
 .pd-empty{color:#777;text-align:center;padding:24px !important}
+.inv-item{display:flex;align-items:center;gap:12px}
+.inv-item b{display:block;color:#eee;font-size:13px;font-weight:700}
+.inv-item small{display:block;color:#888;font-size:11px;margin-top:2px}
+.inv-thumb{width:42px;height:42px;flex:0 0 42px;display:flex;align-items:center;justify-content:center;background:#0e0e0e;border:1px solid #2a2a2a;color:#df8104;font-size:14px;font-weight:800}
+.inv-thumb.g1{border-color:#3a3a3a;color:#bbb}
+.inv-thumb.g2{border-color:#2f4a2f;color:#7dcea0}
+.inv-thumb.g3{border-color:#3a2c18;color:#e6c36a}
+.inv-thumb.g4{border-color:#4a2218;color:#e08a8a}
+.inv-table td{vertical-align:middle}
 @media (max-width:1100px){
   .pd-split,.pd-hero{grid-template-columns:1fr}
   .pd-hero{flex-wrap:wrap}

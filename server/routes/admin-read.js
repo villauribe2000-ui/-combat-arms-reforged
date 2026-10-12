@@ -178,18 +178,68 @@ router.get('/players/:id', async (req, res) => {
   const bans = await log(`
     SELECT TOP 20 BanDate, BanType, BanPeriod, Reason, BanNickName, GMOidUser
     FROM CBT_BanUserList WHERE BanOidUser = @id ORDER BY BanDate DESC`, p);
-  const inventory = await ca(`
-    SELECT TOP 80 i.InventorySeqNo, i.ItemNo, i.ProductID, i.StartDate, i.EndDate, i.remaincount, inf.Name, inf.ItemGrade
+  const inventoryStats = (await ca(`
+    SELECT
+      COUNT(*) as total,
+      SUM(CASE WHEN i.EndDate IS NULL OR i.EndDate > GETDATE() THEN 1 ELSE 0 END) as active,
+      SUM(CASE WHEN i.EndDate IS NOT NULL AND i.EndDate <= GETDATE() THEN 1 ELSE 0 END) as expired
+    FROM CBT_UserInventory i
+    WHERE i.oidUser = @id`, p))[0] || { total: 0, active: 0, expired: 0 };
+  let inventory = await ca(`
+    SELECT TOP 250 i.InventorySeqNo, i.ItemNo, i.ProductID, i.StartDate, i.EndDate, i.remaincount, i.UseType,
+      inf.Name, inf.ItemGrade, inf.ItemType, p.ProductName
     FROM CBT_UserInventory i
     LEFT JOIN CBT_ItemInfo inf ON inf.ItemNo = i.ItemNo
+    LEFT JOIN CBT_ProductInfo p ON p.ProductID = i.ProductID
     WHERE i.oidUser = @id
-    ORDER BY i.InventorySeqNo DESC`, p);
-  const inbox = await ca(`
-    SELECT TOP 40 UserStoreSeqNo, ProductID, GiftType, SendNickname, Message, RecvDate, enddate, ConfirmType
-    FROM CBT_UserStore WHERE OidUser = @id ORDER BY RecvDate DESC`, p);
-  const purchases = await vis(`
-    SELECT TOP 40 OrderID, ProductNo, TotalPrice, PaymentType, IsGift, RegDate, strNexonID
-    FROM VISMS_PurchaseLog WHERE oid = @id ORDER BY RegDate DESC`, p);
+    ORDER BY i.StartDate DESC`, p);
+  if (!inventory.length) {
+    inventory = await ca(`
+      SELECT TOP 250 i.InventorySeqNo, i.ItemNo, i.ProductID, i.StartDate, i.EndDate, i.remaincount, i.UseType,
+        inf.Name, inf.ItemGrade, inf.ItemType
+      FROM CBT_UserInventory i
+      LEFT JOIN CBT_ItemInfo inf ON inf.ItemNo = i.ItemNo
+      WHERE i.oidUser = @id
+      ORDER BY i.StartDate DESC`, p);
+  }
+  let inbox = await ca(`
+    SELECT TOP 80 s.UserStoreSeqNo, s.ProductID, s.GiftType, s.SendNickname, s.Message, s.RecvDate, s.enddate, s.ConfirmType,
+      p.ProductName
+    FROM CBT_UserStore s
+    LEFT JOIN CBT_ProductInfo p ON p.ProductID = s.ProductID
+    WHERE s.OidUser = @id
+    ORDER BY s.RecvDate DESC`, p);
+  if (!inbox.length) {
+    inbox = await ca(`
+      SELECT TOP 80 UserStoreSeqNo, ProductID, GiftType, SendNickname, Message, RecvDate, enddate, ConfirmType
+      FROM CBT_UserStore WHERE OidUser = @id ORDER BY RecvDate DESC`, p);
+  }
+  let purchases = await vis(`
+    SELECT TOP 80 l.OrderID, l.ProductNo, l.TotalPrice, l.PaymentType, l.IsGift, l.RegDate, l.strNexonID, pl.ProductName
+    FROM VISMS_PurchaseLog l
+    LEFT JOIN VISMS_ProductList pl ON pl.ProductNo = l.ProductNo
+    WHERE l.oid = @id
+    ORDER BY l.RegDate DESC`, p);
+  if (!purchases.length) {
+    purchases = await vis(`
+      SELECT TOP 80 OrderID, ProductNo, TotalPrice, PaymentType, IsGift, RegDate, strNexonID
+      FROM VISMS_PurchaseLog WHERE oid = @id ORDER BY RegDate DESC`, p);
+  }
+  const detail = (await ca(`
+    SELECT TOP 1 NutShotCnt, SpyKillCnt, CoopKill, CoopDead, CoopSuccess, CoopPlayNum,
+      HumanKillCnt, HumanDeathCnt, HumanWin, InfectKillCnt, InfectDeathCnt, InfectWin, QuaRanTinePlayNum
+    FROM CBT_UserDetailInfo WHERE oiduser = @id`, p))[0] || null;
+  let kicks = await ca(`
+    SELECT TOP 40 logId, loggedAt, userId, kickReason, forfeited
+    FROM CBT_CharacterKickedLog WHERE userId = @id ORDER BY loggedAt DESC`, p);
+  if (!kicks.length) {
+    kicks = await log(`
+      SELECT TOP 40 logId, loggedAt, userId, kickReason, forfeited
+      FROM CBT_CharacterKickedLog WHERE userId = @id ORDER BY loggedAt DESC`, p);
+  }
+  const kickCounts = (await ca(`
+    SELECT TOP 1 oiduser, nomanercnt, bugplaycnt, defamationcnt, hackprogramusecnt, etc, kicktype, kicktypedecription
+    FROM CBT_UserKickReason WHERE oiduser = @id`, p))[0] || null;
   const friends = await ca(`
     SELECT TOP 40 f.oidFriend, f.RegDate, u.NickName, u.strNexonID as username
     FROM CBT_MessengerFriend f
@@ -241,8 +291,16 @@ router.get('/players/:id', async (req, res) => {
     punishments,
     bans,
     inventory,
+    inventoryStats: {
+      total: Number(inventoryStats.total || 0),
+      active: Number(inventoryStats.active || 0),
+      expired: Number(inventoryStats.expired || 0),
+    },
     inbox,
     purchases,
+    detail,
+    kicks,
+    kickCounts,
     friends,
     clan,
     reports,
