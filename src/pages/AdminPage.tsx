@@ -8,7 +8,7 @@ import AdminClanProfile from '@/components/AdminClanProfile';
 import {
   XCircle, Loader, RotateCcw, MessageSquare, Send,
   LayoutDashboard, Users, Radio, Shield, Store, Landmark, FileBarChart, Swords, LogIn,
-  Link2, Megaphone, Map, Zap, ArrowLeft, Ticket, KeyRound, CreditCard, ExternalLink, ChevronRight, Search, Activity, TrendingUp, Wallet, ShoppingBag, Coins
+  Link2, Megaphone, Map, Zap, ArrowLeft, Ticket, KeyRound, CreditCard, ExternalLink, ChevronRight, Search, Activity, TrendingUp, Wallet, ShoppingBag, Coins, Flag
 } from 'lucide-react';
 
 interface PaymentCode {
@@ -279,6 +279,8 @@ export default function AdminPage({ onNavigate }: { onNavigate?: (page: PageId) 
   const [clanId, setClanId] = useState<number | null>(null);
   const [economyDays, setEconomyDays] = useState('30');
   const [economyCur, setEconomyCur] = useState<'gp' | 'nx'>('gp');
+  const [reportTab, setReportTab] = useState<'open' | 'handled' | 'dismissed' | 'all'>('open');
+  const [openReport, setOpenReport] = useState<any>(null);
 
   const READ_SECTIONS: Section[] = ['players', 'online', 'clans', 'shop', 'economy', 'reports', 'matches', 'logins', 'linked', 'announcements', 'maps', 'boosts'];
 
@@ -1030,32 +1032,103 @@ export default function AdminPage({ onNavigate }: { onNavigate?: (page: PageId) 
         )}
 
         {section === 'reports' && (
-          <div className="admin-panel">
-            <div className="admin-toolbar"><h1>REPORTS</h1><span className="admin-chip">{room.source}</span></div>
-            <p className="sub">In-game reports, web reviews, punishments. Tickets remain in Tickets.</p>
-            <h2>IN-GAME</h2>
-            <Grid rows={room.ingame} cols={[
-              { key: 'TargetNickName', label: 'TARGET' },
-              { key: 'Message', label: 'MESSAGE' },
-              { key: 'MainCategory', label: 'CAT' },
-              { key: 'RegDate', label: 'DATE', fmt: dt },
-            ]} />
-            <h2>PUNISHMENTS</h2>
-            <Grid rows={room.punishments} cols={[
-              { key: 'nickname', label: 'NICK' },
-              { key: 'type', label: 'TYPE' },
-              { key: 'reason', label: 'REASON' },
-              { key: 'issuedByName', label: 'BY' },
-              { key: 'createdAt', label: 'DATE', fmt: dt },
-            ]} />
-            <h2>REVIEWS</h2>
-            <Grid rows={room.reviews} cols={[
-              { key: 'reportSeq', label: 'SEQ' },
-              { key: 'status', label: 'STATUS' },
-              { key: 'note', label: 'NOTE' },
-              { key: 'reviewedByName', label: 'REVIEWER' },
-            ]} />
-          </div>
+          <>
+            <div className="pl-hero">
+              <div className="pl-hero-ico"><Flag /></div>
+              <div>
+                <p className="eyebrow">TRACKING / COMBAT ARMS</p>
+                <h1>PLAYER REPORTS</h1>
+                <p>Reports players send from the game. Open one to see what came with it, act on the player, and mark it handled.</p>
+              </div>
+            </div>
+            <div className="eco-tabs">
+              {([
+                ['open', `Open (${room.counts?.open ?? 0})`],
+                ['handled', 'Handled'],
+                ['dismissed', 'Dismissed'],
+                ['all', `All (${room.counts?.all ?? 0})`],
+              ] as const).map(([id, label]) => (
+                <button key={id} className={reportTab === id ? 'on' : ''} onClick={() => { setReportTab(id); setOpenReport(null); }}>{label}</button>
+              ))}
+            </div>
+            {openReport ? (
+              <section className="ol-panel">
+                <button className="pd-back" onClick={() => setOpenReport(null)}><ArrowLeft /> Reports</button>
+                <h2>REPORT #{openReport.SeqNo || openReport.id}</h2>
+                <div className="pd-grid" style={{ marginTop: 12 }}>
+                  <div><p>WHEN</p><b>{stampSec(openReport.RegDate)}</b></div>
+                  <div><p>REPORTER</p><b className="login-nick" style={{ cursor: 'pointer' }} onClick={() => { setSection('players'); setPlayerId(openReport.ReporterOiduser); }}>{openReport.reporterName}</b></div>
+                  <div><p>REPORTED</p><b className="login-nick" style={{ cursor: 'pointer' }} onClick={() => { setSection('players'); setPlayerId(openReport.TargetOiduser); }}>{openReport.reportedName}</b></div>
+                  <div><p>CATEGORY</p><b>{openReport.category}</b></div>
+                  <div><p>STATUS</p><b>{String(openReport.status || 'open').toUpperCase()}</b></div>
+                </div>
+                <p className="sub" style={{ marginTop: 16 }}>MESSAGE</p>
+                <p className="pd-note">{openReport.Message || '—'}</p>
+                {(openReport.chat || []).length > 0 && (
+                  <>
+                    <p className="sub" style={{ marginTop: 16 }}>CHAT ATTACHED</p>
+                    <pre className="rep-chat">{(openReport.chat || []).map((c: any) => c.ChatLog).join('\n')}</pre>
+                  </>
+                )}
+                {openReport.status === 'open' && (
+                  <div className="eco-cur" style={{ marginTop: 18, marginBottom: 8 }}>
+                    <button className="on" onClick={async () => {
+                      await api.reviewAdminReport(openReport.SeqNo || openReport.id, 'handled', profile.username);
+                      setOpenReport(null);
+                      api.getAdminSection('reports').then(setRoom).catch(() => {});
+                    }}>Mark handled</button>
+                    <button onClick={async () => {
+                      await api.reviewAdminReport(openReport.SeqNo || openReport.id, 'dismissed', profile.username);
+                      setOpenReport(null);
+                      api.getAdminSection('reports').then(setRoom).catch(() => {});
+                    }}>Dismiss</button>
+                  </div>
+                )}
+              </section>
+            ) : (
+              <section className="ol-panel">
+                <div className="pd-card-top">
+                  <h2><Flag /> {(room.counts?.[reportTab] ?? 0)} {reportTab === 'all' ? 'REPORTS' : reportTab.toUpperCase()}</h2>
+                  <span className="pd-chip">The chat attached to a report is the reporter's own client buffer</span>
+                </div>
+                {roomLoading ? <Empty text="Leyendo reportes..." /> : (
+                  <table className="pl-table">
+                    <thead>
+                      <tr>
+                        <th>WHEN</th>
+                        <th>REPORTER</th>
+                        <th>REPORTED</th>
+                        <th>CATEGORY</th>
+                        <th>MESSAGE</th>
+                        <th>STATUS</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {((room.data || []).filter((r: any) => reportTab === 'all' || r.status === reportTab)).length === 0 ? (
+                        <tr><td colSpan={6} className="pd-empty">No {reportTab === 'all' ? '' : reportTab + ' '}reports.</td></tr>
+                      ) : (room.data || []).filter((r: any) => reportTab === 'all' || r.status === reportTab).map((r: any) => (
+                        <tr
+                          key={r.id}
+                          className="pl-row"
+                          onClick={() => {
+                            setOpenReport(r);
+                            api.getAdminReport(r.id).then((d) => setOpenReport({ ...r, ...d.report, chat: d.chat, match: d.match })).catch(() => {});
+                          }}
+                        >
+                          <td className="pd-time">{stampSec(r.RegDate)}</td>
+                          <td className="login-nick">{r.reporterName}</td>
+                          <td className="login-nick">{r.reportedName}</td>
+                          <td>{r.category}</td>
+                          <td>{r.Message || '—'}</td>
+                          <td>{String(r.status).toUpperCase()}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                )}
+              </section>
+            )}
+          </>
         )}
 
         {section === 'matches' && (

@@ -160,6 +160,14 @@ class ApiClient {
     return await this.request<any>('GET', `/admin/clans/${id}`);
   }
 
+  async getAdminReport(seq: number) {
+    return await this.request<any>('GET', `/admin/reports/${seq}`);
+  }
+
+  async reviewAdminReport(seq: number, status: string, reviewedByName: string, note = '') {
+    return await this.request<any>('POST', `/admin/reports/${seq}/review`, { status, reviewedByName, note });
+  }
+
   async getAdminSection(section: string, params?: Record<string, string | number | undefined> | string) {
     const query = new URLSearchParams();
     if (typeof params === 'string') {

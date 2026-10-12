@@ -588,17 +588,103 @@ router.get('/economy', async (req, res) => {
   });
 });
 
+function reportCategory(main, sub) {
+  const mains = {
+    1: 'Abuse',
+    2: 'Cheat',
+    3: 'Team kill',
+    4: 'Bug play',
+    5: 'Harassment',
+    6: 'Bad language',
+    7: 'Other',
+  };
+  const label = mains[Number(main)] || `Category ${main ?? '—'}`;
+  return Number(sub) ? `${label} / ${sub}` : label;
+}
+
+function normalizeReviewStatus(status) {
+  const s = String(status || '').toLowerCase();
+  if (s === 'handled' || s === 'closed' || s === 'done') return 'handled';
+  if (s === 'dismissed' || s === 'rejected') return 'dismissed';
+  return 'open';
+}
+
 router.get('/reports', async (_req, res) => {
-  const reviews = await web(`
-    SELECT TOP 40 reportSeq, status, note, reviewedBy, reviewedByName, reviewedAt
-    FROM report_reviews ORDER BY reviewedAt DESC`);
-  const punishments = await web(`
-    SELECT TOP 40 id, userId, nickname, type, reason, issuedByName, startsAt, endsAt, liftedAt, createdAt
-    FROM punishments ORDER BY createdAt DESC`);
-  const ingame = await log(`
-    SELECT TOP 40 SeqNo, ReporterOiduser, MainCategory, SubCategory, TargetOiduser, TargetNickName, Message, RegDate
+  const list = await log(`
+    SELECT TOP 200 SeqNo, ReporterOiduser, MainCategory, SubCategory, TargetOiduser, TargetNickName, Message, RegDate
     FROM CBT_UserReportCommon ORDER BY RegDate DESC`);
-  res.json({ reviews, punishments, ingame, source: 'combatarms_web + COMBATARMS_LOG.CBT_UserReportCommon' });
+  const reviews = await web(`
+    SELECT reportSeq, status, note, reviewedBy, reviewedByName, reviewedAt FROM report_reviews`);
+  const reviewMap = {};
+  for (const r of reviews) reviewMap[r.reportSeq] = r;
+  const ids = [...new Set(list.flatMap((r) => [r.ReporterOiduser, r.TargetOiduser]).filter((n) => Number.isFinite(n)))];
+  let users = [];
+  if (ids.length) {
+    users = await ca(`SELECT oidUser as id, strNexonID as username, NickName, UserType FROM CBT_User WHERE oidUser IN (${ids.join(',')})`);
+  }
+  const userMap = Object.fromEntries(users.map((u) => [u.id, u]));
+  const data = list.map((r) => {
+    const review = reviewMap[r.SeqNo];
+    const reporter = userMap[r.ReporterOiduser] || {};
+    const target = userMap[r.TargetOiduser] || {};
+    return {
+      ...r,
+      id: r.SeqNo,
+      reporterName: reporter.NickName || reporter.username || `#${r.ReporterOiduser}`,
+      reporterUser: reporter.username || null,
+      reportedName: r.TargetNickName || target.NickName || target.username || `#${r.TargetOiduser}`,
+      category: reportCategory(r.MainCategory, r.SubCategory),
+      status: review ? normalizeReviewStatus(review.status) : 'open',
+      note: review?.note || '',
+      reviewedByName: review?.reviewedByName || null,
+      reviewedAt: review?.reviewedAt || null,
+    };
+  });
+  const counts = {
+    open: data.filter((r) => r.status === 'open').length,
+    handled: data.filter((r) => r.status === 'handled').length,
+    dismissed: data.filter((r) => r.status === 'dismissed').length,
+    all: data.length,
+  };
+  res.json({ data, counts, source: 'COMBATARMS_LOG.CBT_UserReportCommon + combatarms_web.report_reviews' });
+});
+
+router.get('/reports/:seq', async (req, res) => {
+  const seq = parseInt(req.params.seq, 10);
+  if (!Number.isFinite(seq)) return res.status(400).json({ error: 'invalid id' });
+  const rows = await log(`
+    SELECT TOP 1 SeqNo, ReporterOiduser, MainCategory, SubCategory, TargetOiduser, TargetNickName, Message, RegDate
+    FROM CBT_UserReportCommon WHERE SeqNo = @seq`, { seq });
+  if (!rows.length) return res.status(404).json({ error: 'not found' });
+  const chat = await log(`
+    SELECT SeqNo, RegDate, ChatLog FROM CBT_UserReportChatLog WHERE ReportCommonSeqNo = @seq ORDER BY RegDate`, { seq });
+  const match = (await log(`
+    SELECT TOP 1 ReportCommonSeqNo, RoomID, ModeID, GoalScore, AlphaScore, BravoScore, UserNum, KillCnt
+    FROM CBT_UserReportInGameLog WHERE ReportCommonSeqNo = @seq`, { seq }))[0] || null;
+  const review = (await web(`SELECT TOP 1 * FROM report_reviews WHERE reportSeq = @seq`, { seq }))[0] || null;
+  res.json({ report: rows[0], chat, match, review });
+});
+
+router.post('/reports/:seq/review', async (req, res) => {
+  const seq = parseInt(req.params.seq, 10);
+  const status = normalizeReviewStatus(req.body?.status);
+  if (!Number.isFinite(seq) || status === 'open') return res.status(400).json({ error: 'invalid' });
+  const note = String(req.body?.note || '').slice(0, 500);
+  const reviewedByName = String(req.body?.reviewedByName || 'admin').slice(0, 50);
+  const reviewedBy = parseInt(String(req.body?.reviewedBy || 0), 10) || 0;
+  const existing = await web(`SELECT TOP 1 reportSeq FROM report_reviews WHERE reportSeq = @seq`, { seq });
+  if (existing.length) {
+    await web(`
+      UPDATE report_reviews
+      SET status = @status, note = @note, reviewedBy = @reviewedBy, reviewedByName = @reviewedByName, reviewedAt = SYSUTCDATETIME()
+      WHERE reportSeq = @seq`, { seq, status, note, reviewedBy, reviewedByName });
+  } else {
+    await web(`
+      INSERT INTO report_reviews (reportSeq, status, note, reviewedBy, reviewedByName, reviewedAt)
+      VALUES (@seq, @status, @note, @reviewedBy, @reviewedByName, SYSUTCDATETIME())`,
+    { seq, status, note, reviewedBy, reviewedByName });
+  }
+  res.json({ ok: true, status });
 });
 
 function winnerLabel(type) {
