@@ -1,6 +1,30 @@
 import { Router } from 'express';
+import jwt from 'jsonwebtoken';
 import { query, queryGuildDB, queryLog, queryVisms, queryWeb } from '../db.js';
 import { ensureStaffTables, roleFlags } from '../site-admin.js';
+
+const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-change-this';
+const STAFF_OWNER = 'villauribe12';
+
+function staffActor(req) {
+  const header = String(req.headers.authorization || '');
+  const token = header.startsWith('Bearer ') ? header.slice(7) : '';
+  if (!token) return null;
+  try {
+    const decoded = jwt.verify(token, JWT_SECRET);
+    return String(decoded?.username || '');
+  } catch {
+    return null;
+  }
+}
+
+function requireStaffOwner(req, res) {
+  if (staffActor(req) !== STAFF_OWNER) {
+    res.status(403).json({ error: 'Solo el dueño puede cambiar roles' });
+    return false;
+  }
+  return true;
+}
 
 const router = Router();
 
@@ -1209,6 +1233,7 @@ router.get('/staff/search', async (req, res) => {
 
 router.post('/staff/roles', async (req, res) => {
   try {
+    if (!requireStaffOwner(req, res)) return;
     await ensureStaffTables();
     const name = String(req.body?.name || '').trim().slice(0, 40);
     if (name.length < 2) return res.status(400).json({ error: 'invalid role' });
@@ -1235,6 +1260,7 @@ router.post('/staff/roles', async (req, res) => {
 
 router.post('/staff', async (req, res) => {
   try {
+    if (!requireStaffOwner(req, res)) return;
     await ensureStaffTables();
     const userId = parseInt(String(req.body?.userId), 10);
     const roleName = String(req.body?.role || '').trim().slice(0, 40);
@@ -1294,6 +1320,7 @@ router.post('/staff', async (req, res) => {
 
 router.delete('/staff/:userId', async (req, res) => {
   try {
+    if (!requireStaffOwner(req, res)) return;
     await ensureStaffTables();
     const userId = parseInt(req.params.userId, 10);
     if (!Number.isFinite(userId)) return res.status(400).json({ error: 'invalid' });

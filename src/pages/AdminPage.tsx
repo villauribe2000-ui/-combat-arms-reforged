@@ -652,7 +652,10 @@ export default function AdminPage({ onNavigate }: { onNavigate?: (page: PageId) 
     }
   };
 
+  const canManageStaff = profile?.username === 'villauribe12';
+
   const assignStaff = async (userId: number, role: string) => {
+    if (!canManageStaff) return;
     setStaffBusy(true);
     try {
       const d = await api.assignAdminStaff({ userId, role, grantedByName: profile?.username });
@@ -666,6 +669,7 @@ export default function AdminPage({ onNavigate }: { onNavigate?: (page: PageId) 
   };
 
   const removeStaff = async (userId: number) => {
+    if (!canManageStaff) return;
     setStaffBusy(true);
     try {
       applyStaffBundle(await api.removeAdminStaff(userId));
@@ -678,6 +682,7 @@ export default function AdminPage({ onNavigate }: { onNavigate?: (page: PageId) 
 
   const createStaffRole = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!canManageStaff) return;
     const name = newRoleName.trim();
     if (name.length < 2) return;
     setStaffBusy(true);
@@ -1856,28 +1861,34 @@ export default function AdminPage({ onNavigate }: { onNavigate?: (page: PageId) 
               <div>
                 <p className="eyebrow">OPERATIONS / STAFF</p>
                 <h1>ADMINISTRACIÓN</h1>
-                <p>Busca jugadores reales y asígnales un rol. Los roles viven en combatarms_web. Quien tenga acceso al panel lo ve en su perfil.</p>
+                <p>{canManageStaff
+                  ? 'Solo tú puedes crear roles y asignarlos. El resto del staff ve esta lista en solo lectura.'
+                  : 'Solo lectura. Puedes ver el staff, pero no crear roles ni asignar a nadie.'}</p>
               </div>
             </div>
+            {canManageStaff && (
             <form className="pl-filters" onSubmit={createStaffRole}>
               <input value={newRoleName} onChange={(e) => setNewRoleName(e.target.value)} placeholder="Nuevo rol (ej. MOD, GM, HELPER)" />
               <label className="staff-check"><input type="checkbox" checked={newRoleAdmin} onChange={(e) => setNewRoleAdmin(e.target.checked)} /> Panel admin</label>
               <label className="staff-check"><input type="checkbox" checked={newRoleGm} onChange={(e) => setNewRoleGm(e.target.checked)} /> Marca GM</label>
               <button className="pl-apply" type="submit" disabled={staffBusy}>Crear rol</button>
             </form>
+            )}
             <form className="pl-filters" onSubmit={searchStaffPlayers}>
               <input value={staffQ} onChange={(e) => setStaffQ(e.target.value)} placeholder="Buscar nick, usuario, email o #oid" />
+              {canManageStaff && (
               <select value={pickRole} onChange={(e) => setPickRole(e.target.value)}>
                 {(staffRoles.length ? staffRoles : [{ name: 'ADMINISTRATOR' }, { name: 'GM' }, { name: 'SUPERADMIN' }]).map((r: any) => (
                   <option key={r.name} value={r.name}>{r.name}{r.isGm ? ' · GM' : ''}{r.siteAdmin ? ' · ADMIN' : ''}</option>
                 ))}
               </select>
+              )}
               <button className="pl-apply" type="submit" disabled={staffBusy}>Buscar</button>
             </form>
             {staffBusy && roomLoading ? <Empty text="Leyendo jugadores..." /> : null}
             <div className="pl-meta">
               <h2>BUSCAR JUGADORES</h2>
-              <span>{staffHits.length} resultados · rol a asignar: {pickRole}</span>
+              <span>{staffHits.length} resultados{canManageStaff ? ` · rol a asignar: ${pickRole}` : ' · solo lectura'}</span>
             </div>
             <table className="pl-table">
               <thead>
@@ -1885,12 +1896,12 @@ export default function AdminPage({ onNavigate }: { onNavigate?: (page: PageId) 
                   <th>PLAYER</th>
                   <th>EMAIL</th>
                   <th>ROL ACTUAL</th>
-                  <th>ACTIONS</th>
+                  {canManageStaff && <th>ACTIONS</th>}
                 </tr>
               </thead>
               <tbody>
                 {staffHits.length === 0 ? (
-                  <tr><td colSpan={4} style={{ color: '#777', padding: 28 }}>Busca un jugador para asignarle un rol.</td></tr>
+                  <tr><td colSpan={canManageStaff ? 4 : 3} style={{ color: '#777', padding: 28 }}>Busca un jugador para ver su rol.</td></tr>
                 ) : staffHits.map((p: any) => (
                   <tr key={p.id}>
                     <td>
@@ -1909,9 +1920,11 @@ export default function AdminPage({ onNavigate }: { onNavigate?: (page: PageId) 
                         {(p.isGM || p.webGm) && String(p.webRole || '').toLowerCase() !== 'gm' && <span className="pl-pill pl-pill-gm">GM</span>}
                       </div>
                     </td>
+                    {canManageStaff && (
                     <td>
                       <button className="pl-apply" type="button" disabled={staffBusy} onClick={() => assignStaff(p.id, pickRole)}>Asignar {pickRole}</button>
                     </td>
+                    )}
                   </tr>
                 ))}
               </tbody>
@@ -1927,12 +1940,12 @@ export default function AdminPage({ onNavigate }: { onNavigate?: (page: PageId) 
                     <th>PLAYER</th>
                     <th>ROLE</th>
                     <th>GRANTED BY</th>
-                    <th>ACTIONS</th>
+                    {canManageStaff && <th>ACTIONS</th>}
                   </tr>
                 </thead>
                 <tbody>
                   {staffList.length === 0 ? (
-                    <tr><td colSpan={4} style={{ color: '#777', padding: 28 }}>Aún no hay roles asignados.</td></tr>
+                    <tr><td colSpan={canManageStaff ? 4 : 3} style={{ color: '#777', padding: 28 }}>Aún no hay roles asignados.</td></tr>
                   ) : staffList.map((p: any) => (
                     <tr key={p.userId}>
                       <td>
@@ -1952,6 +1965,7 @@ export default function AdminPage({ onNavigate }: { onNavigate?: (page: PageId) 
                         </div>
                       </td>
                       <td>{p.grantedBy || '—'} · {stamp(p.grantedAt)}</td>
+                      {canManageStaff && (
                       <td>
                         {p.username === 'villauribe12' ? (
                           <span className="pl-pill pl-pill-super">LOCKED</span>
@@ -1959,6 +1973,7 @@ export default function AdminPage({ onNavigate }: { onNavigate?: (page: PageId) 
                           <button className="admin-no" type="button" disabled={staffBusy} onClick={() => removeStaff(p.userId)}>Quitar</button>
                         )}
                       </td>
+                      )}
                     </tr>
                   ))}
                 </tbody>
