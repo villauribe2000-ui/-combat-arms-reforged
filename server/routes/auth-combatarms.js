@@ -7,6 +7,7 @@ import express from 'express';
 import { query } from '../db.js';
 import crypto from 'crypto';
 import jwt from 'jsonwebtoken';
+import { userIsSiteAdmin } from '../site-admin.js';
 
 const router = express.Router();
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-change-this';
@@ -129,6 +130,7 @@ router.post('/login', async (req, res) => {
 
     const profile = userDetails.recordset?.[0];
     const wallet = balance.recordset?.[0];
+    const staff = await userIsSiteAdmin(user.oidUser, user.strNexonID);
 
     return res.json({
       success: true,
@@ -143,7 +145,8 @@ router.post('/login', async (req, res) => {
         gameCoins: wallet?.RealBalance || 0,
         bonusCoins: wallet?.BonusBalance || 0,
         totalBalance: profile?.Money || 0,
-        is_admin: user.strNexonID === 'villauribe12'
+        is_admin: staff.is_admin,
+        webRole: staff.webRole,
       }
     });
   } catch (error) {
@@ -375,6 +378,7 @@ router.get('/verify', async (req, res) => {
 
     const profile = userDetails.recordset?.[0];
     const wallet = balance.recordset?.[0];
+    const staff = await userIsSiteAdmin(user.oidUser, user.strNexonID);
 
     return res.json({
       success: true,
@@ -388,7 +392,8 @@ router.get('/verify', async (req, res) => {
         gameCoins: wallet?.RealBalance || 0,
         bonusCoins: wallet?.BonusBalance || 0,
         totalBalance: profile?.Money || 0,
-        is_admin: user.strNexonID === 'villauribe12'
+        is_admin: staff.is_admin,
+        webRole: staff.webRole,
       }
     });
   } catch (error) {
@@ -457,6 +462,7 @@ router.get('/profile/:userId', async (req, res) => {
 
     const character = characterResult.recordset?.[0];
     const wallet = balanceResult.recordset?.[0];
+    const staff = await userIsSiteAdmin(user.oidUser, user.strNexonID);
 
     return res.json({
       success: true,
@@ -473,7 +479,8 @@ router.get('/profile/:userId', async (req, res) => {
         characterClass: character?.ClassType,
         gender: character?.genderType,
         joinDate: character?.CreateDate || user.strNexonID,
-        is_admin: user.strNexonID === 'villauribe12'
+        is_admin: staff.is_admin,
+        webRole: staff.webRole,
       }
     });
   } catch (error) {

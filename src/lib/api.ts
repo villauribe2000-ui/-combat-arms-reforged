@@ -168,6 +168,26 @@ class ApiClient {
     return await this.request<any>('POST', `/admin/reports/${seq}/review`, { status, reviewedByName, note });
   }
 
+  async getAdminStaff() {
+    return await this.request<any>('GET', '/admin/staff');
+  }
+
+  async searchAdminStaff(q: string) {
+    return await this.request<any>('GET', `/admin/staff/search?q=${encodeURIComponent(q)}`);
+  }
+
+  async assignAdminStaff(body: { userId: number; role: string; grantedByName?: string }) {
+    return await this.request<any>('POST', '/admin/staff', body);
+  }
+
+  async removeAdminStaff(userId: number) {
+    return await this.request<any>('DELETE', `/admin/staff/${userId}`);
+  }
+
+  async createAdminStaffRole(body: { name: string; siteAdmin?: boolean; isGm?: boolean; createdBy?: string }) {
+    return await this.request<any>('POST', '/admin/staff/roles', body);
+  }
+
   async getAdminSection(section: string, params?: Record<string, string | number | undefined> | string) {
     const query = new URLSearchParams();
     if (typeof params === 'string') {

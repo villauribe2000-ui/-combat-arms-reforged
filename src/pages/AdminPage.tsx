@@ -8,7 +8,7 @@ import AdminClanProfile from '@/components/AdminClanProfile';
 import {
   XCircle, Loader, RotateCcw, MessageSquare, Send,
   LayoutDashboard, Users, Radio, Shield, Store, Landmark, FileBarChart, Swords, LogIn,
-  Link2, Megaphone, Map, Zap, ArrowLeft, Ticket, KeyRound, CreditCard, ExternalLink, ChevronRight, Search, Activity, TrendingUp, Wallet, ShoppingBag, Coins, Flag, Check, Star
+  Link2, Megaphone, Map, Zap, ArrowLeft, Ticket, KeyRound, CreditCard, ExternalLink, ChevronRight, Search, Activity, TrendingUp, Wallet, ShoppingBag, Coins, Flag, Check, Star, UserCog
 } from 'lucide-react';
 
 interface PaymentCode {
@@ -71,7 +71,7 @@ interface TicketMessage {
 type Section =
   | 'overview' | 'players' | 'online' | 'clans' | 'shop' | 'economy' | 'reports'
   | 'matches' | 'logins' | 'linked' | 'announcements' | 'maps' | 'boosts'
-  | 'codes' | 'payments' | 'refunds' | 'tickets';
+  | 'codes' | 'payments' | 'refunds' | 'tickets' | 'staff';
 
 const NAV: { id: Section; label: string; icon: typeof LayoutDashboard; group: string }[] = [
   { id: 'overview', label: 'Overview', icon: LayoutDashboard, group: 'CONTROL ROOM' },
@@ -91,6 +91,7 @@ const NAV: { id: Section; label: string; icon: typeof LayoutDashboard; group: st
   { id: 'payments', label: 'Recargas', icon: CreditCard, group: 'OPERATIONS' },
   { id: 'refunds', label: 'Refunds', icon: RotateCcw, group: 'OPERATIONS' },
   { id: 'tickets', label: 'Tickets', icon: Ticket, group: 'OPERATIONS' },
+  { id: 'staff', label: 'Administración', icon: UserCog, group: 'OPERATIONS' },
 ];
 
 const ISO3: Record<string, string> = {
@@ -283,6 +284,15 @@ export default function AdminPage({ onNavigate }: { onNavigate?: (page: PageId) 
   const [openReport, setOpenReport] = useState<any>(null);
   const [shopQ, setShopQ] = useState('');
   const [mapLevel, setMapLevel] = useState<number | null>(null);
+  const [staffQ, setStaffQ] = useState('');
+  const [staffHits, setStaffHits] = useState<any[]>([]);
+  const [staffList, setStaffList] = useState<any[]>([]);
+  const [staffRoles, setStaffRoles] = useState<any[]>([]);
+  const [newRoleName, setNewRoleName] = useState('');
+  const [newRoleAdmin, setNewRoleAdmin] = useState(true);
+  const [newRoleGm, setNewRoleGm] = useState(false);
+  const [staffBusy, setStaffBusy] = useState(false);
+  const [pickRole, setPickRole] = useState('ADMINISTRATOR');
 
   const READ_SECTIONS: Section[] = ['players', 'online', 'clans', 'shop', 'economy', 'reports', 'matches', 'logins', 'linked', 'announcements', 'maps', 'boosts'];
 
@@ -377,6 +387,22 @@ export default function AdminPage({ onNavigate }: { onNavigate?: (page: PageId) 
       api.getAdminSection('clans')
         .then((d) => { if (live) setRoom(d || {}); })
         .catch(() => { if (live) setRoom({}); })
+        .finally(() => { if (live) setRoomLoading(false); });
+      return () => { live = false; };
+    }
+    if (section === 'staff') {
+      let live = true;
+      setRoomLoading(true);
+      api.getAdminStaff()
+        .then((d) => {
+          if (!live) return;
+          setStaffList(d.staff || []);
+          setStaffRoles(d.roles || []);
+          if ((d.roles || []).length && !pickRole) setPickRole(d.roles[0].name);
+        })
+        .catch(() => {
+          if (live) { setStaffList([]); setStaffRoles([]); }
+        })
         .finally(() => { if (live) setRoomLoading(false); });
       return () => { live = false; };
     }
@@ -560,6 +586,72 @@ export default function AdminPage({ onNavigate }: { onNavigate?: (page: PageId) 
     }
   };
 
+  const applyStaffBundle = (d: any) => {
+    setStaffList(d?.staff || []);
+    setStaffRoles(d?.roles || []);
+  };
+
+  const searchStaffPlayers = async (e?: React.FormEvent) => {
+    e?.preventDefault();
+    const q = staffQ.trim();
+    if (q.length < 2) { setStaffHits([]); return; }
+    setStaffBusy(true);
+    try {
+      const d = await api.searchAdminStaff(q);
+      setStaffHits(d.data || []);
+    } catch {
+      setStaffHits([]);
+    } finally {
+      setStaffBusy(false);
+    }
+  };
+
+  const assignStaff = async (userId: number, role: string) => {
+    setStaffBusy(true);
+    try {
+      const d = await api.assignAdminStaff({ userId, role, grantedByName: profile?.username });
+      applyStaffBundle(d);
+      setStaffHits((rows) => rows.map((p) => (p.id === userId ? { ...p, webRole: role } : p)));
+    } catch (err: any) {
+      alert(err?.message || 'No se pudo asignar el rol');
+    } finally {
+      setStaffBusy(false);
+    }
+  };
+
+  const removeStaff = async (userId: number) => {
+    setStaffBusy(true);
+    try {
+      applyStaffBundle(await api.removeAdminStaff(userId));
+    } catch (err: any) {
+      alert(err?.message || 'No se pudo quitar el rol');
+    } finally {
+      setStaffBusy(false);
+    }
+  };
+
+  const createStaffRole = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const name = newRoleName.trim();
+    if (name.length < 2) return;
+    setStaffBusy(true);
+    try {
+      const d = await api.createAdminStaffRole({
+        name,
+        siteAdmin: newRoleAdmin,
+        isGm: newRoleGm,
+        createdBy: profile?.username,
+      });
+      applyStaffBundle(d);
+      setPickRole(name);
+      setNewRoleName('');
+    } catch (err: any) {
+      alert(err?.message || 'No se pudo crear el rol');
+    } finally {
+      setStaffBusy(false);
+    }
+  };
+
   const handleUpdateTicketStatus = async (ticketId: number, newStatus: string) => {
     if (!profile?.username) return;
     try {
@@ -574,7 +666,7 @@ export default function AdminPage({ onNavigate }: { onNavigate?: (page: PageId) 
     }
   };
 
-  if (profile?.username !== 'villauribe12') {
+  if (!profile?.is_admin && profile?.username !== 'villauribe12') {
     return (
       <div className="flex h-96 items-center justify-center">
         <div className="text-center">
@@ -768,7 +860,9 @@ export default function AdminPage({ onNavigate }: { onNavigate?: (page: PageId) 
                   ) : room.data.map((p: any) => {
                     const code = flagCode(p.CountryCode, p.NationCode);
                     const superAdmin = p.username === 'villauribe12' || String(p.webRole || '').toLowerCase() === 'superadmin';
-                    const isAdmin = superAdmin || Boolean(p.webRole);
+                    const roleLabel = String(p.webRole || '').trim();
+                    const showRole = Boolean(roleLabel) && !superAdmin;
+                    const showGm = Boolean(p.isGM || p.webGm) && roleLabel.toLowerCase() !== 'gm';
                     return (
                       <tr key={p.id} className="pl-row" onClick={() => setPlayerId(p.id)}>
                         <td>
@@ -784,9 +878,9 @@ export default function AdminPage({ onNavigate }: { onNavigate?: (page: PageId) 
                         <td>
                           <div className="pl-roles">
                             {superAdmin && <span className="pl-pill pl-pill-super">SUPERADMIN</span>}
-                            {isAdmin && !superAdmin && <span className="pl-pill pl-pill-admin">ADMINISTRATOR</span>}
-                            {p.isGM && <span className="pl-pill pl-pill-gm">GM</span>}
-                            {!isAdmin && !p.isGM && <span className="pl-pill pl-pill-player">PLAYER</span>}
+                            {showRole && <span className="pl-pill pl-pill-admin">{roleLabel.toUpperCase()}</span>}
+                            {showGm && <span className="pl-pill pl-pill-gm">GM</span>}
+                            {!superAdmin && !showRole && !p.isGM && !p.webGm && <span className="pl-pill pl-pill-player">PLAYER</span>}
                           </div>
                         </td>
                         <td>
@@ -1705,6 +1799,124 @@ export default function AdminPage({ onNavigate }: { onNavigate?: (page: PageId) 
                 </div>
               </div>
             ))}
+          </>
+        )}
+
+        {section === 'staff' && (
+          <>
+            <div className="pl-hero">
+              <div className="pl-hero-ico"><UserCog /></div>
+              <div>
+                <p className="eyebrow">OPERATIONS / STAFF</p>
+                <h1>ADMINISTRACIÓN</h1>
+                <p>Busca jugadores reales y asígnales un rol. Los roles viven en combatarms_web. Quien tenga acceso al panel lo ve en su perfil.</p>
+              </div>
+            </div>
+            <form className="pl-filters" onSubmit={createStaffRole}>
+              <input value={newRoleName} onChange={(e) => setNewRoleName(e.target.value)} placeholder="Nuevo rol (ej. MOD, GM, HELPER)" />
+              <label className="staff-check"><input type="checkbox" checked={newRoleAdmin} onChange={(e) => setNewRoleAdmin(e.target.checked)} /> Panel admin</label>
+              <label className="staff-check"><input type="checkbox" checked={newRoleGm} onChange={(e) => setNewRoleGm(e.target.checked)} /> Marca GM</label>
+              <button className="pl-apply" type="submit" disabled={staffBusy}>Crear rol</button>
+            </form>
+            <form className="pl-filters" onSubmit={searchStaffPlayers}>
+              <input value={staffQ} onChange={(e) => setStaffQ(e.target.value)} placeholder="Buscar nick, usuario, email o #oid" />
+              <select value={pickRole} onChange={(e) => setPickRole(e.target.value)}>
+                {(staffRoles.length ? staffRoles : [{ name: 'ADMINISTRATOR' }, { name: 'GM' }, { name: 'SUPERADMIN' }]).map((r: any) => (
+                  <option key={r.name} value={r.name}>{r.name}{r.isGm ? ' · GM' : ''}{r.siteAdmin ? ' · ADMIN' : ''}</option>
+                ))}
+              </select>
+              <button className="pl-apply" type="submit" disabled={staffBusy}>Buscar</button>
+            </form>
+            {staffBusy && roomLoading ? <Empty text="Leyendo jugadores..." /> : null}
+            <div className="pl-meta">
+              <h2>BUSCAR JUGADORES</h2>
+              <span>{staffHits.length} resultados · rol a asignar: {pickRole}</span>
+            </div>
+            <table className="pl-table">
+              <thead>
+                <tr>
+                  <th>PLAYER</th>
+                  <th>EMAIL</th>
+                  <th>ROL ACTUAL</th>
+                  <th>ACTIONS</th>
+                </tr>
+              </thead>
+              <tbody>
+                {staffHits.length === 0 ? (
+                  <tr><td colSpan={4} style={{ color: '#777', padding: 28 }}>Busca un jugador para asignarle un rol.</td></tr>
+                ) : staffHits.map((p: any) => (
+                  <tr key={p.id}>
+                    <td>
+                      <div className="pl-player">
+                        <img src={rankIcon({ exp: p.Exp, UserType: p.UserType })} alt="" onError={(e) => { e.currentTarget.src = '/ranks/RANK_0.png'; }} />
+                        <div>
+                          <b>{p.isGM ? `[GM]${p.NickName || p.username}` : (p.NickName || p.username)}</b>
+                          <small>{p.username}_ #{p.id}</small>
+                        </div>
+                      </div>
+                    </td>
+                    <td className="pl-mail">{p.email || '—'}</td>
+                    <td>
+                      <div className="pl-roles">
+                        {p.webRole ? <span className="pl-pill pl-pill-admin">{String(p.webRole).toUpperCase()}</span> : <span className="pl-pill pl-pill-player">PLAYER</span>}
+                        {(p.isGM || p.webGm) && String(p.webRole || '').toLowerCase() !== 'gm' && <span className="pl-pill pl-pill-gm">GM</span>}
+                      </div>
+                    </td>
+                    <td>
+                      <button className="pl-apply" type="button" disabled={staffBusy} onClick={() => assignStaff(p.id, pickRole)}>Asignar {pickRole}</button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+            <div className="pl-meta" style={{ marginTop: 28 }}>
+              <h2>STAFF ACTIVO</h2>
+              <span>{staffList.length} cuentas en combatarms_web.admin_users</span>
+            </div>
+            {roomLoading ? <Empty text="Leyendo staff..." /> : (
+              <table className="pl-table">
+                <thead>
+                  <tr>
+                    <th>PLAYER</th>
+                    <th>ROLE</th>
+                    <th>GRANTED BY</th>
+                    <th>ACTIONS</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {staffList.length === 0 ? (
+                    <tr><td colSpan={4} style={{ color: '#777', padding: 28 }}>Aún no hay roles asignados.</td></tr>
+                  ) : staffList.map((p: any) => (
+                    <tr key={p.userId}>
+                      <td>
+                        <div className="pl-player">
+                          <div>
+                            <b>{p.isGM ? `[GM]${p.NickName || p.username}` : (p.NickName || p.username)}</b>
+                            <small>{p.username}_ #{p.userId}</small>
+                          </div>
+                        </div>
+                      </td>
+                      <td>
+                        <div className="pl-roles">
+                          <span className={String(p.webRole || '').toLowerCase() === 'superadmin' ? 'pl-pill pl-pill-super' : 'pl-pill pl-pill-admin'}>
+                            {String(p.webRole || '').toUpperCase()}
+                          </span>
+                          {p.webGm && String(p.webRole || '').toLowerCase() !== 'gm' && <span className="pl-pill pl-pill-gm">GM</span>}
+                        </div>
+                      </td>
+                      <td>{p.grantedBy || '—'} · {stamp(p.grantedAt)}</td>
+                      <td>
+                        {p.username === 'villauribe12' ? (
+                          <span className="pl-pill pl-pill-super">LOCKED</span>
+                        ) : (
+                          <button className="admin-no" type="button" disabled={staffBusy} onClick={() => removeStaff(p.userId)}>Quitar</button>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
           </>
         )}
 

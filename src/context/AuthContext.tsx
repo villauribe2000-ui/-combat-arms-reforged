@@ -15,6 +15,7 @@ export interface Profile {
   gender?: number;
   joinDate?: string;
   is_admin?: boolean;
+  webRole?: string | null;
 }
 
 type AuthContextType = {

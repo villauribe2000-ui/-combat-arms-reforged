@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import { query, queryGuildDB, queryLog, queryVisms, queryWeb } from '../db.js';
+import { ensureStaffTables, roleFlags } from '../site-admin.js';
 
 const router = Router();
 
@@ -65,14 +66,19 @@ router.get('/players', async (req, res) => {
   if (status === 'active') {
     where += ` AND u.Status <> 2 AND (u.StatusEndDate IS NULL OR u.StatusEndDate < GETDATE()) AND (a.BlockEndDate IS NULL OR a.BlockEndDate < GETDATE())`;
   }
-  if (role === 'gm') where += ` AND u.UserType = 1`;
-  if (role === 'player') where += ` AND ISNULL(u.UserType, 0) <> 1`;
-
-  const admins = await web(`SELECT userId, role FROM admin_users`);
+  await ensureStaffTables();
+  const admins = await web(`SELECT userId, role, siteAdmin, isGm FROM admin_users`);
   const adminMap = {};
-  for (const row of admins) adminMap[row.userId] = row.role;
+  for (const row of admins) adminMap[Number(row.userId)] = row;
+  if (role === 'gm') {
+    const gmIds = admins.filter((r) => roleFlags(r).webGm).map((r) => Number(r.userId)).filter(Number.isFinite);
+    where += gmIds.length
+      ? ` AND (u.UserType = 1 OR u.oidUser IN (${gmIds.join(',')}))`
+      : ` AND u.UserType = 1`;
+  }
+  if (role === 'player') where += ` AND ISNULL(u.UserType, 0) <> 1`;
   if (role === 'admin') {
-    const ids = admins.map((r) => Number(r.userId)).filter((n) => Number.isFinite(n));
+    const ids = admins.filter((r) => roleFlags(r).siteAdmin).map((r) => Number(r.userId)).filter(Number.isFinite);
     where += ids.length ? ` AND u.oidUser IN (${ids.join(',')})` : ` AND 1 = 0`;
   }
 
@@ -96,11 +102,15 @@ router.get('/players', async (req, res) => {
 
   const data = list.map((p) => {
     const banned = p.Status === 2 || (p.StatusEndDate && new Date(p.StatusEndDate) > new Date()) || (p.BlockEndDate && new Date(p.BlockEndDate) > new Date());
-    const webRole = adminMap[p.id];
+    const flags = roleFlags(adminMap[p.id]);
+    const superAdmin = p.username === 'villauribe12' || String(flags.role || '').toLowerCase() === 'superadmin';
     return {
       ...p,
-      webRole: webRole || null,
-      isGM: p.UserType === 1,
+      webRole: flags.role,
+      webGm: flags.webGm,
+      siteAdmin: flags.siteAdmin || superAdmin,
+      superAdmin,
+      isGM: p.UserType === 1 || flags.webGm,
       accountStatus: banned ? 'banned' : 'active',
     };
   });
@@ -138,7 +148,8 @@ router.get('/players/:id', async (req, res) => {
     SELECT TOP 1 GradeLevel as rank, GradeName as rankName
     FROM CBT_GradeInfo WHERE @exp >= MinExp AND @exp <= MaxExp`, { exp: user.Exp || 0 }))[0] || null;
   const grades = await ca(`SELECT GradeLevel, GradeName, MinExp, MaxExp FROM CBT_GradeInfo ORDER BY GradeLevel`);
-  const admins = await web(`SELECT userId, role FROM admin_users WHERE userId = @id`, p);
+  await ensureStaffTables();
+  const admins = await web(`SELECT userId, role, siteAdmin, isGm FROM admin_users WHERE userId = @id`, p);
   const twofa = await web(`SELECT userId, enabledAt FROM two_factor WHERE userId = @id`, p);
   const nx = await vis(`SELECT TOP 1 TotalBalance, RealBalance, BonusBalance FROM VISMS_UserList WHERE oid = @id`, p);
   const discord = await ca(`SELECT TOP 1 discord_id, data_vinculo FROM DiscordAccounts WHERE oidUser = @id`, p);
@@ -261,16 +272,18 @@ router.get('/players/:id', async (req, res) => {
   const now = new Date();
   const banned = user.Status === 2 || (user.StatusEndDate && new Date(user.StatusEndDate) > now) || (user.BlockEndDate && new Date(user.BlockEndDate) > now);
   const muted = user.SilenceEndDate && new Date(user.SilenceEndDate) > now;
-  const webRole = admins[0]?.role || null;
-  const superAdmin = user.username === 'villauribe12' || String(webRole || '').toLowerCase() === 'superadmin';
+  const flags = roleFlags(admins[0]);
+  const superAdmin = user.username === 'villauribe12' || String(flags.role || '').toLowerCase() === 'superadmin';
 
   res.json({
     user: {
       ...user,
       rank: grade?.rank ?? 0,
       rankName: grade?.rankName || 'TRAINEE',
-      webRole,
-      isGM: user.UserType === 1,
+      webRole: flags.role,
+      webGm: flags.webGm,
+      siteAdmin: flags.siteAdmin || superAdmin,
+      isGM: user.UserType === 1 || flags.webGm,
       superAdmin,
       accountStatus: banned ? 'banned' : 'active',
       muted: Boolean(muted),
@@ -1111,6 +1124,188 @@ router.get('/boosts', async (_req, res) => {
     serverNow: now.toISOString(),
     source: 'CBT_EventEXPGP',
   });
+});
+
+async function loadStaffBundle() {
+  await ensureStaffTables();
+  const roles = await web(`SELECT id, name, siteAdmin, isGm, createdBy, createdAt FROM staff_roles ORDER BY name`);
+  const staffRows = await web(`
+    SELECT userId, username, nickName, role, siteAdmin, isGm, grantedBy, grantedAt
+    FROM admin_users ORDER BY grantedAt DESC`);
+  const ids = staffRows.map((r) => Number(r.userId)).filter(Number.isFinite);
+  let users = [];
+  if (ids.length) {
+    users = await ca(`
+      SELECT u.oidUser as id, u.strNexonID as username, u.NickName, u.Exp, u.UserType, u.Status,
+        a.strEmail as email
+      FROM CBT_User u
+      LEFT JOIN CBT_UserAuth a ON a.oidUser = u.oidUser
+      WHERE u.oidUser IN (${ids.join(',')})`);
+  }
+  const byId = Object.fromEntries(users.map((u) => [Number(u.id), u]));
+  const staff = staffRows.map((row) => {
+    const flags = roleFlags(row);
+    const user = byId[Number(row.userId)] || {};
+    return {
+      userId: Number(row.userId),
+      username: user.username || row.username,
+      NickName: user.NickName || row.nickName,
+      email: user.email || null,
+      Exp: user.Exp,
+      UserType: user.UserType,
+      webRole: flags.role,
+      siteAdmin: flags.siteAdmin,
+      webGm: flags.webGm,
+      isGM: user.UserType === 1 || flags.webGm,
+      grantedBy: row.grantedBy,
+      grantedAt: row.grantedAt,
+    };
+  });
+  return { staff, roles: roles.map((r) => ({ ...r, siteAdmin: roleFlags({ ...r, role: r.name }).siteAdmin, isGm: roleFlags({ ...r, role: r.name, isGm: r.isGm }).webGm })) };
+}
+
+router.get('/staff', async (_req, res) => {
+  try {
+    const bundle = await loadStaffBundle();
+    res.json({ ...bundle, source: 'combatarms_web.admin_users + staff_roles' });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+router.get('/staff/search', async (req, res) => {
+  const q = String(req.query.q || '').trim();
+  if (q.length < 2) return res.json({ data: [] });
+  await ensureStaffTables();
+  const params = {};
+  let where = `u.DeleteDate IS NULL`;
+  if (q.startsWith('#') && /^\d+$/.test(q.slice(1))) {
+    where += ` AND u.oidUser = @oid`;
+    params.oid = parseInt(q.slice(1), 10);
+  } else if (/^\d+$/.test(q) && q.length <= 8) {
+    where += ` AND u.oidUser = @oid`;
+    params.oid = parseInt(q, 10);
+  } else {
+    where += ` AND (u.strNexonID LIKE @q OR u.NickName LIKE @q OR a.strEmail LIKE @q)`;
+    params.q = `%${q}%`;
+  }
+  const list = await ca(`
+    SELECT TOP 25 u.oidUser as id, u.strNexonID as username, u.NickName, u.Exp, u.UserType, u.Status,
+      a.strEmail as email
+    FROM CBT_User u
+    LEFT JOIN CBT_UserAuth a ON a.oidUser = u.oidUser
+    WHERE ${where}
+    ORDER BY u.oidUser DESC`, params);
+  const staffRows = await web(`SELECT userId, role, siteAdmin, isGm FROM admin_users`);
+  const adminMap = {};
+  for (const row of staffRows) adminMap[Number(row.userId)] = row;
+  res.json({
+    data: list.map((p) => {
+      const flags = roleFlags(adminMap[p.id]);
+      return { ...p, webRole: flags.role, webGm: flags.webGm, siteAdmin: flags.siteAdmin, isGM: p.UserType === 1 || flags.webGm };
+    }),
+  });
+});
+
+router.post('/staff/roles', async (req, res) => {
+  try {
+    await ensureStaffTables();
+    const name = String(req.body?.name || '').trim().slice(0, 40);
+    if (name.length < 2) return res.status(400).json({ error: 'invalid role' });
+    const siteAdmin = req.body?.siteAdmin === false ? 0 : 1;
+    const isGm = req.body?.isGm ? 1 : 0;
+    const createdBy = String(req.body?.createdBy || 'admin').slice(0, 64);
+    const existing = await web(`SELECT TOP 1 id FROM staff_roles WHERE name = @name`, { name });
+    if (existing.length) {
+      await queryWeb(
+        `UPDATE staff_roles SET siteAdmin = @siteAdmin, isGm = @isGm WHERE name = @name`,
+        { name, siteAdmin, isGm },
+      );
+    } else {
+      await queryWeb(
+        `INSERT INTO staff_roles (name, siteAdmin, isGm, createdBy) VALUES (@name, @siteAdmin, @isGm, @createdBy)`,
+        { name, siteAdmin, isGm, createdBy },
+      );
+    }
+    res.json(await loadStaffBundle());
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+router.post('/staff', async (req, res) => {
+  try {
+    await ensureStaffTables();
+    const userId = parseInt(String(req.body?.userId), 10);
+    const roleName = String(req.body?.role || '').trim().slice(0, 40);
+    const grantedBy = String(req.body?.grantedByName || 'admin').slice(0, 64);
+    if (!Number.isFinite(userId) || !roleName) return res.status(400).json({ error: 'invalid' });
+    const users = await ca(`
+      SELECT TOP 1 u.oidUser as id, u.strNexonID as username, u.NickName
+      FROM CBT_User u WHERE u.oidUser = @id`, { id: userId });
+    if (!users.length) return res.status(404).json({ error: 'player not found' });
+    const user = users[0];
+    if (user.username === 'villauribe12' && roleName.toLowerCase() !== 'superadmin') {
+      return res.status(400).json({ error: 'cannot demote superadmin' });
+    }
+    let roleRow = (await web(`SELECT TOP 1 name, siteAdmin, isGm FROM staff_roles WHERE name = @name`, { name: roleName }))[0];
+    if (!roleRow) {
+      const isGm = roleName.toLowerCase() === 'gm' ? 1 : 0;
+      await queryWeb(
+        `INSERT INTO staff_roles (name, siteAdmin, isGm, createdBy) VALUES (@name, 1, @isGm, @createdBy)`,
+        { name: roleName, isGm, createdBy: grantedBy },
+      );
+      roleRow = { name: roleName, siteAdmin: 1, isGm };
+    }
+    const flags = roleFlags({ role: roleRow.name, siteAdmin: roleRow.siteAdmin, isGm: roleRow.isGm });
+    const existing = await web(`SELECT TOP 1 userId FROM admin_users WHERE userId = @id`, { id: userId });
+    if (existing.length) {
+      await queryWeb(`
+        UPDATE admin_users
+        SET username = @username, nickName = @nickName, role = @role, siteAdmin = @siteAdmin, isGm = @isGm,
+            grantedBy = @grantedBy, grantedAt = GETDATE()
+        WHERE userId = @id`, {
+        id: userId,
+        username: user.username,
+        nickName: user.NickName || '',
+        role: flags.role,
+        siteAdmin: flags.siteAdmin ? 1 : 0,
+        isGm: flags.webGm ? 1 : 0,
+        grantedBy,
+      });
+    } else {
+      await queryWeb(`
+        INSERT INTO admin_users (userId, username, nickName, role, siteAdmin, isGm, grantedBy, grantedAt)
+        VALUES (@id, @username, @nickName, @role, @siteAdmin, @isGm, @grantedBy, GETDATE())`, {
+        id: userId,
+        username: user.username,
+        nickName: user.NickName || '',
+        role: flags.role,
+        siteAdmin: flags.siteAdmin ? 1 : 0,
+        isGm: flags.webGm ? 1 : 0,
+        grantedBy,
+      });
+    }
+    res.json(await loadStaffBundle());
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+router.delete('/staff/:userId', async (req, res) => {
+  try {
+    await ensureStaffTables();
+    const userId = parseInt(req.params.userId, 10);
+    if (!Number.isFinite(userId)) return res.status(400).json({ error: 'invalid' });
+    const row = await web(`SELECT TOP 1 username, role FROM admin_users WHERE userId = @id`, { id: userId });
+    if (row[0]?.username === 'villauribe12' || String(row[0]?.role || '').toLowerCase() === 'superadmin') {
+      return res.status(400).json({ error: 'cannot remove superadmin' });
+    }
+    await queryWeb(`DELETE FROM admin_users WHERE userId = @id`, { id: userId });
+    res.json(await loadStaffBundle());
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
 });
 
 export default router;

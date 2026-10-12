@@ -97,8 +97,8 @@ export default function AdminPlayerAccount({ id, onBack }: { id: number; onBack:
           <p className="pd-mail">{u.email || '—'}</p>
           <div className="pl-roles" style={{ marginTop: 8 }}>
             {u.superAdmin && <span className="pl-pill pl-pill-super">SUPERADMIN</span>}
-            {u.webRole && !u.superAdmin && <span className="pl-pill pl-pill-admin">ADMINISTRATOR</span>}
-            {u.isGM && <span className="pl-pill pl-pill-gm">GM</span>}
+            {u.webRole && !u.superAdmin && <span className="pl-pill pl-pill-admin">{String(u.webRole).toUpperCase()}</span>}
+            {(u.isGM || u.webGm) && String(u.webRole || '').toLowerCase() !== 'gm' && <span className="pl-pill pl-pill-gm">GM</span>}
             <span className={u.accountStatus === 'banned' ? 'pl-status-ban' : 'pl-status'}>{u.accountStatus === 'banned' ? 'BANNED' : 'ACTIVE'}</span>
             <span className="pl-pill pl-pill-player">{u.twofa ? '2FA ON' : '2FA OFF'}</span>
           </div>
