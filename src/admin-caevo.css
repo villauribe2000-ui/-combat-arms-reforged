@@ -132,6 +132,9 @@
 .staff-btn-gold:hover{filter:brightness(1.06)}
 .staff-btn-ghost{border:1px solid #333;background:#171717;color:#ddd;min-width:40px;padding:0 10px}
 .staff-btn-danger{border:1px solid #5a2a2a;background:#1b1313;color:#e8a0a0;width:100%;margin-top:16px}
+.staff-btn-danger-sm{width:auto;margin-top:0;flex-shrink:0}
+.staff-quota-actions{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.staff-card .staff-quota-actions{margin-left:auto}
 .staff-btn:disabled{opacity:.4}
 .staff-switch{display:flex;align-items:center;gap:8px;color:#bbb;font-size:12px;font-weight:700;white-space:nowrap}
 .staff-switch input{display:none}

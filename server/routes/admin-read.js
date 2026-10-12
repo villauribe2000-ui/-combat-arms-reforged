@@ -1519,13 +1519,17 @@ router.post('/staff/:userId/quota', async (req, res) => {
     if (!requireStaffOwner(req, res)) return;
     await ensureStaffTables();
     const userId = parseInt(req.params.userId, 10);
-    const amount = Math.max(0, Math.floor(Number(req.body?.amount) || 0));
+    const raw = Math.max(0, Math.floor(Number(req.body?.amount) || 0));
+    const mode = String(req.body?.mode || 'set').toLowerCase();
     if (!Number.isFinite(userId)) return res.status(400).json({ error: 'invalid' });
     const period = await currentPeriod();
     const named = (await ca(`SELECT TOP 1 strNexonID as username FROM CBT_User WHERE oidUser = @id`, { id: userId }))[0];
     const username = named?.username || '';
     const found = await getQuota(userId, username);
     const quotaId = Number(found.userId || userId);
+    let amount = raw;
+    if (mode === 'add') amount = Math.max(0, asNum(found.monthlyAllotment) + raw);
+    else if (mode === 'sub') amount = Math.max(0, asNum(found.monthlyAllotment) - raw);
     const existing = await web(`SELECT TOP 1 userId FROM staff_nx_quota WHERE userId = @id`, { id: quotaId });
     const actor = staffActor(req);
     const updatedBy = Number(actor?.userId) || 0;
@@ -1553,6 +1557,67 @@ router.post('/staff/:userId/quota', async (req, res) => {
       }
     }
     res.json({ ok: true, quota: await getQuota(quotaId, username), staff: (await loadStaffBundle()).staff });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+router.post('/staff/take-nx', async (req, res) => {
+  try {
+    if (!requireStaffOwner(req, res)) return;
+    await ensureStaffTables();
+    const actor = staffActor(req);
+    const toUserId = parseInt(String(req.body?.toUserId), 10);
+    const amount = Math.floor(Number(req.body?.amount) || 0);
+    const message = String(req.body?.message || '').trim().slice(0, 300);
+    if (!Number.isFinite(toUserId) || amount <= 0) return res.status(400).json({ error: 'invalid amount' });
+    const target = (await ca(`
+      SELECT TOP 1 oidUser as id, strNexonID as username, NickName
+      FROM CBT_User WHERE oidUser = @id AND DeleteDate IS NULL`, { id: toUserId }))[0];
+    if (!target) return res.status(404).json({ error: 'player not found' });
+    const bal = await queryVisms(`SELECT ISNULL(RealBalance, 0) as RealBalance FROM VISMS_UserList WHERE oid = @oid`, { oid: toUserId });
+    const current = Math.floor(Number(bal?.recordset?.[0]?.RealBalance || 0));
+    if (current <= 0) return res.status(400).json({ error: 'El jugador no tiene NX' });
+    const take = Math.min(amount, current);
+    const updated = await queryVisms(
+      `UPDATE VISMS_UserList SET RealBalance = ISNULL(RealBalance, 0) - @nx WHERE oid = @oid AND ISNULL(RealBalance, 0) >= @nx`,
+      { nx: take, oid: toUserId },
+    );
+    if (!updated?.rowsAffected?.[0]) {
+      return res.status(500).json({ error: 'no se pudo quitar NX en VISMS' });
+    }
+    const caUser = await caUserByActor(actor);
+    const fromUserId = Number(caUser?.id || actor?.userId || 0);
+    const period = await currentPeriod();
+    try {
+      await queryWeb(`
+        INSERT INTO staff_nx_gifts (fromUserId, fromUsername, fromNick, fromRole, toUserId, toUsername, toNick, amount, period, message, createdAt)
+        VALUES (@fromUserId, @fromUsername, @fromNick, @fromRole, @toUserId, @toUsername, @toNick, @amount, @period, @message, GETDATE())`, {
+        fromUserId,
+        fromUsername: STAFF_OWNER,
+        fromNick: caUser?.NickName || STAFF_OWNER,
+        fromRole: 'SUPERADMIN',
+        toUserId,
+        toUsername: target.username,
+        toNick: target.NickName || target.username,
+        amount: -take,
+        period,
+        message: message || 'NX retirado por el dueño',
+      });
+    } catch {
+      await queryWeb(`
+        INSERT INTO staff_nx_gifts (fromUserId, toUserId, amount, period, createdAt)
+        VALUES (@fromUserId, @toUserId, @amount, @period, GETDATE())`, {
+        fromUserId, toUserId, amount: -take, period,
+      });
+    }
+    const left = await queryVisms(`SELECT ISNULL(RealBalance, 0) as RealBalance FROM VISMS_UserList WHERE oid = @oid`, { oid: toUserId });
+    res.json({
+      ok: true,
+      taken: take,
+      balance: Math.floor(Number(left?.recordset?.[0]?.RealBalance || 0)),
+      gifts: await giftsFor(fromUserId, 80),
+    });
   } catch (e) {
     res.status(500).json({ error: e.message });
   }

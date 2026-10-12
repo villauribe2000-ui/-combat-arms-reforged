@@ -209,12 +209,24 @@ class ApiClient {
     return await this.request<any>('GET', `/admin/staff/${userId}/desk`);
   }
 
-  async setAdminStaffQuota(userId: number, amount: number) {
-    return await this.request<any>('POST', `/admin/staff/${userId}/quota`, { amount });
+  async setAdminStaffQuota(userId: number, amount: number, mode: 'add' | 'sub' | 'set' = 'set') {
+    return await this.request<any>('POST', `/admin/staff/${userId}/quota`, { amount, mode });
   }
 
   async getAdminStaffMe() {
     return await this.request<any>('GET', '/admin/staff/me');
+  }
+
+  async takeAdminNx(toUserId: number, amount: number, message = '', actor?: { userId?: number; username?: string }) {
+    const authToken = (typeof window !== 'undefined' ? localStorage.getItem('token') : null) || this.token || '';
+    return await this.request<any>('POST', '/admin/staff/take-nx', {
+      toUserId,
+      amount,
+      message,
+      authToken,
+      actorUsername: actor?.username || '',
+      actorUserId: actor?.userId || 0,
+    });
   }
 
   async giftAdminNx(toUserId: number, amount: number, message = '', actor?: { userId?: number; username?: string }) {

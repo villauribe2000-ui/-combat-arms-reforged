@@ -342,10 +342,35 @@ export default function AdminPlayerAccount({ id, onBack }: { id: number; onBack:
             <button className="staff-btn staff-btn-gold" type="submit" disabled={giftBusy || (profile?.username !== 'villauribe12' && Number(giftQuota?.remaining || 0) <= 0)}>
               Enviar NX
             </button>
+            {profile?.username === 'villauribe12' && (
+              <button
+                className="staff-btn staff-btn-danger staff-btn-danger-sm"
+                type="button"
+                disabled={giftBusy}
+                onClick={async () => {
+                  const amount = Math.floor(Number(String(giftAmount).replace(/[^\d]/g, '')) || 0);
+                  if (amount <= 0) return;
+                  setGiftBusy(true);
+                  try {
+                    await api.takeAdminNx(id, amount, giftMessage.trim() || 'NX retirado por el dueño', { userId: profile?.userId || profile?.id, username: profile?.username });
+                    const log = await api.getAdminStaffGifts();
+                    setGiftLog((log?.gifts || []).filter((g: any) => Number(g.toUserId) === Number(id)));
+                    const fresh = await api.getAdminPlayer(id);
+                    setData(fresh);
+                  } catch (err: any) {
+                    alert(err?.message || 'No se pudo quitar NX');
+                  } finally {
+                    setGiftBusy(false);
+                  }
+                }}
+              >
+                Quitar NX
+              </button>
+            )}
           </form>
           <p className="staff-note">
             {profile?.username === 'villauribe12'
-              ? 'Como dueño puedes poner NX sin límite. El envío queda en Historial y Charge Coins.'
+              ? 'Como dueño puedes poner NX sin límite y también quitar NX a esta cuenta. Queda en Historial.'
               : `Usado ${Number(giftQuota?.used || 0).toLocaleString()} · asignado ${Number(giftQuota?.monthlyAllotment || 0).toLocaleString()} este mes.`}
           </p>
           <h3 style={{ fontSize: 11, letterSpacing: '1.2px', color: '#888', margin: '18px 0 8px' }}>ENVIOS A ESTA CUENTA</h3>
@@ -353,7 +378,7 @@ export default function AdminPlayerAccount({ id, onBack }: { id: number; onBack:
             {giftLog.length === 0 ? <p className="staff-note">Nadie le ha regalado NX todavía.</p> : giftLog.map((g: any) => (
               <div key={g.id} className="staff-gift-row">
                 <div>
-                  <b>{Number(g.amount).toLocaleString()} NX</b>
+                  <b style={{ color: Number(g.amount) < 0 ? '#e8a0a0' : undefined }}>{Number(g.amount).toLocaleString()} NX</b>
                   <small>{g.fromNick || g.fromUsername} · {stampShort(g.createdAt)}{g.message ? ` · ${g.message}` : ''}</small>
                 </div>
                 <strong>{String(g.fromRole || '').toUpperCase()}</strong>

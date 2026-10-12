@@ -736,24 +736,34 @@ export default function AdminPage({ onNavigate }: { onNavigate?: (page: PageId) 
 
   const openStaffDesk = async (p: any) => {
     setStaffOpen(p);
-    setQuotaInput(String(p.monthlyAllotment || 0));
+    setQuotaInput('');
     try {
       const d = await api.getAdminStaffDesk(p.userId);
       setStaffDesk(d);
-      setQuotaInput(String(d.quota?.monthlyAllotment || 0));
     } catch {
       setStaffDesk({ staff: p, quota: p, gifts: [] });
     }
   };
 
-  const saveQuota = async () => {
+  const saveQuota = async (mode: 'add' | 'sub' | 'set') => {
     if (!canManageStaff || !staffOpen) return;
     const amount = Math.max(0, Math.floor(Number(String(quotaInput).replace(/[^\d]/g, '')) || 0));
+    if (amount <= 0) {
+      alert('Escribe cuánto NX quieres sumar o restar');
+      return;
+    }
     setStaffBusy(true);
     try {
-      const d = await api.setAdminStaffQuota(staffOpen.userId, amount);
+      const d = await api.setAdminStaffQuota(staffOpen.userId, amount, mode);
       if (d.staff) setStaffList(d.staff);
       setStaffDesk((prev: any) => ({ ...(prev || {}), quota: d.quota }));
+      setStaffOpen((prev: any) => prev ? {
+        ...prev,
+        monthlyAllotment: d.quota?.monthlyAllotment,
+        used: d.quota?.used,
+        remaining: d.quota?.remaining,
+      } : prev);
+      setQuotaInput('');
     } catch (err: any) {
       alert(err?.message || 'No se pudo guardar el cupo');
     } finally {
@@ -791,6 +801,22 @@ export default function AdminPage({ onNavigate }: { onNavigate?: (page: PageId) 
       setGmAmount('');
     } catch (err: any) {
       alert(err?.message || 'No tienes saldo para regalar');
+    } finally {
+      setStaffBusy(false);
+    }
+  };
+
+  const takeGmNx = async (toUserId: number) => {
+    if (profile?.username !== 'villauribe12') return;
+    const amount = Math.floor(Number(String(gmAmount).replace(/[^\d]/g, '')) || 0);
+    if (amount <= 0) return;
+    setStaffBusy(true);
+    try {
+      const d = await api.takeAdminNx(toUserId, amount, 'NX retirado por el dueño', { userId: profile?.userId || profile?.id, username: profile?.username });
+      setGmDesk((prev: any) => ({ ...(prev || {}), gifts: d.gifts || prev?.gifts }));
+      setGmAmount('');
+    } catch (err: any) {
+      alert(err?.message || 'No se pudo quitar NX');
     } finally {
       setStaffBusy(false);
     }
@@ -2003,7 +2029,7 @@ export default function AdminPage({ onNavigate }: { onNavigate?: (page: PageId) 
                 <p className="eyebrow">OPERATIONS / STAFF</p>
                 <h1>ADMINISTRACIÓN</h1>
                 <p>{canManageStaff
-                  ? 'Asigna roles, abre un staff para cargarle cupo mensual de NX y revisa a quién ha regalado.'
+                  ? 'Asigna roles, abre un staff y súmale o réstale cupo mensual de NX. El número que escribes se suma o se quita al cupo actual, no lo reemplaza.'
                   : 'Solo lectura. Abre un staff para ver su etiqueta y su cupo. No puedes cambiar roles ni montos.'}</p>
               </div>
             </div>
@@ -2097,12 +2123,13 @@ export default function AdminPage({ onNavigate }: { onNavigate?: (page: PageId) 
                     <article><p>RESTA</p><strong>{nxFmt(staffDesk?.quota?.remaining ?? staffOpen.remaining)}</strong></article>
                   </div>
                   {canManageStaff && (
-                    <form className="staff-toolbar" onSubmit={(e) => { e.preventDefault(); saveQuota(); }}>
-                      <input value={quotaInput} onChange={(e) => setQuotaInput(e.target.value)} placeholder="Cupo mensual NX" />
-                      <button className="staff-btn staff-btn-gold" type="submit" disabled={staffBusy}>Guardar cupo</button>
+                    <form className="staff-toolbar staff-quota-actions" onSubmit={(e) => { e.preventDefault(); saveQuota('add'); }}>
+                      <input value={quotaInput} onChange={(e) => setQuotaInput(e.target.value)} placeholder="Cantidad NX a sumar o restar" />
+                      <button className="staff-btn staff-btn-gold" type="submit" disabled={staffBusy}>Sumar cupo</button>
+                      <button className="staff-btn staff-btn-danger staff-btn-danger-sm" type="button" disabled={staffBusy} onClick={() => saveQuota('sub')}>Restar cupo</button>
                     </form>
                   )}
-                  <p className="staff-note">El cupo se reinicia cada mes. Si llega a 0, este staff no puede regalar más NX.</p>
+                  <p className="staff-note">Sumar agrega NX al cupo que ya tiene. Restar se lo quita. El cupo se reinicia cada mes; si llega a 0 no puede regalar más NX.</p>
                   <h3>REGALOS DE ESTE MES</h3>
                   <div className="staff-gift-list">
                     {(staffDesk?.gifts || []).length === 0 ? <p className="staff-note">Todavía no ha regalado NX.</p> : (staffDesk.gifts || []).map((g: any) => (
@@ -2111,7 +2138,7 @@ export default function AdminPage({ onNavigate }: { onNavigate?: (page: PageId) 
                           <b>{g.toNick || g.toUsername}</b>
                           <small>{g.toUsername} · {stamp(g.createdAt)}</small>
                         </div>
-                        <strong>{nxFmt(g.amount)} NX</strong>
+                        <strong style={{ color: Number(g.amount) < 0 ? '#e8a0a0' : undefined }}>{nxFmt(g.amount)} NX</strong>
                       </div>
                     ))}
                   </div>
@@ -2131,7 +2158,7 @@ export default function AdminPage({ onNavigate }: { onNavigate?: (page: PageId) 
               <div>
                 <p className="eyebrow">OPERATIONS / GM</p>
                 <h1>GM</h1>
-                <p>Tu etiqueta y el NX que puedes regalar este mes. Busca un jugador y envía desde tu cupo.</p>
+                <p>Tu etiqueta y el NX que puedes regalar este mes. Busca un jugador y envía desde tu cupo.{profile?.username === 'villauribe12' ? ' Solo tú puedes quitarle NX a las personas.' : ''}</p>
               </div>
             </div>
             {roomLoading ? <Empty text="Cargando cupo..." /> : !gmDesk?.me ? <Empty text="No tienes un rol de staff asignado." /> : (
@@ -2162,9 +2189,16 @@ export default function AdminPage({ onNavigate }: { onNavigate?: (page: PageId) 
                           <small>{p.username} · #{p.id}</small>
                         </div>
                       </div>
-                      <button className="staff-btn staff-btn-gold" type="button" disabled={staffBusy || (!(gmDesk.me.username === 'villauribe12') && Number(gmDesk.quota?.remaining || 0) <= 0)} onClick={() => sendGmGift(p.id)}>
-                        Regalar {gmAmount || '0'} NX
-                      </button>
+                      <div className="staff-quota-actions">
+                        <button className="staff-btn staff-btn-gold" type="button" disabled={staffBusy || (!(gmDesk.me.username === 'villauribe12') && Number(gmDesk.quota?.remaining || 0) <= 0)} onClick={() => sendGmGift(p.id)}>
+                          Regalar {gmAmount || '0'} NX
+                        </button>
+                        {profile?.username === 'villauribe12' && (
+                          <button className="staff-btn staff-btn-danger staff-btn-danger-sm" type="button" disabled={staffBusy} onClick={() => takeGmNx(p.id)}>
+                            Quitar NX
+                          </button>
+                        )}
+                      </div>
                     </article>
                   ))}
                 </div>
@@ -2179,7 +2213,7 @@ export default function AdminPage({ onNavigate }: { onNavigate?: (page: PageId) 
                         <b>{g.toNick || g.toUsername}</b>
                         <small>{g.toUsername} · {stamp(g.createdAt)}{g.message ? ` · ${g.message}` : ''}</small>
                       </div>
-                      <strong>{nxFmt(g.amount)} NX</strong>
+                      <strong style={{ color: Number(g.amount) < 0 ? '#e8a0a0' : undefined }}>{nxFmt(g.amount)} NX</strong>
                     </div>
                   ))}
                 </div>
@@ -2229,7 +2263,7 @@ export default function AdminPage({ onNavigate }: { onNavigate?: (page: PageId) 
                         <b>{g.toNick || g.toUsername}</b>
                         <div style={{ color: '#888', fontSize: 11 }}>{g.toUsername}</div>
                       </td>
-                      <td><strong>{nxFmt(g.amount)}</strong></td>
+                      <td><strong style={{ color: Number(g.amount) < 0 ? '#e8a0a0' : undefined }}>{nxFmt(g.amount)}</strong></td>
                       <td>{g.message || '—'}</td>
                     </tr>
                   ))}
