@@ -1,7 +1,12 @@
 import { useEffect, useState } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { api } from '@/lib/api';
-import { CheckCircle, XCircle, Clock, DollarSign, Coins, Loader, RotateCcw, MessageSquare, Send } from 'lucide-react';
+import type { PageId } from '@/components/Layout';
+import {
+  XCircle, Loader, RotateCcw, MessageSquare, Send,
+  LayoutDashboard, Users, Radio, Shield, Store, Landmark, FileBarChart, Swords, LogIn,
+  Link2, Megaphone, Map, Zap, ArrowLeft, Search, RefreshCw, Ticket, KeyRound, CreditCard
+} from 'lucide-react';
 
 interface PaymentCode {
   id: number;
@@ -13,10 +18,6 @@ interface PaymentCode {
   dollarAmount: number;
   status: 'pending' | 'approved' | 'rejected';
   createdAt: string;
-  approvedAt?: string;
-  approvedBy?: string;
-  rejectedAt?: string;
-  rejectionReason?: string;
 }
 
 interface PaymentRequest {
@@ -28,10 +29,6 @@ interface PaymentRequest {
   dollarAmount: number;
   status: 'pending' | 'approved' | 'rejected';
   createdAt: string;
-  approvedAt?: string;
-  approvedBy?: string;
-  rejectedReason?: string;
-  proofImageBase64?: string;
 }
 
 interface RefundRequest {
@@ -46,10 +43,6 @@ interface RefundRequest {
   nxToRefund: number;
   status: 'pending' | 'approved' | 'rejected';
   createdAt: string;
-  approvedAt?: string;
-  approvedBy?: string;
-  rejectedReason?: string;
-  rejectedAt?: string;
 }
 
 interface SupportTicket {
@@ -62,8 +55,6 @@ interface SupportTicket {
   priority: string;
   createdAt: string;
   updatedAt: string;
-  resolvedAt?: string;
-  resolvedBy?: string;
 }
 
 interface TicketMessage {
@@ -74,15 +65,32 @@ interface TicketMessage {
   createdAt: string;
 }
 
-interface Toast {
-  id: string;
-  type: 'success' | 'error' | 'info';
-  title: string;
-  message: string;
-  duration?: number;
-}
+type Section =
+  | 'overview' | 'players' | 'online' | 'clans' | 'shop' | 'economy' | 'reports'
+  | 'matches' | 'logins' | 'linked' | 'announcements' | 'maps' | 'boosts'
+  | 'codes' | 'payments' | 'refunds' | 'tickets';
 
-export default function AdminPage() {
+const NAV: { id: Section; label: string; icon: typeof LayoutDashboard; group: string }[] = [
+  { id: 'overview', label: 'Overview', icon: LayoutDashboard, group: 'CONTROL' },
+  { id: 'players', label: 'Players', icon: Users, group: 'CONTROL' },
+  { id: 'online', label: 'Online', icon: Radio, group: 'CONTROL' },
+  { id: 'clans', label: 'Clans', icon: Shield, group: 'CONTROL' },
+  { id: 'shop', label: 'Shop', icon: Store, group: 'CONTROL' },
+  { id: 'codes', label: 'Payment codes', icon: KeyRound, group: 'ECONOMY' },
+  { id: 'payments', label: 'Recargas', icon: CreditCard, group: 'ECONOMY' },
+  { id: 'refunds', label: 'Refunds', icon: RotateCcw, group: 'ECONOMY' },
+  { id: 'tickets', label: 'Tickets', icon: Ticket, group: 'ECONOMY' },
+  { id: 'economy', label: 'Economy', icon: Landmark, group: 'ECONOMY' },
+  { id: 'reports', label: 'Reports', icon: FileBarChart, group: 'ECONOMY' },
+  { id: 'matches', label: 'Matches', icon: Swords, group: 'WORLD' },
+  { id: 'logins', label: 'Logins', icon: LogIn, group: 'WORLD' },
+  { id: 'linked', label: 'Linked accounts', icon: Link2, group: 'WORLD' },
+  { id: 'announcements', label: 'Announcements', icon: Megaphone, group: 'WORLD' },
+  { id: 'maps', label: 'Maps', icon: Map, group: 'WORLD' },
+  { id: 'boosts', label: 'Boosts', icon: Zap, group: 'WORLD' },
+];
+
+export default function AdminPage({ onNavigate }: { onNavigate?: (page: PageId) => void }) {
   const { profile } = useAuth();
   const [paymentCodes, setPaymentCodes] = useState<PaymentCode[]>([]);
   const [payments, setPayments] = useState<PaymentRequest[]>([]);
@@ -101,88 +109,52 @@ export default function AdminPage() {
   const [sendingMessage, setSendingMessage] = useState(false);
   const [newMessage, setNewMessage] = useState('');
   const [updatingStatus, setUpdatingStatus] = useState<number | null>(null);
-  const [activeTab, setActiveTab] = useState<'codes' | 'payments' | 'refunds' | 'tickets'>('codes');
-  const [toasts, setToasts] = useState<Toast[]>([]);
+  const [section, setSection] = useState<Section>('overview');
+  const [find, setFind] = useState('');
+  const [overview, setOverview] = useState<any>(null);
+  const [players, setPlayers] = useState<any[]>([]);
+  const [clans, setClans] = useState<any[]>([]);
+  const [products, setProducts] = useState<any[]>([]);
+  const [modes, setModes] = useState<any[]>([]);
+  const [clock, setClock] = useState(new Date());
 
   useEffect(() => {
     if (!profile) return;
     loadData();
-    
-    // Deshabilitado: El intervalo está causando que se reseteen los datos
-    // const interval = setInterval(loadData, 10000);
-    // return () => clearInterval(interval);
   }, [profile]);
 
   useEffect(() => {
-    console.log('[ADMIN] paymentCodes actualizado:', paymentCodes);
-    console.log('[ADMIN] pendingCodes debería ser:', paymentCodes);
-  }, [paymentCodes]);
+    const t = setInterval(() => setClock(new Date()), 1000);
+    return () => clearInterval(t);
+  }, []);
 
   const loadData = async () => {
     try {
       setLoading(true);
-      console.log('[ADMIN] Iniciando carga de datos...');
-      console.log('[ADMIN] Instancia de API:', api);
-      console.log('[ADMIN] Tipo de api.getPendingPaymentCodes:', typeof api.getPendingPaymentCodes);
-      
-      if (!api.getPendingPaymentCodes) {
-        console.error('[ADMIN] ERROR CRÍTICO: getPendingPaymentCodes no existe en api');
-        console.error('[ADMIN] Métodos disponibles:', Object.getOwnPropertyNames(Object.getPrototypeOf(api)));
-        throw new Error('Método getPendingPaymentCodes no disponible');
-      }
-
-      console.log('[ADMIN] Llamando getPendingPaymentCodes...');
-      let codeData = [];
-      try {
-        codeData = await api.getPendingPaymentCodes(); 
-        console.log('[ADMIN] Respuesta de getPendingPaymentCodes:', codeData);
-      } catch (e) {
-        console.error('[ADMIN] Error en getPendingPaymentCodes:', e);
-        codeData = [];
-      }
-      
-      let paymentData = [];
-      try {
-        paymentData = await api.getPendingPayments();
-      } catch (e) {
-        console.error('[ADMIN] Error en getPendingPayments:', e);
-        paymentData = [];
-      }
-      
-      let refundData = [];
-      try {
-        refundData = await api.getPendingRefunds();
-      } catch (e) {
-        console.error('[ADMIN] Error en getPendingRefunds:', e);
-        refundData = [];
-      }
-      
-      let ticketData = [];
-      try {
-        ticketData = await api.getAllTickets();
-      } catch (e) {
-        console.error('[ADMIN] Error en getAllTickets:', e);
-        ticketData = [];
-      }
-
-      console.log('[ADMIN] Códigos recibidos:', codeData);
-      console.log('[ADMIN] Pagos recibidos:', paymentData);
-      console.log('[ADMIN] Reembolsos recibidos:', refundData);
-      console.log('[ADMIN] Tickets recibidos:', ticketData);
-      console.log('[ADMIN] Intentando setPaymentCodes con:', codeData);
+      const [codeData, paymentData, refundData, ticketData, ov, pl, cl, pr, gm] = await Promise.all([
+        api.getPendingPaymentCodes().catch(() => []),
+        api.getPendingPayments().catch(() => []),
+        api.getPendingRefunds().catch(() => []),
+        api.getAllTickets().catch(() => []),
+        api.getAdminOverview().catch(() => null),
+        api.getPlayers(1, 40).catch(() => ({ data: [] })),
+        api.getClans().catch(() => []),
+        api.getProducts().catch(() => []),
+        api.getTournaments().catch(() => []),
+      ]);
       setPaymentCodes(codeData || []);
-      console.log('[ADMIN] setPaymentCodes llamado');
-      
       setPayments(paymentData || []);
       setRefunds(refundData || []);
       setSupportTickets(ticketData || []);
-      console.log('[ADMIN] Todos los states actualizados');
+      setOverview(ov);
+      setPlayers(pl?.data || []);
+      setClans(Array.isArray(cl) ? cl : []);
+      setProducts(Array.isArray(pr) ? pr : []);
+      setModes(Array.isArray(gm) ? gm : []);
     } catch (error) {
-      console.error('[ADMIN] Error general loading data:', error);
+      console.error('[ADMIN] Error loading data:', error);
     } finally {
-      console.log('[ADMIN] En finally - poniendo loading en false');
       setLoading(false);
-      console.log('[ADMIN] setLoading(false) llamado');
     }
   };
 
@@ -207,7 +179,6 @@ export default function AdminPage() {
     try {
       const reason = prompt('¿Razón del rechazo?');
       if (reason === null) return;
-      
       setRejecting(paymentId);
       const result = await api.rejectPayment(paymentId, profile.username, reason);
       if (result.success) {
@@ -221,7 +192,6 @@ export default function AdminPage() {
     }
   };
 
-  // Códigos de pago
   const handleApproveCode = async (codeId: number) => {
     if (!profile?.username) return;
     try {
@@ -243,7 +213,6 @@ export default function AdminPage() {
     try {
       const reason = prompt('¿Razón del rechazo?');
       if (reason === null) return;
-      
       setRejectingCode(codeId);
       const result = await api.rejectPaymentCode(codeId, profile.username, reason);
       if (result.success) {
@@ -278,7 +247,6 @@ export default function AdminPage() {
     try {
       const reason = prompt('¿Razón del rechazo?');
       if (reason === null) return;
-      
       setRejectingRefund(refundId);
       const result = await api.rejectRefund(refundId, profile.username, reason);
       if (result.success) {
@@ -307,16 +275,9 @@ export default function AdminPage() {
 
   const handleSendTicketMessage = async () => {
     if (!newMessage.trim() || !selectedTicket || !profile?.username) return;
-
     try {
       setSendingMessage(true);
-      await api.sendTicketMessage(
-        selectedTicket.id,
-        'admin',
-        profile.username,
-        newMessage
-      );
-
+      await api.sendTicketMessage(selectedTicket.id, 'admin', profile.username, newMessage);
       setNewMessage('');
       await loadTicketDetail(selectedTicket.id);
     } catch (error: any) {
@@ -328,14 +289,10 @@ export default function AdminPage() {
 
   const handleUpdateTicketStatus = async (ticketId: number, newStatus: string) => {
     if (!profile?.username) return;
-
     try {
       setUpdatingStatus(ticketId);
       await api.updateTicketStatus(ticketId, newStatus, profile.username);
-      
-      if (selectedTicket?.id === ticketId) {
-        await loadTicketDetail(ticketId);
-      }
+      if (selectedTicket?.id === ticketId) await loadTicketDetail(ticketId);
       await loadData();
     } catch (error: any) {
       console.error('Error updating status:', error);
@@ -344,7 +301,6 @@ export default function AdminPage() {
     }
   };
 
-  // Solo villauribe12 puede ver esto
   if (profile?.username !== 'villauribe12') {
     return (
       <div className="flex h-96 items-center justify-center">
@@ -357,636 +313,392 @@ export default function AdminPage() {
     );
   }
 
+  const pendingCodes = paymentCodes;
   const pendingCount = payments.filter(p => p.status === 'pending').length;
   const totalNX = payments.filter(p => p.status === 'pending').reduce((sum, p) => sum + p.nxAmount, 0);
   const totalDollars = payments.filter(p => p.status === 'pending').reduce((sum, p) => sum + p.dollarAmount, 0);
-  
-  const pendingCodes = paymentCodes; // El endpoint ya devuelve solo pendientes
-  console.log('[ADMIN] En render - pendingCodes:', pendingCodes, 'length:', pendingCodes.length);
   const totalCodesNX = pendingCodes.reduce((sum, c) => sum + c.nxAmount, 0);
   const totalCodesDollars = pendingCodes.reduce((sum, c) => sum + c.dollarAmount, 0);
-  
   const pendingRefunds = refunds.filter(p => p.status === 'pending');
   const totalRefundNX = pendingRefunds.reduce((sum, p) => sum + p.nxPaid, 0);
   const totalRefundCommission = pendingRefunds.reduce((sum, p) => sum + p.nxCommission, 0);
+  const q = find.trim().toLowerCase();
+  const groups = [...new Set(NAV.map(n => n.group))];
+  const latest = overview?.latest || [];
+  const onlineList = overview?.onlineList || [];
+
+  const Empty = ({ text }: { text: string }) => <div className="admin-empty">{text}</div>;
 
   return (
-    <div className="space-y-6 pb-12">
-      {/* Header */}
-      <div>
-        <h1 className="text-3xl font-black">Panel de Administración</h1>
-        <p className="mt-1 text-slate-400">Gestiona solicitudes de recargas y reembolsos</p>
-      </div>
-
-      {/* Tabs */}
-      <div className="flex gap-2 border-b border-white/10">
-        <button
-          onClick={() => setActiveTab('codes')}
-          className={`px-4 py-3 font-semibold border-b-2 transition ${
-            activeTab === 'codes'
-              ? 'border-blue-400 text-blue-300'
-              : 'border-transparent text-slate-400 hover:text-slate-300'
-          }`}
-        >
-          🔐 Códigos de Pago ({paymentCodes.filter(c => c.status === 'pending').length})
+    <div className="admin-shell">
+      <aside className="admin-side">
+        <div className="admin-brand">
+          <img src="/caevo/ca.ico" alt="" />
+          <div>
+            <strong>COMBAT ARMS</strong>
+            <small>CONTROL ROOM</small>
+          </div>
+        </div>
+        <input className="admin-find" placeholder="Find..." value={find} onChange={(e) => setFind(e.target.value)} />
+        <nav className="admin-nav">
+          {groups.map(group => (
+            <div key={group}>
+              <p>{group}</p>
+              {NAV.filter(n => n.group === group && n.label.toLowerCase().includes(q)).map(item => {
+                const Icon = item.icon;
+                return (
+                  <button key={item.id} className={section === item.id ? 'admin-on' : ''} onClick={() => setSection(item.id)}>
+                    <Icon /> {item.label}
+                  </button>
+                );
+              })}
+            </div>
+          ))}
+        </nav>
+        <button className="admin-back" onClick={() => onNavigate?.('home')}>
+          <ArrowLeft className="mr-2 inline h-4 w-4" /> Back to website
         </button>
-        <button
-          onClick={() => setActiveTab('payments')}
-          className={`px-4 py-3 font-semibold border-b-2 transition ${
-            activeTab === 'payments'
-              ? 'border-cyan-400 text-cyan-300'
-              : 'border-transparent text-slate-400 hover:text-slate-300'
-          }`}
-        >
-          💳 Recargas ({payments.filter(p => p.status === 'pending').length})
-        </button>
-        <button
-          onClick={() => setActiveTab('refunds')}
-          className={`px-4 py-3 font-semibold border-b-2 transition ${
-            activeTab === 'refunds'
-              ? 'border-orange-400 text-orange-300'
-              : 'border-transparent text-slate-400 hover:text-slate-300'
-          }`}
-        >
-          ↩️ Reembolsos ({refunds.filter(p => p.status === 'pending').length})
-        </button>
-        <button
-          onClick={() => setActiveTab('tickets')}
-          className={`px-4 py-3 font-semibold border-b-2 transition ${
-            activeTab === 'tickets'
-              ? 'border-purple-400 text-purple-300'
-              : 'border-transparent text-slate-400 hover:text-slate-300'
-          }`}
-        >
-          🎫 Tickets de Soporte ({supportTickets.filter(t => t.status === 'open' || t.status === 'in-progress').length})
-        </button>
-      </div>
+      </aside>
 
-      {/* CÓDIGOS DE PAGO TAB */}
-      {activeTab === 'codes' && (
-        <>
-          {/* Stats */}
-          <div className="grid gap-4 lg:grid-cols-3">
-            <div className="rounded-2xl border border-white/5 bg-gradient-to-br from-blue-900/30 via-[#0d1320] to-cyan-900/20 p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-slate-400 mb-1">CÓDIGOS PENDIENTES</p>
-                  <p className="text-4xl font-black text-blue-400">{pendingCodes.length}</p>
-                </div>
-                <Clock className="h-12 w-12 text-blue-400 opacity-20" />
-              </div>
-            </div>
-
-            <div className="rounded-2xl border border-white/5 bg-gradient-to-br from-purple-900/30 via-[#0d1320] to-pink-900/20 p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-slate-400 mb-1">NX TOTAL PENDIENTE</p>
-                  <p className="text-4xl font-black text-purple-400">{totalCodesNX.toLocaleString()}</p>
-                </div>
-                <Coins className="h-12 w-12 text-purple-400 opacity-20" />
-              </div>
-            </div>
-
-            <div className="rounded-2xl border border-white/5 bg-gradient-to-br from-emerald-900/30 via-[#0d1320] to-green-900/20 p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-slate-400 mb-1">DINERO PENDIENTE</p>
-                  <p className="text-4xl font-black text-emerald-400">${totalCodesDollars.toFixed(2)}</p>
-                </div>
-                <DollarSign className="h-12 w-12 text-emerald-400 opacity-20" />
-              </div>
-            </div>
+      <div className="admin-main">
+        <div className="admin-top">
+          <span>CONTROL ROOM / {section.toUpperCase()}</span>
+          <div className="admin-top-actions">
+            <span className="admin-chip">SQL READ ONLY</span>
+            <button className="admin-chip" onClick={loadData}><RefreshCw className="mr-1 inline h-3 w-3" /> Refresh</button>
+            <Search className="h-4 w-4" />
           </div>
+        </div>
 
-          {/* Códigos Table */}
-          <div className="rounded-2xl border border-white/5 bg-[#0d1320] p-6">
-            <h2 className="mb-6 text-lg font-bold">Códigos de Pago Pendientes</h2>
-            {console.log('[ADMIN] Estado render: loading=', loading, 'pendingCodes.length=', pendingCodes.length)}
-
-            {loading ? (
-              <div className="flex justify-center py-12">
-                <Loader className="h-8 w-8 animate-spin text-blue-400" />
-              </div>
-            ) : pendingCodes.length === 0 ? (
-              <div className="flex h-32 items-center justify-center text-slate-500">
-                <p>No hay códigos de pago pendientes</p>
-              </div>
-            ) : (
-              <div className="space-y-3">
-                {pendingCodes.map((code) => (
-                  <div
-                    key={code.id}
-                    className="flex items-center justify-between rounded-xl border border-white/10 bg-white/5 p-4 hover:bg-white/10 transition"
-                  >
-                    <div className="min-w-0 flex-1">
-                      <div className="flex items-center gap-3">
-                        <div>
-                          <p className="font-semibold text-white">{code.NickName}</p>
-                          <p className="text-xs text-slate-400">{code.username}</p>
-                        </div>
-                      </div>
-                      <div className="mt-2 flex gap-4 text-sm">
-                        <div>
-                          <p className="text-slate-400">Código: <span className="text-blue-400 font-mono font-semibold">{code.paymentCode}</span></p>
-                        </div>
-                        <div>
-                          <p className="text-slate-400">NX: <span className="text-purple-400 font-semibold">{code.nxAmount.toLocaleString()}</span></p>
-                        </div>
-                        <div>
-                          <p className="text-slate-400">Precio: <span className="text-emerald-400 font-semibold">${code.dollarAmount.toFixed(2)}</span></p>
-                        </div>
-                        <div>
-                          <p className="text-slate-400">Fecha: <span className="text-slate-300 font-semibold">{new Date(code.createdAt).toLocaleString('es')}</span></p>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="flex gap-2 ml-4">
-                      <button
-                        onClick={() => handleApproveCode(code.id)}
-                        disabled={approvingCode === code.id}
-                        className="flex items-center gap-2 px-4 py-2 rounded-lg bg-emerald-500/20 text-emerald-400 hover:bg-emerald-500/30 transition disabled:opacity-50 font-semibold whitespace-nowrap"
-                      >
-                        {approvingCode === code.id ? (
-                          <>
-                            <Loader className="h-4 w-4 animate-spin" />
-                            Aprobando...
-                          </>
-                        ) : (
-                          <>
-                            <CheckCircle className="h-4 w-4" />
-                            Aprobar
-                          </>
-                        )}
-                      </button>
-
-                      <button
-                        onClick={() => handleRejectCode(code.id)}
-                        disabled={rejectingCode === code.id}
-                        className="flex items-center gap-2 px-4 py-2 rounded-lg bg-red-500/20 text-red-400 hover:bg-red-500/30 transition disabled:opacity-50 font-semibold whitespace-nowrap"
-                      >
-                        {rejectingCode === code.id ? (
-                          <>
-                            <Loader className="h-4 w-4 animate-spin" />
-                            Rechazando...
-                          </>
-                        ) : (
-                          <>
-                            <XCircle className="h-4 w-4" />
-                            Rechazar
-                          </>
-                        )}
-                      </button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        </>
-      )}
-
-      {/* PAYMENTS TAB */}
-      {activeTab === 'payments' && (
-        <>
-          {/* Stats */}
-          <div className="grid gap-4 lg:grid-cols-3">
-            <div className="rounded-2xl border border-white/5 bg-gradient-to-br from-orange-900/30 via-[#0d1320] to-red-900/20 p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-slate-400 mb-1">SOLICITUDES PENDIENTES</p>
-                  <p className="text-4xl font-black text-orange-400">{pendingCount}</p>
+        {section === 'overview' && (
+          <>
+            <div className="admin-hero">
+              <img src="/caevo/hero.jpg" alt="" />
+              <div className="admin-clock">{clock.toLocaleString('en-GB')}</div>
+              <div className="admin-hero-copy">
+                <p className="eyebrow">SERVER CONTROL</p>
+                <h1>COMMAND<br /><span>CENTER</span></h1>
+                <p>Live Combat Arms operations. New views only read the database — they never change it.</p>
+                <div className="admin-hero-btns">
+                  <button className="primary" onClick={() => setSection('players')}>Manage players</button>
+                  <button onClick={() => setSection('codes')}>Payment codes</button>
                 </div>
-                <Clock className="h-12 w-12 text-orange-400 opacity-20" />
               </div>
             </div>
-
-            <div className="rounded-2xl border border-white/5 bg-gradient-to-br from-purple-900/30 via-[#0d1320] to-pink-900/20 p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-slate-400 mb-1">NX TOTAL PENDIENTE</p>
-                  <p className="text-4xl font-black text-purple-400">{totalNX.toLocaleString()}</p>
-                </div>
-                <Coins className="h-12 w-12 text-purple-400 opacity-20" />
-              </div>
+            <div className="admin-metrics">
+              <article><p>ONLINE NOW</p><strong className="admin-green">{overview?.onlineNow ?? 0}</strong><small>Status = 1</small></article>
+              <article><p>MATCH RESULTS</p><strong>{overview?.matchesRecorded ?? 0}</strong><small>Wins + losses recorded</small></article>
+              <article><p>NEW TODAY</p><strong>{overview?.newAccountsToday ?? 0}</strong><small>CreateDate today</small></article>
+              <article><p>NEW 7 DAYS</p><strong>{overview?.newAccounts7 ?? 0}</strong><small>Last week</small></article>
+              <article><p>CHARACTERS</p><strong>{overview?.characters ?? 0}</strong><small>CBT_User</small></article>
+              <article><p>CLANS</p><strong>{overview?.clans ?? 0}</strong><small>GuildMaster</small></article>
             </div>
-
-            <div className="rounded-2xl border border-white/5 bg-gradient-to-br from-emerald-900/30 via-[#0d1320] to-green-900/20 p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-slate-400 mb-1">DINERO PENDIENTE</p>
-                  <p className="text-4xl font-black text-emerald-400">${totalDollars.toFixed(2)}</p>
-                </div>
-                <DollarSign className="h-12 w-12 text-emerald-400 opacity-20" />
-              </div>
-            </div>
-          </div>
-
-          {/* Payments Table */}
-          <div className="rounded-2xl border border-white/5 bg-[#0d1320] p-6">
-            <h2 className="mb-6 text-lg font-bold">Solicitudes Pendientes</h2>
-
-            {loading ? (
-              <div className="flex justify-center py-12">
-                <Loader className="h-8 w-8 animate-spin text-cyan-400" />
-              </div>
-            ) : payments.filter(p => p.status === 'pending').length === 0 ? (
-              <div className="flex h-32 items-center justify-center text-slate-500">
-                <p>No hay solicitudes pendientes</p>
-              </div>
-            ) : (
-              <div className="space-y-3">
-                {payments.filter(p => p.status === 'pending').map((payment) => (
-                  <div
-                    key={payment.id}
-                    className="flex items-center justify-between rounded-xl border border-white/10 bg-white/5 p-4 hover:bg-white/10 transition"
-                  >
-                    <div className="min-w-0 flex-1">
-                      <div className="flex items-center gap-3">
-                        <div>
-                          <p className="font-semibold text-white">{payment.NickName}</p>
-                          <p className="text-xs text-slate-400">{payment.username}</p>
-                        </div>
-                      </div>
-                      <div className="mt-2 flex gap-4 text-sm">
-                        <div>
-                          <p className="text-slate-400">NX: <span className="text-purple-400 font-semibold">{payment.nxAmount.toLocaleString()}</span></p>
-                        </div>
-                        <div>
-                          <p className="text-slate-400">Precio: <span className="text-emerald-400 font-semibold">${payment.dollarAmount.toFixed(2)}</span></p>
-                        </div>
-                        <div>
-                          <p className="text-slate-400">Fecha: <span className="text-slate-300 font-semibold">{new Date(payment.createdAt).toLocaleString('es')}</span></p>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="flex gap-2 ml-4">
-                      <button
-                        onClick={() => handleApprove(payment.id)}
-                        disabled={approving === payment.id}
-                        className="flex items-center gap-2 px-4 py-2 rounded-lg bg-emerald-500/20 text-emerald-400 hover:bg-emerald-500/30 transition disabled:opacity-50 font-semibold whitespace-nowrap"
-                      >
-                        {approving === payment.id ? (
-                          <>
-                            <Loader className="h-4 w-4 animate-spin" />
-                            Aprobando...
-                          </>
-                        ) : (
-                          <>
-                            <CheckCircle className="h-4 w-4" />
-                            Aprobar
-                          </>
-                        )}
-                      </button>
-
-                      <button
-                        onClick={() => handleReject(payment.id)}
-                        disabled={rejecting === payment.id}
-                        className="flex items-center gap-2 px-4 py-2 rounded-lg bg-red-500/20 text-red-400 hover:bg-red-500/30 transition disabled:opacity-50 font-semibold whitespace-nowrap"
-                      >
-                        {rejecting === payment.id ? (
-                          <>
-                            <Loader className="h-4 w-4 animate-spin" />
-                            Rechazando...
-                          </>
-                        ) : (
-                          <>
-                            <XCircle className="h-4 w-4" />
-                            Rechazar
-                          </>
-                        )}
-                      </button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        </>
-      )}
-
-      {/* REFUNDS TAB */}
-      {activeTab === 'refunds' && (
-        <>
-          {/* Stats */}
-          <div className="grid gap-4 lg:grid-cols-3">
-            <div className="rounded-2xl border border-white/5 bg-gradient-to-br from-orange-900/30 via-[#0d1320] to-red-900/20 p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-slate-400 mb-1">REEMBOLSOS PENDIENTES</p>
-                  <p className="text-4xl font-black text-orange-400">{pendingRefunds.length}</p>
-                </div>
-                <RotateCcw className="h-12 w-12 text-orange-400 opacity-20" />
-              </div>
-            </div>
-
-            <div className="rounded-2xl border border-white/5 bg-gradient-to-br from-purple-900/30 via-[#0d1320] to-pink-900/20 p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-slate-400 mb-1">NX A DEVOLVER</p>
-                  <p className="text-4xl font-black text-purple-400">{totalRefundNX.toLocaleString()}</p>
-                </div>
-                <Coins className="h-12 w-12 text-purple-400 opacity-20" />
-              </div>
-            </div>
-
-            <div className="rounded-2xl border border-white/5 bg-gradient-to-br from-cyan-900/30 via-[#0d1320] to-blue-900/20 p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-slate-400 mb-1">COMISIÓN (10%)</p>
-                  <p className="text-4xl font-black text-cyan-400">{totalRefundCommission.toLocaleString()}</p>
-                </div>
-                <DollarSign className="h-12 w-12 text-cyan-400 opacity-20" />
-              </div>
-            </div>
-          </div>
-
-          {/* Refunds Table */}
-          <div className="rounded-2xl border border-white/5 bg-[#0d1320] p-6">
-            <h2 className="mb-6 text-lg font-bold">Solicitudes de Reembolso Pendientes</h2>
-
-            {loading ? (
-              <div className="flex justify-center py-12">
-                <Loader className="h-8 w-8 animate-spin text-cyan-400" />
-              </div>
-            ) : pendingRefunds.length === 0 ? (
-              <div className="flex h-32 items-center justify-center text-slate-500">
-                <p>No hay solicitudes de reembolso pendientes</p>
-              </div>
-            ) : (
-              <div className="space-y-3">
-                {pendingRefunds.map((refund) => (
-                  <div
-                    key={refund.id}
-                    className="flex items-center justify-between rounded-xl border border-white/10 bg-white/5 p-4 hover:bg-white/10 transition"
-                  >
-                    <div className="min-w-0 flex-1">
-                      <div className="flex items-center gap-3">
-                        <div>
-                          <p className="font-semibold text-white">{refund.NickName}</p>
-                          <p className="text-xs text-slate-400">{refund.username}</p>
-                        </div>
-                      </div>
-                      <div className="mt-2 flex gap-4 text-sm flex-wrap">
-                        <div>
-                          <p className="text-slate-400">Producto: <span className="text-white font-semibold">{refund.productName}</span></p>
-                        </div>
-                        <div>
-                          <p className="text-slate-400">NX Pagado: <span className="text-orange-400 font-semibold">{refund.nxPaid}</span></p>
-                        </div>
-                        <div>
-                          <p className="text-slate-400">Comisión (10%): <span className="text-red-400 font-semibold">-{refund.nxCommission}</span></p>
-                        </div>
-                        <div>
-                          <p className="text-slate-400">A Devolver: <span className="text-emerald-400 font-semibold">{refund.nxToRefund}</span></p>
-                        </div>
-                        <div>
-                          <p className="text-slate-400">Fecha: <span className="text-slate-300 font-semibold">{new Date(refund.createdAt).toLocaleString('es')}</span></p>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="flex gap-2 ml-4">
-                      <button
-                        onClick={() => handleApproveRefund(refund.id)}
-                        disabled={approvingRefund === refund.id}
-                        className="flex items-center gap-2 px-4 py-2 rounded-lg bg-emerald-500/20 text-emerald-400 hover:bg-emerald-500/30 transition disabled:opacity-50 font-semibold whitespace-nowrap"
-                      >
-                        {approvingRefund === refund.id ? (
-                          <>
-                            <Loader className="h-4 w-4 animate-spin" />
-                            Aprobando...
-                          </>
-                        ) : (
-                          <>
-                            <CheckCircle className="h-4 w-4" />
-                            Aprobar
-                          </>
-                        )}
-                      </button>
-
-                      <button
-                        onClick={() => handleRejectRefund(refund.id)}
-                        disabled={rejectingRefund === refund.id}
-                        className="flex items-center gap-2 px-4 py-2 rounded-lg bg-red-500/20 text-red-400 hover:bg-red-500/30 transition disabled:opacity-50 font-semibold whitespace-nowrap"
-                      >
-                        {rejectingRefund === refund.id ? (
-                          <>
-                            <Loader className="h-4 w-4 animate-spin" />
-                            Rechazando...
-                          </>
-                        ) : (
-                          <>
-                            <XCircle className="h-4 w-4" />
-                            Rechazar
-                          </>
-                        )}
-                      </button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        </>
-      )}
-
-      {/* TICKETS TAB */}
-      {activeTab === 'tickets' && (
-        <>
-          {/* Stats */}
-          <div className="grid gap-4 lg:grid-cols-3">
-            <div className="rounded-2xl border border-white/5 bg-gradient-to-br from-purple-900/30 via-[#0d1320] to-pink-900/20 p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-slate-400 mb-1">TICKETS ABIERTOS</p>
-                  <p className="text-4xl font-black text-purple-400">{supportTickets.filter(t => t.status === 'open').length}</p>
-                </div>
-                <MessageSquare className="h-12 w-12 text-purple-400 opacity-20" />
-              </div>
-            </div>
-
-            <div className="rounded-2xl border border-white/5 bg-gradient-to-br from-orange-900/30 via-[#0d1320] to-red-900/20 p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-slate-400 mb-1">EN PROGRESO</p>
-                  <p className="text-4xl font-black text-orange-400">{supportTickets.filter(t => t.status === 'in-progress').length}</p>
-                </div>
-                <Clock className="h-12 w-12 text-orange-400 opacity-20" />
-              </div>
-            </div>
-
-            <div className="rounded-2xl border border-white/5 bg-gradient-to-br from-emerald-900/30 via-[#0d1320] to-green-900/20 p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-slate-400 mb-1">TOTAL TICKETS</p>
-                  <p className="text-4xl font-black text-emerald-400">{supportTickets.length}</p>
-                </div>
-                <CheckCircle className="h-12 w-12 text-emerald-400 opacity-20" />
-              </div>
-            </div>
-          </div>
-
-          {/* Tickets */}
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            {/* Lista de tickets */}
-            <div className="rounded-2xl border border-white/5 bg-[#0d1320] p-6">
-              <h2 className="mb-6 text-lg font-bold">Tickets Pendientes</h2>
-
-              {loading ? (
-                <div className="flex justify-center py-8">
-                  <Loader className="h-8 w-8 animate-spin text-cyan-400" />
-                </div>
-              ) : supportTickets.filter(t => t.status === 'open' || t.status === 'in-progress').length === 0 ? (
-                <div className="flex h-32 items-center justify-center text-slate-500">
-                  <p className="text-center">No hay tickets pendientes</p>
-                </div>
-              ) : (
-                <div className="space-y-2 max-h-96 overflow-y-auto">
-                  {supportTickets
-                    .filter(t => t.status === 'open' || t.status === 'in-progress')
-                    .sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime())
-                    .map((ticket) => (
-                      <button
-                        key={ticket.id}
-                        onClick={() => loadTicketDetail(ticket.id)}
-                        className={`w-full text-left rounded-xl border p-3 transition ${
-                          selectedTicket?.id === ticket.id
-                            ? 'border-purple-500 bg-purple-500/20'
-                            : 'border-white/10 bg-white/5 hover:bg-white/10'
-                        }`}
-                      >
-                        <p className="text-sm font-semibold text-white truncate">{ticket.subject}</p>
-                        <p className="text-xs text-slate-400 mt-1">#{ticket.ticketNumber}</p>
-                        <div className="mt-2 flex items-center justify-between">
-                          <span className={`text-xs font-semibold px-2 py-0.5 rounded ${
-                            ticket.status === 'open'
-                              ? 'bg-blue-500/20 text-blue-300'
-                              : 'bg-amber-500/20 text-amber-300'
-                          }`}>
-                            {ticket.status === 'open' ? 'Abierto' : 'En progreso'}
-                          </span>
-                          <span className="text-xs text-slate-400">
-                            {new Date(ticket.updatedAt).toLocaleDateString('es')}
-                          </span>
-                        </div>
-                      </button>
+            <div className="admin-split">
+              <div className="admin-panel">
+                <h2><Users /> LATEST REGISTRATIONS</h2>
+                <p className="sub">Newest rows from CBT_User. Read only.</p>
+                <table className="admin-table">
+                  <thead><tr><th>NICK</th><th>ACCOUNT</th><th>CREATED</th><th>STATUS</th></tr></thead>
+                  <tbody>
+                    {latest.length === 0 ? (
+                      <tr><td colSpan={4}>No rows</td></tr>
+                    ) : latest.map((u: any) => (
+                      <tr key={u.id}>
+                        <td>{u.NickName || '—'}</td>
+                        <td>{u.username}</td>
+                        <td>{u.CreateDate ? new Date(u.CreateDate).toLocaleString('es') : '—'}</td>
+                        <td><span className="admin-active">{u.Status === 1 ? 'ONLINE' : 'OFFLINE'}</span></td>
+                      </tr>
                     ))}
+                  </tbody>
+                </table>
+              </div>
+              <div className="admin-panel admin-quick">
+                <h2>QUICK ACCESS</h2>
+                <p className="sub">Jump to working panels</p>
+                <button onClick={() => setSection('codes')}><div><strong>Payment codes</strong><small>{pendingCodes.length} pending</small></div><span>→</span></button>
+                <button onClick={() => setSection('payments')}><div><strong>Recargas</strong><small>{pendingCount} pending</small></div><span>→</span></button>
+                <button onClick={() => setSection('refunds')}><div><strong>Refunds</strong><small>{pendingRefunds.length} pending</small></div><span>→</span></button>
+                <button onClick={() => setSection('tickets')}><div><strong>Tickets</strong><small>{supportTickets.filter(t => t.status === 'open' || t.status === 'in-progress').length} open</small></div><span>→</span></button>
+              </div>
+            </div>
+          </>
+        )}
+
+        {section === 'players' && (
+          <div className="admin-panel">
+            <div className="admin-toolbar"><h1>PLAYERS</h1></div>
+            <p className="sub">Existing player list — SELECT only.</p>
+            {loading ? <Empty text="Loading..." /> : players.length === 0 ? <Empty text="No players returned" /> : (
+              <table className="admin-table">
+                <thead><tr><th>NICK</th><th>ACCOUNT</th><th>KILLS</th><th>WINS</th><th>EXP</th></tr></thead>
+                <tbody>
+                  {players.map((p: any) => (
+                    <tr key={p.id || p.username}>
+                      <td>{p.NickName}</td>
+                      <td>{p.username}</td>
+                      <td>{p.kills ?? p.KillCnt ?? 0}</td>
+                      <td>{p.wins ?? p.WinCnt ?? 0}</td>
+                      <td>{p.userExp ?? p.Exp ?? 0}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
+          </div>
+        )}
+
+        {section === 'online' && (
+          <div className="admin-panel">
+            <div className="admin-toolbar"><h1>ONLINE</h1><span className="admin-chip">{overview?.onlineNow ?? 0} now</span></div>
+            {onlineList.length === 0 ? <Empty text="Nobody online (Status = 1) or column unavailable." /> : (
+              <table className="admin-table">
+                <thead><tr><th>NICK</th><th>ACCOUNT</th><th>KILLS</th></tr></thead>
+                <tbody>
+                  {onlineList.map((u: any) => (
+                    <tr key={u.id}><td>{u.NickName}</td><td>{u.username}</td><td>{u.kills}</td></tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
+          </div>
+        )}
+
+        {section === 'clans' && (
+          <div className="admin-panel">
+            <div className="admin-toolbar"><h1>CLANS</h1></div>
+            {clans.length === 0 ? <Empty text="No clans returned from GuildMaster." /> : (
+              <table className="admin-table">
+                <thead><tr><th>CLAN</th><th>ID</th></tr></thead>
+                <tbody>
+                  {clans.map((c: any, i: number) => (
+                    <tr key={c.GuildID || c.id || i}>
+                      <td>{c.GuildName || c.name || JSON.stringify(c).slice(0, 80)}</td>
+                      <td>{c.GuildID || c.id || '—'}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
+          </div>
+        )}
+
+        {section === 'shop' && (
+          <div className="admin-panel">
+            <div className="admin-toolbar"><h1>SHOP</h1></div>
+            {products.length === 0 ? <Empty text="No store products returned." /> : (
+              <table className="admin-table">
+                <thead><tr><th>ITEM</th><th>NX</th><th>CATEGORY</th></tr></thead>
+                <tbody>
+                  {products.map((p: any, i: number) => (
+                    <tr key={p.id || i}>
+                      <td>{p.name || p.productName || p.Name}</td>
+                      <td>{p.price ?? p.nx ?? p.NX ?? '—'}</td>
+                      <td>{p.category || p.Category || '—'}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
+          </div>
+        )}
+
+        {section === 'economy' && (
+          <div>
+            <div className="admin-stats">
+              <article><p>CODES</p><strong>{pendingCodes.length}</strong></article>
+              <article><p>RECARGAS</p><strong>{pendingCount}</strong></article>
+              <article><p>REFUNDS</p><strong>{pendingRefunds.length}</strong></article>
+            </div>
+            <div className="admin-quick">
+              <button onClick={() => setSection('codes')}><div><strong>Open payment codes</strong><small>Approve / reject existing requests</small></div><span>→</span></button>
+              <button onClick={() => setSection('payments')}><div><strong>Open recargas</strong><small>Existing payment queue</small></div><span>→</span></button>
+            </div>
+          </div>
+        )}
+
+        {section === 'reports' && (
+          <div className="admin-quick">
+            <button onClick={() => setSection('refunds')}><div><strong>Refund queue</strong><small>{pendingRefunds.length} pending</small></div><span>→</span></button>
+            <button onClick={() => setSection('tickets')}><div><strong>Support tickets</strong><small>{supportTickets.length} total</small></div><span>→</span></button>
+          </div>
+        )}
+
+        {section === 'matches' && (
+          <div className="admin-panel">
+            <div className="admin-toolbar"><h1>MATCHES</h1></div>
+            <p className="sub">Recorded results: {overview?.matchesRecorded ?? 0}. Modes from CBT_GameMode. No match writes.</p>
+            {modes.length === 0 ? <Empty text="No game modes returned." /> : (
+              <table className="admin-table">
+                <thead><tr><th>MODE</th></tr></thead>
+                <tbody>
+                  {modes.map((m: any, i: number) => (
+                    <tr key={i}><td>{m.GameModeName || m.Name || m.name || JSON.stringify(m).slice(0, 120)}</td></tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
+          </div>
+        )}
+
+        {section === 'logins' && (
+          <div className="admin-panel">
+            <div className="admin-toolbar"><h1>LOGINS</h1></div>
+            <p className="sub">There is no login-history table in use. Showing account CreateDate instead — read only.</p>
+            {latest.length === 0 ? <Empty text="No registration rows." /> : (
+              <table className="admin-table">
+                <thead><tr><th>ACCOUNT</th><th>CREATED</th></tr></thead>
+                <tbody>
+                  {latest.map((u: any) => (
+                    <tr key={u.id}><td>{u.username}</td><td>{u.CreateDate ? new Date(u.CreateDate).toLocaleString('es') : '—'}</td></tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
+          </div>
+        )}
+
+        {section === 'linked' && <Empty text="No linked-account table is connected. SQL was not modified to add one." />}
+        {section === 'announcements' && <Empty text="No announcements table is connected. SQL was not modified to add one." />}
+        {section === 'boosts' && <Empty text="No boosts table is connected. SQL was not modified to add one." />}
+
+        {section === 'maps' && (
+          <div className="admin-panel">
+            <div className="admin-toolbar"><h1>MAPS / MODES</h1></div>
+            {modes.length === 0 ? <Empty text="No maps/modes returned from CBT_GameMode." /> : (
+              <table className="admin-table">
+                <thead><tr><th>ENTRY</th></tr></thead>
+                <tbody>
+                  {modes.map((m: any, i: number) => (
+                    <tr key={i}><td>{JSON.stringify(m)}</td></tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
+          </div>
+        )}
+
+        {section === 'codes' && (
+          <>
+            <div className="admin-stats">
+              <article><p>PENDING CODES</p><strong>{pendingCodes.length}</strong></article>
+              <article><p>NX PENDING</p><strong>{totalCodesNX.toLocaleString()}</strong></article>
+              <article><p>MONEY</p><strong>${totalCodesDollars.toFixed(2)}</strong></article>
+            </div>
+            {loading ? <Empty text="Loading..." /> : pendingCodes.length === 0 ? <Empty text="No hay códigos de pago pendientes" /> : pendingCodes.map(code => (
+              <div className="admin-row" key={code.id}>
+                <div>
+                  <b>{code.NickName}</b>
+                  <span>{code.username} · {code.paymentCode} · {code.nxAmount.toLocaleString()} NX · ${code.dollarAmount.toFixed(2)}</span>
                 </div>
+                <div className="admin-actions">
+                  <button className="admin-ok" disabled={approvingCode === code.id} onClick={() => handleApproveCode(code.id)}>
+                    {approvingCode === code.id ? '...' : 'Aprobar'}
+                  </button>
+                  <button className="admin-no" disabled={rejectingCode === code.id} onClick={() => handleRejectCode(code.id)}>
+                    {rejectingCode === code.id ? '...' : 'Rechazar'}
+                  </button>
+                </div>
+              </div>
+            ))}
+          </>
+        )}
+
+        {section === 'payments' && (
+          <>
+            <div className="admin-stats">
+              <article><p>PENDING</p><strong>{pendingCount}</strong></article>
+              <article><p>NX</p><strong>{totalNX.toLocaleString()}</strong></article>
+              <article><p>MONEY</p><strong>${totalDollars.toFixed(2)}</strong></article>
+            </div>
+            {loading ? <Empty text="Loading..." /> : payments.filter(p => p.status === 'pending').length === 0 ? <Empty text="No hay solicitudes pendientes" /> : payments.filter(p => p.status === 'pending').map(payment => (
+              <div className="admin-row" key={payment.id}>
+                <div>
+                  <b>{payment.NickName}</b>
+                  <span>{payment.username} · {payment.nxAmount.toLocaleString()} NX · ${payment.dollarAmount.toFixed(2)}</span>
+                </div>
+                <div className="admin-actions">
+                  <button className="admin-ok" disabled={approving === payment.id} onClick={() => handleApprove(payment.id)}>Aprobar</button>
+                  <button className="admin-no" disabled={rejecting === payment.id} onClick={() => handleReject(payment.id)}>Rechazar</button>
+                </div>
+              </div>
+            ))}
+          </>
+        )}
+
+        {section === 'refunds' && (
+          <>
+            <div className="admin-stats">
+              <article><p>REFUNDS</p><strong>{pendingRefunds.length}</strong></article>
+              <article><p>NX TO RETURN</p><strong>{totalRefundNX.toLocaleString()}</strong></article>
+              <article><p>COMMISSION</p><strong>{totalRefundCommission.toLocaleString()}</strong></article>
+            </div>
+            {loading ? <Empty text="Loading..." /> : pendingRefunds.length === 0 ? <Empty text="No hay solicitudes de reembolso pendientes" /> : pendingRefunds.map(refund => (
+              <div className="admin-row" key={refund.id}>
+                <div>
+                  <b>{refund.NickName}</b>
+                  <span>{refund.productName} · pagar {refund.nxPaid} · devolver {refund.nxToRefund}</span>
+                </div>
+                <div className="admin-actions">
+                  <button className="admin-ok" disabled={approvingRefund === refund.id} onClick={() => handleApproveRefund(refund.id)}>Aprobar</button>
+                  <button className="admin-no" disabled={rejectingRefund === refund.id} onClick={() => handleRejectRefund(refund.id)}>Rechazar</button>
+                </div>
+              </div>
+            ))}
+          </>
+        )}
+
+        {section === 'tickets' && (
+          <div className="admin-split">
+            <div className="admin-panel">
+              <h2><MessageSquare /> TICKETS</h2>
+              {supportTickets.filter(t => t.status === 'open' || t.status === 'in-progress').length === 0 ? <Empty text="No hay tickets pendientes" /> : (
+                supportTickets.filter(t => t.status === 'open' || t.status === 'in-progress').map(ticket => (
+                  <button key={ticket.id} className="admin-row" onClick={() => loadTicketDetail(ticket.id)}>
+                    <div>
+                      <b>{ticket.subject}</b>
+                      <span>#{ticket.ticketNumber} · {ticket.status}</span>
+                    </div>
+                  </button>
+                ))
               )}
             </div>
-
-            {/* Detalle del ticket */}
-            {selectedTicket ? (
-              <div className="lg:col-span-2 space-y-6">
-                {/* Info del ticket */}
-                <div className="rounded-2xl border border-white/5 bg-[#0d1320] p-6">
-                  <div className="flex items-start justify-between mb-4">
-                    <div>
-                      <h2 className="text-2xl font-black text-white">{selectedTicket.subject}</h2>
-                      <p className="text-xs text-slate-400 mt-1">#{selectedTicket.ticketNumber}</p>
-                    </div>
-                  </div>
-
-                  <div className="bg-white/5 rounded-lg p-4 mb-4">
-                    <p className="text-sm text-slate-300">{selectedTicket.username} ({selectedTicket.NickName})</p>
-                    <p className="text-sm text-slate-400 mt-2">
-                      Creado: {new Date(selectedTicket.createdAt).toLocaleDateString('es')}
-                    </p>
-                  </div>
-
-                  {/* Estado */}
-                  <div className="mb-4">
-                    <p className="text-sm font-semibold text-slate-400 mb-2">Estado</p>
-                    <select
-                      value={selectedTicket.status}
-                      onChange={(e) => handleUpdateTicketStatus(selectedTicket.id, e.target.value)}
-                      disabled={updatingStatus === selectedTicket.id}
-                      className="w-full rounded-lg bg-white/10 border border-white/20 px-4 py-2 text-white focus:outline-none focus:border-purple-500 disabled:opacity-50"
-                    >
-                      <option value="open">Abierto</option>
-                      <option value="in-progress">En progreso</option>
-                      <option value="resolved">Resuelto</option>
-                      <option value="closed">Cerrado</option>
-                    </select>
-                  </div>
-                </div>
-
-                {/* Mensajes */}
-                <div className="rounded-2xl border border-white/5 bg-[#0d1320] p-6">
-                  <h3 className="mb-4 text-lg font-bold">Conversación</h3>
-
-                  {loadingTicket ? (
-                    <div className="flex justify-center py-8">
-                      <Loader className="h-8 w-8 animate-spin text-purple-400" />
-                    </div>
-                  ) : (
-                    <>
-                      <div className="space-y-3 max-h-64 overflow-y-auto mb-4 p-4 rounded-lg bg-white/5">
-                        {ticketMessages.length === 0 ? (
-                          <p className="text-center text-slate-500 py-8">No hay mensajes aún</p>
-                        ) : (
-                          ticketMessages.map((msg) => (
-                            <div
-                              key={msg.id}
-                              className={`flex ${msg.senderType === 'admin' ? 'justify-end' : 'justify-start'}`}
-                            >
-                              <div
-                                className={`max-w-xs rounded-lg p-3 ${
-                                  msg.senderType === 'admin'
-                                    ? 'bg-purple-500/20 text-purple-300'
-                                    : 'bg-slate-500/20 text-slate-300'
-                                }`}
-                              >
-                                <p className="text-xs font-semibold mb-1">{msg.senderUsername} {msg.senderType === 'admin' ? '(Admin)' : ''}</p>
-                                <p className="text-sm">{msg.message}</p>
-                                <p className="text-xs opacity-70 mt-1">
-                                  {new Date(msg.createdAt).toLocaleTimeString('es')}
-                                </p>
-                              </div>
-                            </div>
-                          ))
-                        )}
+            <div className="admin-panel">
+              {!selectedTicket ? <Empty text="Selecciona un ticket" /> : (
+                <>
+                  <h2>{selectedTicket.subject}</h2>
+                  <p className="sub">#{selectedTicket.ticketNumber} · {selectedTicket.username}</p>
+                  <select
+                    value={selectedTicket.status}
+                    onChange={(e) => handleUpdateTicketStatus(selectedTicket.id, e.target.value)}
+                    disabled={updatingStatus === selectedTicket.id}
+                    className="w-full rounded bg-[#111] border border-[#343434] px-3 py-2"
+                  >
+                    <option value="open">Abierto</option>
+                    <option value="in-progress">En progreso</option>
+                    <option value="resolved">Resuelto</option>
+                    <option value="closed">Cerrado</option>
+                  </select>
+                  <div className="admin-thread">
+                    {loadingTicket ? <Loader className="h-5 w-5 animate-spin" /> : ticketMessages.map(msg => (
+                      <div key={msg.id} className={`admin-msg ${msg.senderType === 'admin' ? 'admin-msg-admin' : ''}`}>
+                        <b>{msg.senderUsername}</b>
+                        <p>{msg.message}</p>
                       </div>
-
-                      {/* Enviar mensaje */}
-                      {selectedTicket.status !== 'closed' && (
-                        <div className="flex gap-2">
-                          <input
-                            type="text"
-                            value={newMessage}
-                            onChange={(e) => setNewMessage(e.target.value)}
-                            onKeyPress={(e) => e.key === 'Enter' && handleSendTicketMessage()}
-                            placeholder="Escribe tu respuesta..."
-                            className="flex-1 rounded-lg bg-white/10 border border-white/20 px-4 py-2 text-white placeholder-slate-500 focus:outline-none focus:border-purple-500 disabled:opacity-50"
-                            disabled={sendingMessage}
-                          />
-                          <button
-                            onClick={handleSendTicketMessage}
-                            disabled={!newMessage.trim() || sendingMessage}
-                            className="rounded-lg bg-purple-500/20 text-purple-400 hover:bg-purple-500/30 transition disabled:opacity-50 px-4 py-2 font-semibold flex items-center gap-2"
-                          >
-                            {sendingMessage ? <Loader className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
-                          </button>
-                        </div>
-                      )}
-
-                      {selectedTicket.status === 'closed' && (
-                        <p className="text-center text-slate-500 text-sm">Este ticket está cerrado</p>
-                      )}
-                    </>
+                    ))}
+                  </div>
+                  {selectedTicket.status !== 'closed' && (
+                    <div className="admin-compose">
+                      <input value={newMessage} onChange={(e) => setNewMessage(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && handleSendTicketMessage()} placeholder="Respuesta..." />
+                      <button onClick={handleSendTicketMessage} disabled={sendingMessage}><Send className="h-4 w-4" /></button>
+                    </div>
                   )}
-                </div>
-              </div>
-            ) : (
-              <div className="lg:col-span-2 rounded-2xl border border-white/5 bg-[#0d1320] p-6 flex items-center justify-center h-96">
-                <p className="text-slate-500">Selecciona un ticket para ver los detalles</p>
-              </div>
-            )}
+                </>
+              )}
+            </div>
           </div>
-        </>
-      )}
+        )}
+      </div>
     </div>
   );
 }

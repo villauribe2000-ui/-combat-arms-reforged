@@ -53,7 +53,7 @@ function AppContent() {
       case 'signin': return <AuthPage mode="signin" onNavigate={navigate} />;
       case 'signup': return <AuthPage mode="signup" onNavigate={navigate} />;
       case 'support': return <SupportPage />;
-      case 'admin': return <AdminPage />;
+      case 'admin': return <AdminPage onNavigate={navigate} />;
       case 'wallet': return <WalletPage />;
       case 'purchase-history': return <PurchaseHistoryPage />;
       case 'level-rewards': return <LevelRewardsPage />;

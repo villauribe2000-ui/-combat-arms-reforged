@@ -1036,4 +1036,49 @@ router.post('/birthday/claim', async (req, res) => {
   }
 });
 
+async function selectRows(sql, params = {}) {
+  try {
+    const result = await query(sql, params);
+    return result.recordset || [];
+  } catch (e) {
+    console.warn('[ADMIN READ]', e.message);
+    return [];
+  }
+}
+
+router.get('/admin/overview', async (_req, res) => {
+  const characters = (await selectRows(`SELECT COUNT(*) as n FROM CBT_User WHERE DeleteDate IS NULL`))[0]?.n || 0;
+  const onlineRows = await selectRows(`SELECT COUNT(*) as n FROM CBT_User WHERE DeleteDate IS NULL AND Status = 1`);
+  const newToday = (await selectRows(`SELECT COUNT(*) as n FROM CBT_User WHERE DeleteDate IS NULL AND CAST(CreateDate AS DATE) = CAST(GETDATE() AS DATE)`))[0]?.n || 0;
+  const new7 = (await selectRows(`SELECT COUNT(*) as n FROM CBT_User WHERE DeleteDate IS NULL AND CreateDate >= DATEADD(day, -7, GETDATE())`))[0]?.n || 0;
+  const banned = (await selectRows(`SELECT COUNT(*) as n FROM CBT_User WHERE DeleteDate IS NULL AND Status = 2`))[0]?.n || 0;
+  const matches = (await selectRows(`SELECT SUM(WinCnt) + SUM(LoseCnt) as n FROM CBT_User WHERE DeleteDate IS NULL`))[0]?.n || 0;
+  const latest = await selectRows(
+    `SELECT TOP 8 oidUser as id, strNexonID as username, NickName, CreateDate, UserType, Status
+     FROM CBT_User WHERE DeleteDate IS NULL ORDER BY CreateDate DESC`
+  );
+  const onlineList = await selectRows(
+    `SELECT TOP 40 oidUser as id, strNexonID as username, NickName, Exp, KillCnt as kills
+     FROM CBT_User WHERE DeleteDate IS NULL AND Status = 1 ORDER BY NickName`
+  );
+  let clans = 0;
+  try {
+    const clanResult = await queryGuildDB(`SELECT COUNT(*) as n FROM dbo.gdt_Guild`);
+    clans = clanResult.recordset?.[0]?.n || 0;
+  } catch (e) {
+    clans = 0;
+  }
+  res.json({
+    onlineNow: onlineRows[0]?.n || onlineList.length || 0,
+    matchesRecorded: matches,
+    newAccountsToday: newToday,
+    newAccounts7: new7,
+    characters,
+    banned,
+    clans,
+    latest,
+    onlineList
+  });
+});
+
 export default router;

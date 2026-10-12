@@ -144,6 +144,20 @@ class ApiClient {
     return await this.request<{ total: number }>('GET', '/stats/players-count');
   }
 
+  async getAdminOverview() {
+    return await this.request<{
+      onlineNow: number;
+      matchesRecorded: number;
+      newAccountsToday: number;
+      newAccounts7: number;
+      characters: number;
+      banned: number;
+      clans: number;
+      latest: any[];
+      onlineList: any[];
+    }>('GET', '/admin/overview');
+  }
+
   async getClans(search?: string) {
     const url = search ? `/clans?search=${encodeURIComponent(search)}` : '/clans';
     return await this.request<any[]>('GET', url);

@@ -42,7 +42,7 @@ export default function Layout({ currentPage, onNavigate, children }: Props) {
   const menuRef = useRef<HTMLDivElement>(null);
   const publicPages: PageId[] = ['home', 'guide', 'download', 'signin', 'signup', 'rankings'];
   const isPublic = publicPages.includes(currentPage);
-  const isFullBleed = isPublic || currentPage === 'profile' || currentPage === 'account' || currentPage === 'wallet' || currentPage === 'store' || currentPage === 'purchase-history' || currentPage === 'level-rewards' || currentPage === 'support' || currentPage === 'birthday';
+  const isFullBleed = isPublic || currentPage === 'profile' || currentPage === 'account' || currentPage === 'wallet' || currentPage === 'store' || currentPage === 'purchase-history' || currentPage === 'level-rewards' || currentPage === 'support' || currentPage === 'birthday' || currentPage === 'admin';
 
   useEffect(() => {
     const onDoc = (e: MouseEvent) => {
@@ -103,6 +103,25 @@ export default function Layout({ currentPage, onNavigate, children }: Props) {
       </a>
     </>
   );
+
+  if (currentPage === 'admin') {
+    return (
+      <div className="min-h-screen bg-[#101010] text-[#f2f2f2]">
+        {loading ? (
+          <div className="flex h-screen items-center justify-center">
+            <div className="h-8 w-8 animate-spin rounded-full border-2 border-[#f5a000]/30 border-t-[#f5a000]" />
+          </div>
+        ) : !profile ? (
+          <div className="flex min-h-screen flex-col items-center justify-center text-center">
+            <h2 className="text-2xl font-bold">Inicia sesión para continuar</h2>
+            <button onClick={() => go('signin')} className="mt-6 rounded-md bg-[#f5a000] px-8 py-3 font-semibold text-black">Iniciar Sesión</button>
+          </div>
+        ) : (
+          children
+        )}
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-[#101010] text-[#f2f2f2]">
