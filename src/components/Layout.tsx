@@ -1,8 +1,8 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import {
   Trophy, Store, LifeBuoy, Shield, Wallet, History,
-  Menu, LogOut, Crown, Gift, Home, Download, BookOpen, UserRound, UserRoundPlus, ChevronDown,
+  Menu, LogOut, Crown, Gift, Home, Download, BookOpen, UserRound, UserRoundPlus, ChevronDown, Coins, LayoutGrid,
 } from 'lucide-react';
 
 export type PageId = 'home' | 'profile' | 'rankings' | 'store' | 'support' | 'admin' | 'wallet' | 'purchase-history' | 'level-rewards' | 'birthday' | 'guide' | 'download' | 'signin' | 'signup';
@@ -38,9 +38,19 @@ type Props = {
 export default function Layout({ currentPage, onNavigate, children }: Props) {
   const { profile, loading, signOut } = useAuth();
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
   const publicPages: PageId[] = ['home', 'guide', 'download', 'signin', 'signup', 'rankings'];
   const isPublic = publicPages.includes(currentPage);
-  const isFullBleed = isPublic || currentPage === 'profile';
+  const isFullBleed = isPublic || currentPage === 'profile' || currentPage === 'wallet';
+
+  useEffect(() => {
+    const onDoc = (e: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) setMenuOpen(false);
+    };
+    document.addEventListener('mousedown', onDoc);
+    return () => document.removeEventListener('mousedown', onDoc);
+  }, []);
 
   const navItems = PRIMARY_NAV.filter(item => !item.adminOnly || profile?.is_admin);
 
@@ -112,24 +122,61 @@ export default function Layout({ currentPage, onNavigate, children }: Props) {
 
           <div className="ml-auto flex items-center gap-2">
             {profile ? (
-              <>
+              <div className="user-menu-wrap" ref={menuRef}>
                 <button
-                  onClick={() => go('profile')}
-                  className="account-button hidden sm:inline-flex"
+                  type="button"
+                  onClick={() => setMenuOpen(open => !open)}
+                  className="account-button"
+                  aria-expanded={menuOpen}
                 >
                   <UserRound className="h-3.5 w-3.5" />
                   {profile.nickname || profile.username}
-                  {profile.is_admin && <Crown className="h-3.5 w-3.5 text-[#f5a000]" />}
                   <ChevronDown className="h-3.5 w-3.5" />
                 </button>
-                <button
-                  onClick={signOut}
-                  className="flex items-center gap-1.5 rounded-full border border-white/15 px-3 py-1.5 text-sm text-neutral-300 hover:border-white/30 hover:text-white"
-                >
-                  <LogOut className="h-3.5 w-3.5" />
-                  <span className="hidden sm:inline">Salir</span>
-                </button>
-              </>
+                {menuOpen && (
+                  <div className="user-menu">
+                    {profile.is_admin && (
+                      <button type="button" onClick={() => { setMenuOpen(false); go('admin'); }}>
+                        <Shield size={16} />
+                        <span>
+                          <strong>Admin Dashboard</strong>
+                          <small>Manage the community</small>
+                        </span>
+                      </button>
+                    )}
+                    <button type="button" onClick={() => { sessionStorage.setItem('profile_tab', 'overview'); setMenuOpen(false); go('profile'); }}>
+                      <UserRound size={16} />
+                      <span>
+                        <strong>Profile</strong>
+                        <small>Your public player profile</small>
+                      </span>
+                    </button>
+                    <button type="button" onClick={() => { setMenuOpen(false); go('wallet'); }}>
+                      <Coins size={16} />
+                      <span>
+                        <strong>Charge Coins</strong>
+                        <small>Buy NX</small>
+                      </span>
+                    </button>
+                    <button type="button" onClick={() => { sessionStorage.setItem('profile_tab', 'password'); setMenuOpen(false); go('profile'); }}>
+                      <LayoutGrid size={16} />
+                      <span>
+                        <strong>Account</strong>
+                        <small>Account settings & security</small>
+                      </span>
+                    </button>
+                    <div className="user-menu-sep" />
+                    <button
+                      type="button"
+                      className="user-menu-signout"
+                      onClick={async () => { setMenuOpen(false); await signOut(); go('home'); }}
+                    >
+                      <LogOut size={16} />
+                      <span><strong>Sign out</strong></span>
+                    </button>
+                  </div>
+                )}
+              </div>
             ) : (
               <div className="header-auth-actions">
                 <button onClick={() => go('signin')} className="account-button">

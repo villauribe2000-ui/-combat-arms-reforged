@@ -51,6 +51,12 @@ export default function ProfilePage({ onNavigate }: { onNavigate: (page: PageId)
   const joined = profile?.joinDate;
 
   useEffect(() => {
+    const stored = sessionStorage.getItem('profile_tab') as Tab | null;
+    if (stored && ['overview', 'stats', 'logs', '2fa', 'password'].includes(stored)) setTab(stored);
+    sessionStorage.removeItem('profile_tab');
+  }, []);
+
+  useEffect(() => {
     if (!profile?.username) return;
     const stored = localStorage.getItem(`profile_${profile.username}`);
     const storedData = stored ? JSON.parse(stored) : {};

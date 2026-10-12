@@ -1,0 +1,82 @@
+.user-menu-wrap{position:relative}
+.user-menu{
+  position:absolute;right:0;top:calc(100% + 10px);z-index:60;
+  width:280px;padding:8px;background:#171717;border:1px solid #df8104;border-radius:4px;
+  box-shadow:0 18px 40px #0008;
+}
+.user-menu button{
+  width:100%;display:flex;align-items:flex-start;gap:12px;padding:11px 10px;
+  border:0;background:transparent;color:#eee;text-align:left;border-radius:3px;
+}
+.user-menu button:hover{background:#ffffff08}
+.user-menu button svg{flex-shrink:0;margin-top:2px;color:#c9c9c9}
+.user-menu button strong{display:block;font-size:13px;font-weight:700}
+.user-menu button small{display:block;margin-top:2px;font-size:11px;color:#8d8d8d;font-weight:500}
+.user-menu-sep{height:1px;background:#333;margin:6px 8px}
+.user-menu-signout{color:#ddd !important}
+.charge-page{padding-bottom:80px}
+.charge-badge{
+  display:inline-flex;align-items:center;gap:8px;padding:10px 14px;border:1px solid #3d3324;
+  border-radius:3px;background:#df81040a;color:#e6aa55;font-size:11px;font-weight:700;white-space:nowrap
+}
+.charge-layout{display:grid;grid-template-columns:minmax(0,1fr) 320px;gap:22px;align-items:start}
+.charge-choose{color:#ed9622;font-size:13px;font-weight:800;margin-bottom:12px;display:flex;align-items:center;gap:8px}
+.charge-packages{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
+.charge-package{
+  min-height:96px;padding:16px 14px;background:#191919;border:1px solid #303030;border-radius:4px;
+  text-align:left;color:#eee;transition:border-color .16s,background .16s
+}
+.charge-package:hover{border-color:#555}
+.charge-package strong{display:block;font-family:var(--font-heading),Impact,sans-serif;font-size:28px;line-height:1}
+.charge-package em{font-style:normal;font-size:11px;color:#888;margin-left:4px;font-weight:700}
+.charge-package span{display:block;margin-top:8px;color:#df8104;font-size:13px;font-weight:800}
+.charge-package-active{border-color:#986220;background:linear-gradient(#df810412,#191919)}
+.charge-custom{
+  margin-top:10px;display:flex;align-items:center;justify-content:space-between;gap:16px;
+  min-height:78px;padding:16px 18px;background:#191919;border:1px solid #303030;border-radius:4px
+}
+.charge-custom h3{font-size:28px;font-weight:800}
+.charge-custom h3 small{font-size:13px;font-weight:600;color:#888;margin-left:6px}
+.charge-custom-field{display:flex;align-items:center;gap:10px;min-width:280px;flex:1;max-width:520px}
+.charge-custom-field>div{flex:1}
+.charge-custom-field label{display:block;font-size:10px;letter-spacing:.8px;color:#888;font-weight:700;margin-bottom:6px}
+.charge-custom-field input{
+  width:100%;height:42px;background:#111;border:1px solid #343434;border-radius:3px;color:#eee;padding:0 12px
+}
+.charge-step{
+  width:36px;height:42px;border:1px solid #343434;background:#222;color:#aaa;font-size:20px;margin-top:16px
+}
+.charge-step:hover{color:#fff;border-color:#777}
+.charge-checkout{background:#171717;border:1px solid #303030;border-radius:4px;padding:22px 20px}
+.charge-checkout p{font-size:10px;letter-spacing:1.1px;color:#888;font-weight:800}
+.charge-checkout h2{font-size:28px;margin:6px 0 18px}
+.charge-checkout-row{display:flex;justify-content:space-between;padding:12px 0;border-top:1px solid #2b2b2b;font-size:13px;color:#b8b8b8}
+.charge-checkout-row strong{color:#eee}
+.charge-checkout-note{font-size:11px !important;letter-spacing:0 !important;font-weight:500 !important;color:#8a8a8a !important;line-height:1.6;margin:14px 0 16px}
+.charge-actions{display:flex;flex-direction:column;gap:8px}
+.charge-review{
+  min-height:46px;background:#df8104;color:#111;font-weight:800;border:0;font-size:13px
+}
+.charge-review:disabled{opacity:.45}
+.charge-review:not(:disabled):hover{background:#f5a000}
+.charge-paid{
+  min-height:40px;border:1px solid #463824;background:#1b1813;color:#d8a25c;font-size:12px;font-weight:700
+}
+.charge-orders{margin-top:22px;border:1px solid #303030;border-radius:4px;background:#171717;overflow:hidden}
+.charge-orders-head{display:flex;justify-content:space-between;align-items:center;padding:18px 22px;border-bottom:1px solid #2b2b2b}
+.charge-orders-head h2{font-size:20px;display:flex;align-items:center;gap:8px}
+.charge-orders-head span{font-size:11px;color:#888}
+.charge-orders-empty{padding:28px 22px;color:#8a8a8a;font-size:13px}
+.charge-order{display:flex;justify-content:space-between;padding:14px 22px;border-top:1px solid #2b2b2b;font-size:13px}
+.charge-extra{margin-top:22px;display:grid;gap:14px}
+.charge-card{background:#171717;border:1px solid #303030;border-radius:4px;padding:20px}
+.charge-card h3{font-size:16px;margin-bottom:12px}
+@media (max-width:1100px){
+  .charge-layout{grid-template-columns:1fr}
+  .charge-packages{grid-template-columns:repeat(3,minmax(0,1fr))}
+}
+@media (max-width:680px){
+  .charge-packages{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .charge-custom{flex-direction:column;align-items:stretch}
+  .charge-custom-field{max-width:none;min-width:0}
+}

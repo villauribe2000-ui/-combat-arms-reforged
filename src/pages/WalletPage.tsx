@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { api } from '@/lib/api';
-import { Wallet, Crown, Upload, X, CheckCircle, AlertCircle, Gift, TrendingUp } from 'lucide-react';
+import { Crown, X, CheckCircle, AlertCircle, Gift, TrendingUp, Coins } from 'lucide-react';
 
 interface GcoinPackage {
   id: number;
@@ -343,57 +343,164 @@ export default function WalletPage() {
     return null;
   }
 
+  const checkoutNx = selectedPackage
+    ? selectedPackage.coins
+    : customNxAmount
+      ? parseInt(customNxAmount)
+      : 0;
+  const checkoutPrice = selectedPackage
+    ? selectedPackage.price
+    : customNxAmount
+      ? calculateCustomPrice(customNxAmount)
+      : 0;
+  const canCheckout = checkoutNx >= 1000;
+
+  const startCheckout = () => {
+    if (selectedPackage) {
+      handlePurchaseClick(selectedPackage);
+      return;
+    }
+    if (!customNxAmount) {
+      setNotification({ type: 'error', message: 'Por favor ingresa una cantidad válida' });
+      setTimeout(() => setNotification(null), 3000);
+      return;
+    }
+    sessionStorage.setItem('customNxAmount', customNxAmount);
+    window.location.href = `https://paypal.me/LBetancourthQuenguan/${checkoutPrice.toFixed(2)}`;
+  };
+
+  const openPaidModal = () => {
+    if (selectedPackage) {
+      setSelectedProofPackage(selectedPackage);
+      setShowProofModal(true);
+      return;
+    }
+    if (customNxAmount) {
+      setSelectedProofPackage({
+        id: 0,
+        coins: parseInt(customNxAmount),
+        price: checkoutPrice,
+      });
+      setShowProofModal(true);
+    }
+  };
+
   return (
-    <div className="space-y-6 pb-12">
-      <div>
-        <h1 className="text-3xl font-black">Billetera</h1>
-        <p className="mt-1 text-slate-400">Gestiona tus fondos y compra NX</p>
-      </div>
-
-      {/* Saldos */}
-      <div className="grid gap-4 lg:grid-cols-2">
-        <div className="rounded-2xl border border-white/5 bg-gradient-to-br from-blue-900/30 via-[#0d1320] to-cyan-900/20 p-6 lg:p-8">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-slate-400 mb-1">NX BALANCE</p>
-              <p className="text-4xl lg:text-5xl font-black text-blue-400">{nxBalance.toLocaleString()}</p>
-              <p className="text-xs text-slate-500 mt-2">Moneda Premium del juego</p>
-            </div>
-            <Wallet className="h-16 w-16 text-blue-400 opacity-20" />
-          </div>
+    <main className="inner-page page-width charge-page">
+      <header className="page-heading">
+        <div>
+          <p className="eyebrow"><span className="tiny-square" />NX STORE</p>
+          <h1>CHARGE COINS.</h1>
+          <p className="page-heading-description">
+            Top up your NX with a package or an amount of your own. An administrator confirms your payment,
+            then the NX is added to your account.
+          </p>
         </div>
-
-        <div className="rounded-2xl border border-white/5 bg-gradient-to-br from-amber-900/30 via-[#0d1320] to-yellow-900/20 p-6 lg:p-8">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-slate-400 mb-1">GP BALANCE</p>
-              <p className="text-4xl lg:text-5xl font-black text-amber-400">{gpBalance.toLocaleString()}</p>
-              <p className="text-xs text-slate-500 mt-2">Moneda del juego</p>
-            </div>
-            <Wallet className="h-16 w-16 text-amber-400 opacity-20" />
-          </div>
+        <div className="page-heading-aside">
+          <span className="charge-badge">
+            <Crown size={14} /> NX — {nxBalance.toLocaleString()} · GP {gpBalance.toLocaleString()}
+          </span>
         </div>
-      </div>
+      </header>
 
-      {/* Historial de Compras */}
-      {nxPurchases.length > 0 && (
-        <div className="rounded-2xl border border-white/5 bg-[#0d1320] p-6">
-          <h2 className="mb-4 flex items-center gap-2 text-lg font-bold">
-            <TrendingUp className="h-5 w-5 text-cyan-400" /> Historial de Compras de NX
-          </h2>
-          <div className="space-y-2 max-h-64 overflow-y-auto">
-            {nxPurchases.map((purchase, idx) => (
-              <div key={idx} className="flex items-center justify-between rounded-lg bg-white/5 p-3 border border-white/10">
-                <div>
-                  <p className="font-semibold text-white">{purchase.coins.toLocaleString()} NX</p>
-                  <p className="text-xs text-slate-400">${purchase.amount}</p>
-                </div>
-                <p className="text-xs text-slate-500">{purchase.date}</p>
-              </div>
+      <div className="charge-layout">
+        <div>
+          <p className="charge-choose"><Coins className="h-4 w-4" /> Choose an amount</p>
+          <div className="charge-packages">
+            {packages.map(pkg => (
+              <button
+                key={pkg.id}
+                type="button"
+                className={`charge-package${selectedPackage?.id === pkg.id ? ' charge-package-active' : ''}`}
+                onClick={() => {
+                  setSelectedPackage(pkg);
+                  setCustomNxAmount('');
+                  setCustomNxBonus(0);
+                }}
+              >
+                <strong>{pkg.coins.toLocaleString()}<em>NX</em></strong>
+                <span>{pkg.price.toFixed(2)} USD</span>
+              </button>
             ))}
           </div>
+
+          <div className={`charge-custom${selectedPackage ? '' : customNxAmount ? ' charge-package-active' : ''}`}>
+            <h3>Custom <small>amount</small></h3>
+            <div className="charge-custom-field">
+              <div>
+                <label>NX amount</label>
+                <input
+                  value={customNxAmount}
+                  onChange={e => {
+                    setSelectedPackage(null);
+                    handleCustomNxChange(e.target.value);
+                  }}
+                  placeholder="105,000"
+                />
+              </div>
+              <button
+                type="button"
+                className="charge-step"
+                onClick={() => {
+                  const next = String(Math.max(1000, parseInt(customNxAmount || '0') + 1000));
+                  setSelectedPackage(null);
+                  handleCustomNxChange(next);
+                }}
+              >
+                +
+              </button>
+            </div>
+          </div>
         </div>
-      )}
+
+        <aside className="charge-checkout">
+          <p>CHECKOUT</p>
+          <h2>Your order</h2>
+          <div className="charge-checkout-row">
+            <span>NX</span>
+            <strong>{checkoutNx ? checkoutNx.toLocaleString() : '—'}</strong>
+          </div>
+          <div className="charge-checkout-row">
+            <span>PRICE</span>
+            <strong>{checkoutNx ? `${checkoutPrice.toFixed(2)} USD` : '—'}</strong>
+          </div>
+          {customNxAmount && !selectedPackage && (
+            <div className="charge-checkout-row">
+              <span>BONUS 10%</span>
+              <strong>+{customNxBonus.toLocaleString()} NX</strong>
+            </div>
+          )}
+          <p className="charge-checkout-note">
+            After you pay, send us the transaction code with Ya pagué. An administrator confirms it, then NX is added to your account.
+            You can have up to 3 orders waiting for approval at a time.
+          </p>
+          <div className="charge-actions">
+            <button type="button" className="charge-review" disabled={!canCheckout || purchasing} onClick={startCheckout}>
+              {purchasing ? 'Opening PayPal...' : 'Review order'}
+            </button>
+            <button type="button" className="charge-paid" disabled={!canCheckout} onClick={openPaidModal}>
+              Ya pagué
+            </button>
+          </div>
+        </aside>
+      </div>
+
+      <section className="charge-orders">
+        <div className="charge-orders-head">
+          <h2><TrendingUp size={18} /> My orders</h2>
+          <span>Your last {Math.max(nxPurchases.length, 50)} orders</span>
+        </div>
+        {nxPurchases.length === 0 ? (
+          <p className="charge-orders-empty">You have not placed any orders yet.</p>
+        ) : (
+          nxPurchases.map((purchase, idx) => (
+            <div key={idx} className="charge-order">
+              <strong>{purchase.coins.toLocaleString()} NX</strong>
+              <span>${purchase.amount} · {purchase.date}</span>
+            </div>
+          ))
+        )}
+      </section>
 
       {/* Recompensas por Recarga */}
       <div className="rounded-2xl border border-white/5 bg-[#0d1320] p-6">
@@ -525,156 +632,6 @@ export default function WalletPage() {
         </div>
       </div>
 
-      {/* Método de Pago */}
-      <div className="rounded-2xl border border-white/5 bg-[#0d1320] p-6">
-        <h2 className="mb-4 text-lg font-bold">Método de Pago</h2>
-        <div className="flex items-center justify-between rounded-xl bg-white/5 p-4 border border-white/10">
-          <div className="flex items-center gap-3">
-            <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-blue-500/20">
-              <img src="https://www.paypalobjects.com/webstatic/icon/pp258.png" alt="PayPal" className="h-6 w-6" />
-            </div>
-            <div>
-              <p className="font-semibold text-white">PayPal</p>
-              <p className="text-xs text-slate-400">Método de pago seguro</p>
-            </div>
-          </div>
-          <span className="text-xs bg-emerald-500/20 text-emerald-400 px-3 py-1 rounded-full">Disponible</span>
-        </div>
-      </div>
-
-      {/* Compra Personalizada */}
-      <div className="rounded-2xl border border-white/5 bg-[#0d1320] p-6">
-        <h2 className="mb-4 flex items-center gap-2 text-lg font-bold">
-          <Crown className="h-5 w-5 text-cyan-400" /> Compra Personalizada
-        </h2>
-        <p className="text-sm text-slate-400 mb-6">Compra la cantidad exacta que necesites y recibe 10% de bonus</p>
-
-        <div className="grid gap-6 md:grid-cols-2">
-          {/* Input y cálculo */}
-          <div>
-            <label className="block mb-3">
-              <p className="text-sm font-semibold text-slate-300 mb-2">Cantidad de NX</p>
-              <input
-                type="text"
-                placeholder="Ej: 50000"
-                value={customNxAmount}
-                onChange={(e) => handleCustomNxChange(e.target.value)}
-                className="w-full px-4 py-3 rounded-lg bg-white/5 border border-white/10 text-white placeholder-slate-500 focus:outline-none focus:border-cyan-400 transition"
-              />
-              <p className="text-xs text-slate-500 mt-2">Solo números</p>
-            </label>
-          </div>
-
-          {/* Resumen */}
-          <div className="space-y-3">
-            <div className="p-4 rounded-xl bg-cyan-500/10 border border-cyan-500/30">
-              <p className="text-xs text-slate-400 mb-2">NX A COMPRAR</p>
-              <p className="text-2xl font-bold text-cyan-400">
-                {customNxAmount ? parseInt(customNxAmount).toLocaleString() : '0'}
-              </p>
-            </div>
-            <div className="p-4 rounded-xl bg-blue-500/10 border border-blue-500/30">
-              <p className="text-xs text-slate-400 mb-2">PRECIO A PAGAR</p>
-              <p className="text-2xl font-bold text-blue-400">
-                ${calculateCustomPrice(customNxAmount).toFixed(2)}
-              </p>
-            </div>
-            <div className="p-4 rounded-xl bg-emerald-500/10 border border-emerald-500/30">
-              <p className="text-xs text-slate-400 mb-2">BONUS (10%)</p>
-              <p className="text-2xl font-bold text-emerald-400">+{customNxBonus.toLocaleString()}</p>
-            </div>
-            <div className="p-4 rounded-xl bg-purple-500/10 border border-purple-500/30">
-              <p className="text-xs text-slate-400 mb-2">TOTAL A RECIBIR</p>
-              <p className="text-2xl font-bold text-purple-400">
-                {(parseInt(customNxAmount || '0') + customNxBonus).toLocaleString()}
-              </p>
-            </div>
-          </div>
-        </div>
-
-        {/* Botón de compra */}
-        <div className="mt-6">
-          <button
-            onClick={() => {
-              if (!customNxAmount) {
-                setNotification({
-                  type: 'error',
-                  message: 'Por favor ingresa una cantidad válida'
-                });
-                setTimeout(() => setNotification(null), 3000);
-                return;
-              }
-              // Guardar la cantidad en sessionStorage para referencia
-              sessionStorage.setItem('customNxAmount', customNxAmount);
-              const customPrice = calculateCustomPrice(customNxAmount);
-              const paypalLink = `https://paypal.me/LBetancourthQuenguan/${customPrice.toFixed(2)}`;
-              window.location.href = paypalLink;
-            }}
-            disabled={!customNxAmount || parseInt(customNxAmount) < 1000}
-            className={`w-full py-3 rounded-lg font-semibold transition ${
-              !customNxAmount || parseInt(customNxAmount) < 1000
-                ? 'bg-slate-700/20 text-slate-400 cursor-not-allowed'
-                : 'bg-gradient-to-r from-cyan-500 to-blue-600 text-white hover:shadow-lg hover:shadow-cyan-500/30'
-            }`}
-          >
-            {!customNxAmount || parseInt(customNxAmount) < 1000
-              ? 'Ingresa una cantidad (mín. 1000 NX)'
-              : `Comprar por $${calculateCustomPrice(customNxAmount).toFixed(2)}`}
-          </button>
-          <p className="text-xs text-slate-500 mt-2 text-center">
-            Serás redirigido a PayPal para completar el pago
-          </p>
-        </div>
-      </div>
-
-      {/* Comprar NX */}
-      <div className="rounded-2xl border border-white/5 bg-[#0d1320] p-6">
-        <h2 className="mb-6 flex items-center gap-2 text-lg font-bold">
-          <Crown className="h-5 w-5 text-purple-400" /> Comprar NX
-        </h2>
-
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b border-white/10">
-                <th className="text-left py-3 px-4 font-semibold text-slate-300">NX</th>
-                <th className="text-left py-3 px-4 font-semibold text-slate-300">Precio</th>
-                <th className="text-left py-3 px-4 font-semibold text-slate-300">Total NX</th>
-                <th className="text-right py-3 px-4 font-semibold text-slate-300">Acción</th>
-              </tr>
-            </thead>
-            <tbody>
-              {packages.map((pkg) => (
-                <tr key={pkg.id} className="border-b border-white/5 hover:bg-white/5 transition">
-                  <td className="py-4 px-4 font-semibold text-purple-400">{pkg.coins.toLocaleString()}</td>
-                  <td className="py-4 px-4 text-white">${pkg.price}</td>
-                  <td className="py-4 px-4 text-slate-300">{pkg.coins.toLocaleString()} NX</td>
-                  <td className="py-4 px-4 text-right">
-                    <div className="flex gap-2 justify-end">
-                      <button
-                        onClick={() => handlePurchaseClick(pkg)}
-                        className="px-4 py-2 rounded-lg bg-purple-500/20 text-purple-400 hover:bg-purple-500/30 transition font-semibold whitespace-nowrap"
-                      >
-                        Comprar
-                      </button>
-                      <button
-                        onClick={() => {
-                          setSelectedProofPackage(pkg);
-                          setShowProofModal(true);
-                        }}
-                        className="px-4 py-2 rounded-lg bg-blue-500/20 text-blue-400 hover:bg-blue-500/30 transition font-semibold whitespace-nowrap"
-                      >
-                        Ya pagué
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </div>
-
       {/* Modal de Código de Pago */}
       {showProofModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80">
@@ -758,6 +715,6 @@ export default function WalletPage() {
           </div>
         </div>
       )}
-    </div>
+    </main>
   );
 }
