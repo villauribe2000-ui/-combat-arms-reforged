@@ -52,17 +52,12 @@ app.get('/api/version', (req, res) => {
   });
 });
 
-// Servir archivos estáticos públicos PRIMERO (para que tenga prioridad)
-app.use(express.static(path.join(__dirname, '../public')));
-
-// Servir archivos estáticos del frontend compilado
-app.use(express.static(path.join(__dirname, '../dist')));
-
-// También servir assets directamente desde dist
-app.use('/assets', express.static(path.join(__dirname, '../dist/assets')));
-
-// Servir src/assets como /src/assets (para imágenes que se referencian directamente en JSX)
-app.use('/src/assets', express.static(path.join(__dirname, '../src/assets')));
+if (!process.env.VERCEL) {
+  app.use(express.static(path.join(__dirname, '../public')));
+  app.use(express.static(path.join(__dirname, '../dist')));
+  app.use('/assets', express.static(path.join(__dirname, '../dist/assets')));
+  app.use('/src/assets', express.static(path.join(__dirname, '../src/assets')));
+}
 
 // Routes
 app.use('/api/auth', authRoutes);
@@ -77,11 +72,12 @@ app.use('/api/marketplace', marketplaceRoutes);
 app.use('/api/combatarms-web', combatarmsWebRoutes);
 app.use('/api/protected', authMiddleware, dataRoutes);
 
-// Catch-all: servir index.html para rutas del frontend (SPA)
-app.get('*', (req, res) => {
-  res.set('Cache-Control', 'no-cache, no-store, must-revalidate');
-  res.sendFile(path.join(__dirname, '../dist/index.html'));
-});
+if (!process.env.VERCEL) {
+  app.get('*', (req, res) => {
+    res.set('Cache-Control', 'no-cache, no-store, must-revalidate');
+    res.sendFile(path.join(__dirname, '../dist/index.html'));
+  });
+}
 
 // Error handling
 app.use((err, req, res, next) => {
@@ -202,4 +198,8 @@ process.on('SIGINT', async () => {
   process.exit(0);
 });
 
-start();
+export default app;
+
+if (!process.env.VERCEL) {
+  start();
+}

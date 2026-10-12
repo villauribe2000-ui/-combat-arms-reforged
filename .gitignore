@@ -22,7 +22,8 @@ dist-ssr
 .env
 
 # Backend files (keep server for deployment to Railway)
-api/
+api/*
+!api/index.js
 *.py
 Procfile
 railway.json
