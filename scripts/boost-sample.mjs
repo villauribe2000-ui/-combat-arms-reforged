@@ -1,0 +1,10 @@
+import { query, disconnect } from '../server/db.js';
+const ev = await query(`SELECT TOP 12 EventID, LobbyServerID, ModeID, MapID, EXPRate, GPRate, BeginTime, EndTime, Enable, [Desc] as description FROM CBT_EventEXPGP ORDER BY BeginTime DESC`);
+console.log(ev.recordset);
+const cnt = await query(`SELECT COUNT(*) n, SUM(CASE WHEN Enable=1 AND EndTime>=GETDATE() AND BeginTime<=GETDATE() THEN 1 ELSE 0 END) live FROM CBT_EventEXPGP`);
+console.log(cnt.recordset);
+const hot = await query(`SELECT TOP 5 SeqNo, EventID, BeginTime, EndTime, Enable, DurationHour, Description FROM CBT___HottimeRegister ORDER BY BeginTime DESC`);
+console.log('hot', hot.recordset);
+const now = await query(`SELECT GETDATE() as now`);
+console.log(now.recordset);
+await disconnect();

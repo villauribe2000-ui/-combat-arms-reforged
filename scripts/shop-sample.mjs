@@ -1,0 +1,14 @@
+import { query, disconnect } from '../server/db.js';
+const pr = await query(`SELECT TOP 8 * FROM CBT_ProductInfo_Price WHERE Price<>BasePrice`);
+console.log('pricechg', pr.recordset);
+const prc = await query(`SELECT COUNT(*) n FROM CBT_ProductInfo_Price WHERE Price<>BasePrice`);
+console.log('prcc', prc.recordset);
+const st = await query(`SELECT TOP 10 SaleType, COUNT(*) n FROM CBT_ProductInfo GROUP BY SaleType ORDER BY n DESC`);
+console.log('saletype', st.recordset);
+const inf = await query(`SELECT TOP 3 ProductID, ProductName, Price, SalePrice, SaleType, ItemNo00, Period00, ConsumeType00 FROM CBT_ProductInfo WHERE ProductID IN (2045,1858,11065,11066)`);
+console.log('ids', inf.recordset);
+const byitem = await query(`SELECT TOP 8 ProductID, ProductName, Price, SalePrice, SaleType, ItemNo00, Period00 FROM CBT_ProductInfo WHERE ItemNo00=9049`);
+console.log('9049', byitem.recordset);
+const shopn = await query(`SELECT COUNT(*) n FROM CBT_ProductInfo_ShopView WHERE ShopView=1`);
+console.log(shopn.recordset);
+await disconnect();

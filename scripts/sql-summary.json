@@ -1,0 +1,4402 @@
+{
+  "COMBATARMS": {
+    "count": 291,
+    "all": [
+      "dbo.__RefactorLog",
+      "dbo.CAEVO_UnfitOffSale_Backup",
+      "dbo.CBT___AccessEntryLock",
+      "dbo.CBT___BingoInfo",
+      "dbo.CBT___BingoReward",
+      "dbo.CBT___HottimeRegister",
+      "dbo.CBT___HottimeReward",
+      "dbo.CBT___QuestRegisterDetail",
+      "dbo.CBT___QuestRegisterDetailReward",
+      "dbo.CBT___QuestRegisterMain",
+      "dbo.CBT___QuestSchedule",
+      "dbo.CBT__CollectQuestBase",
+      "dbo.CBT__CollectQuestCondition",
+      "dbo.CBT__CollectQuestReward",
+      "dbo.CBT__GradeReward",
+      "dbo.CBT__ItemInfo_Openslot",
+      "dbo.CBT__TutorialInfo",
+      "dbo.CBT__TutorialReward",
+      "dbo.CBT__UserBingoStage",
+      "dbo.CBT__UserCollectQuest",
+      "dbo.CBT__UserDailyQuest",
+      "dbo.CBT__UserHottime",
+      "dbo.CBT__UserInventorySlot",
+      "dbo.CBT__UserTutorial",
+      "dbo.CBT__UserWeaponQuest",
+      "dbo.CBT__WeaponQuestBase",
+      "dbo.CBT__WeaponQuestCondition",
+      "dbo.CBT__WeaponQuestReward",
+      "dbo.CBT_Advertise",
+      "dbo.CBT_AdvertiseMessage",
+      "dbo.CBT_AdvertiseMessageInfo",
+      "dbo.CBT_BillTran",
+      "dbo.CBT_BingoNumberBoxInfo",
+      "dbo.CBT_BingoNumberBoxMaster",
+      "dbo.CBT_BlockHWID",
+      "dbo.CBT_BlockIPAddress",
+      "dbo.CBT_BlockMacAddress",
+      "dbo.CBT_ClanDeleteLog",
+      "dbo.CBT_ClanGradeInfo",
+      "dbo.CBT_ClanInfo",
+      "dbo.CBT_ClanInfoLog",
+      "dbo.CBT_ClanLadderInfo",
+      "dbo.CBT_ClanLadderRanking",
+      "dbo.CBT_ClanMarkInfo",
+      "dbo.CBT_ClanRanking",
+      "dbo.CBT_ClanRival",
+      "dbo.CBT_ClanSeasonalRanking_1",
+      "dbo.CBT_ClanSeasonalRanking_2",
+      "dbo.CBT_ClanSeasonalRanking_BlockList",
+      "dbo.CBT_ClanSeasonalRanking_Clan_1",
+      "dbo.CBT_ClanSeasonalRanking_Clan_2",
+      "dbo.CBT_ClanSeasonalRanking_DailyLog_1",
+      "dbo.CBT_ClanSeasonalRanking_DailyLog_2",
+      "dbo.CBT_ClanSeasonalRanking_FinalPoint_1",
+      "dbo.CBT_ClanSeasonalRanking_FinalPoint_2",
+      "dbo.CBT_CouponExchange",
+      "dbo.CBT_CouponInfo",
+      "dbo.CBT_CouponInfoType",
+      "dbo.CBT_CouponRegister",
+      "dbo.CBT_CustomizeInfo",
+      "dbo.CBT_DailyAttendance_Event",
+      "dbo.CBT_DailyAttendance_Info",
+      "dbo.CBT_DailyAttendance_Reward",
+      "dbo.CBT_DefaultEquipmentItemForNewUser",
+      "dbo.CBT_DefaultWeaponChange",
+      "dbo.CBT_DT_Event",
+      "dbo.CBT_DT_Reward",
+      "dbo.CBT_DT_UserReward",
+      "dbo.CBT_Environment",
+      "dbo.CBT_ESLItem",
+      "dbo.CBT_EventEXPGP",
+      "dbo.CBT_ExpRankReward",
+      "dbo.CBT_FakeMarkInfo",
+      "dbo.CBT_FastRespawn_RankMaxCount",
+      "dbo.CBT_FastRespawn_User",
+      "dbo.CBT_FireTeamCoinReward",
+      "dbo.CBT_FireTeamMissionReward",
+      "dbo.CBT_FireTeamModeReward",
+      "dbo.CBT_FreeItemRotation_Event",
+      "dbo.CBT_FreeItemRotation_GroupItems",
+      "dbo.CBT_FreeItemRotation_UserGroupCondition",
+      "dbo.CBT_FreePassGold",
+      "dbo.CBT_GachaponeItemList",
+      "dbo.CBT_GachaTurn",
+      "dbo.CBT_GameMap",
+      "dbo.CBT_GameMode",
+      "dbo.CBT_GameModeType",
+      "dbo.CBT_GeoIP",
+      "dbo.CBT_GeoIPDetailInfo",
+      "dbo.CBT_GeoIPRange",
+      "dbo.CBT_GoldPackageReward",
+      "dbo.CBT_GradeInfo",
+      "dbo.CBT_HiSecCase",
+      "dbo.CBT_HiSecEvent",
+      "dbo.CBT_HiSecRateMode",
+      "dbo.CBT_HiSecTodayCount",
+      "dbo.CBT_InboxGift_UserCount",
+      "dbo.CBT_InGameErrorCodeInfo",
+      "dbo.CBT_ItemInfo",
+      "dbo.CBT_ItemInfo_ForgeRecipe",
+      "dbo.CBT_ItemInfo_FreePass",
+      "dbo.CBT_ItemInfo_GachaponInfo_Item",
+      "dbo.CBT_ItemInfo_GachaponInfo_Item_Double",
+      "dbo.CBT_ItemInfo_GachaponInfo_Product",
+      "dbo.CBT_ItemInfo_GachaponInfo_Product_Double",
+      "dbo.CBT_ItemInfo_OpenSlotCount",
+      "dbo.CBT_ItemInfo_RenewalItemList",
+      "dbo.CBT_ItemInfo_RenewalKitInfo",
+      "dbo.CBT_ItemInfo_SellBackPrice",
+      "dbo.CBT_ItemInfo_TradeReward",
+      "dbo.CBT_ItemTypeToEquipType",
+      "dbo.CBT_Ladder_Info",
+      "dbo.CBT_Ladder_Mmr",
+      "dbo.CBT_Ladder_ModeMap",
+      "dbo.CBT_Ladder_Time",
+      "dbo.CBT_Ladder_User",
+      "dbo.CBT_LadderReward_Product",
+      "dbo.CBT_LadderReward_Tournament",
+      "dbo.CBT_LadderSeason",
+      "dbo.CBT_LastLoginMacAddress",
+      "dbo.CBT_LevelRanker",
+      "dbo.CBT_LevelRankerLog",
+      "dbo.CBT_LevelRankerLog01",
+      "dbo.CBT_LevelRankerLog02",
+      "dbo.CBT_LocalInfo",
+      "dbo.CBT_MapOpen",
+      "dbo.CBT_Marble_Info",
+      "dbo.CBT_Marble_MileageReward",
+      "dbo.CBT_Marble_Tile",
+      "dbo.CBT_Marble_User",
+      "dbo.CBT_Marble_UserReward",
+      "dbo.CBT_MessengerFriend",
+      "dbo.CBT_MessengerFriendRequest",
+      "dbo.CBT_MessengerGroup",
+      "dbo.CBT_MessengerNote",
+      "dbo.CBT_MessengerOption",
+      "dbo.CBT_MgmFinishReward",
+      "dbo.CBT_MgmMission",
+      "dbo.CBT_MgmRelation",
+      "dbo.CBT_MgmRequest",
+      "dbo.CBT_MgmUserInfo",
+      "dbo.CBT_MgmUserMission",
+      "dbo.CBT_MonthlyPass_DailyReward",
+      "dbo.CBT_MonthlyPass_DailyReward_User",
+      "dbo.CBT_MystChoiceBonusList",
+      "dbo.CBT_MystChoiceBonusRewardList",
+      "dbo.CBT_MystChoiceBonusRewardTable",
+      "dbo.CBT_MystChoiceBonusSetting",
+      "dbo.CBT_MystChoiceBonusTableNo",
+      "dbo.CBT_MystChoiceBroadcast",
+      "dbo.CBT_MystChoiceRetryList",
+      "dbo.CBT_MystChoiceRetryRewardList",
+      "dbo.CBT_MystChoiceRetryRewardTable",
+      "dbo.CBT_MystChoiceRetrySetting",
+      "dbo.CBT_MystChoiceRetryTableNo",
+      "dbo.CBT_MystChoiceSetting",
+      "dbo.CBT_MystChoiceTransaction",
+      "dbo.CBT_NXGradeCurrentNo",
+      "dbo.CBT_NXGradeInfo",
+      "dbo.CBT_NxProductOrderNo",
+      "dbo.CBT_NXSale_Block",
+      "dbo.CBT_NXSale_Unlock",
+      "dbo.CBT_OFCR_ItemList",
+      "dbo.CBT_PartnerUser",
+      "dbo.CBT_PcRoomList",
+      "dbo.CBT_ProductFailLog",
+      "dbo.CBT_ProductInfo",
+      "dbo.CBT_ProductInfo_FirstBuy",
+      "dbo.CBT_ProductInfo_Gift",
+      "dbo.CBT_ProductInfo_HotTag",
+      "dbo.CBT_ProductInfo_LimitedSale",
+      "dbo.CBT_ProductInfo_NewTag",
+      "dbo.CBT_ProductInfo_Price",
+      "dbo.CBT_ProductInfo_SaleTag",
+      "dbo.CBT_ProductInfo_ShopEvent",
+      "dbo.CBT_ProductInfo_ShopView",
+      "dbo.CBT_ProductLog",
+      "dbo.CBT_ProductSetItems",
+      "dbo.CBT_RecommendEvent",
+      "dbo.CBT_RecommendEventReward",
+      "dbo.CBT_RecruitPackage",
+      "dbo.CBT_ReleaseInfo",
+      "dbo.CBT_Roulette",
+      "dbo.CBT_RouletteKey",
+      "dbo.CBT_RoulettePiece",
+      "dbo.CBT_RouletteSupply",
+      "dbo.CBT_RouletteWheel",
+      "dbo.CBT_SaleBlock",
+      "dbo.CBT_SaleUnlock",
+      "dbo.CBT_SeasonalRanking",
+      "dbo.CBT_SeasonalRanking_AbusingSetting",
+      "dbo.CBT_SeasonalRanking_Clan_Rank_PrevSeason",
+      "dbo.CBT_SeasonalRanking_ClanReward",
+      "dbo.CBT_SeasonalRanking_Class",
+      "dbo.CBT_SeasonalRanking_Info",
+      "dbo.CBT_SeasonalRanking_Info_Detail",
+      "dbo.CBT_SeasonalRanking_ModeSetting",
+      "dbo.CBT_SeasonalRanking_Personal_Rank_PrevSeason",
+      "dbo.CBT_SeasonalRanking_Reward",
+      "dbo.CBT_SeasonalRanking_Team_Rank_PrevSeason",
+      "dbo.CBT_SeasonalRanking_User_FavoriteType",
+      "dbo.CBT_SeasonalRanking_UserAbusingSetting",
+      "dbo.CBT_SeedEventDetail",
+      "dbo.CBT_SeedEventInfo",
+      "dbo.CBT_SeedEventReward",
+      "dbo.CBT_ServerCurrentMode",
+      "dbo.CBT_ShuffledIndex",
+      "dbo.CBT_SingPlayRankData",
+      "dbo.CBT_SingPlayRankPoint",
+      "dbo.CBT_SingPlayReward",
+      "dbo.CBT_SpFailLog",
+      "dbo.CBT_String",
+      "dbo.CBT_SVSEvent",
+      "dbo.CBT_SVSRecord",
+      "dbo.CBT_SVSReward",
+      "dbo.CBT_TableVersion",
+      "dbo.CBT_TagMapInfo",
+      "dbo.CBT_TagModeInfo",
+      "dbo.CBT_User",
+      "dbo.CBT_User_DefaultEquipmentItemForNewUser",
+      "dbo.CBT_User_LadderPoint",
+      "dbo.CBT_User_LoginReward",
+      "dbo.CBT_User_NickName_Background",
+      "dbo.CBT_UserAdvertise",
+      "dbo.CBT_UserAdvertiseMessage",
+      "dbo.CBT_UserAuth",
+      "dbo.CBT_UserAuthPwd",
+      "dbo.CBT_UserBillTran",
+      "dbo.CBT_UserClanInfo",
+      "dbo.CBT_UserDailyAttendance",
+      "dbo.CBT_UserDetailInfo",
+      "dbo.CBT_UserEM",
+      "dbo.CBT_UserEquipItems",
+      "dbo.CBT_UserEquipItems_OFCR",
+      "dbo.CBT_UserEx",
+      "dbo.CBT_UserFakeMark",
+      "dbo.CBT_UserFreeItemRotation",
+      "dbo.CBT_UserFreePassGold",
+      "dbo.CBT_UserFreePassGoldEquip",
+      "dbo.CBT_UserGameModeInfo",
+      "dbo.CBT_UserGoldPackage",
+      "dbo.CBT_UserGoldPackageTicket",
+      "dbo.CBT_UserHardwareInfo",
+      "dbo.CBT_UserInventory",
+      "dbo.CBT_UserKickReason",
+      "dbo.CBT_UserLog",
+      "dbo.CBT_UserMVPInfo",
+      "dbo.CBT_UserMystChoice",
+      "dbo.CBT_UserNicknames",
+      "dbo.CBT_UserRanking",
+      "dbo.CBT_UserRecieve",
+      "dbo.CBT_UserRecommendEvent_RecommendedCount",
+      "dbo.CBT_UserRecommendEvent_UserType",
+      "dbo.CBT_UserRival",
+      "dbo.CBT_UserRoulette",
+      "dbo.CBT_UserSeasonalRanking_1",
+      "dbo.CBT_UserSeasonalRanking_2",
+      "dbo.CBT_UserSeasonalRanking_Abusing",
+      "dbo.CBT_UserSeasonalRanking_BlockList",
+      "dbo.CBT_UserSeasonalRanking_BlockList_Ladder",
+      "dbo.CBT_UserSeasonalRanking_DailyLog_1",
+      "dbo.CBT_UserSeasonalRanking_DailyLog_2",
+      "dbo.CBT_UserSeasonalRanking_FinalPoint_1",
+      "dbo.CBT_UserSeasonalRanking_FinalPoint_2",
+      "dbo.CBT_UserSeasonalRanking_FireTeam_1",
+      "dbo.CBT_UserSeasonalRanking_FireTeam_2",
+      "dbo.CBT_UserSeasonalRanking_Ladder_1",
+      "dbo.CBT_UserSeasonalRanking_Ladder_2",
+      "dbo.CBT_UserSeasonalRanking_Personal_1",
+      "dbo.CBT_UserSeasonalRanking_Personal_2",
+      "dbo.CBT_UserSeasonalRanking_Quarantine_1",
+      "dbo.CBT_UserSeasonalRanking_Quarantine_2",
+      "dbo.CBT_UserSeasonalRanking_Team_1",
+      "dbo.CBT_UserSeasonalRanking_Team_2",
+      "dbo.CBT_UserSeedEvent",
+      "dbo.CBT_UserSEM",
+      "dbo.CBT_UserSinglePlayInfo",
+      "dbo.CBT_UserStore",
+      "dbo.CBT_UserStoreFailLog",
+      "dbo.CBT_UserSuperRoomMasterInfo",
+      "dbo.CBT_UserTutorialLog",
+      "dbo.CBT_WelcomeBackRegister",
+      "dbo.CBT_WelcomeBackReward",
+      "dbo.CBT_WhisperBlockList",
+      "dbo.CBT_WhisperBlockListMaxNumber",
+      "dbo.CBT_WordFilter",
+      "dbo.DiscordAccounts",
+      "dbo.DiscordHistorico",
+      "dbo.Target_RankExpansion",
+      "dbo.TMP_MacData",
+      "dbo.VISMS_GameList"
+    ],
+    "interesting": [
+      {
+        "table": "dbo.__RefactorLog",
+        "columns": [
+          "OperationKey:uniqueidentifier"
+        ]
+      },
+      {
+        "table": "dbo.CBT__GradeReward",
+        "columns": [
+          "GradeLevel:int",
+          "OrderID:int",
+          "ProductID:int"
+        ]
+      },
+      {
+        "table": "dbo.CBT__ItemInfo_Openslot",
+        "columns": [
+          "ItemNo:int",
+          "P_TypeSlot:int",
+          "B_TypeSlot:int",
+          "T_TypeSlot:int",
+          "revision:tinyint",
+          "Use:bit",
+          "updated:bit"
+        ]
+      },
+      {
+        "table": "dbo.CBT__UserBingoStage",
+        "columns": [
+          "oidUser:int",
+          "EventID:int",
+          "StageViewCode:int",
+          "StageMap:int",
+          "NumberCnt:int",
+          "CompletionLine:int",
+          "CompletionCollect:int",
+          "Time:datetime"
+        ]
+      },
+      {
+        "table": "dbo.CBT__UserCollectQuest",
+        "columns": [
+          "oidUser:int",
+          "QuestID:int",
+          "State:int",
+          "UnlockCount:int",
+          "ProgressCount:int",
+          "Time:datetime"
+        ]
+      },
+      {
+        "table": "dbo.CBT__UserDailyQuest",
+        "columns": [
+          "oidUser:int",
+          "QuestMainID:int",
+          "QuestSeqNo:int",
+          "QuestID:int",
+          "QuestOrderID:int",
+          "State:int",
+          "ProgressCount:int",
+          "Time:datetime"
+        ]
+      },
+      {
+        "table": "dbo.CBT__UserHottime",
+        "columns": [
+          "oidUser:int",
+          "SeqNo:int",
+          "EventID:int",
+          "RegTime:datetime"
+        ]
+      },
+      {
+        "table": "dbo.CBT__UserInventorySlot",
+        "columns": [
+          "oidUser:int",
+          "InventorySeqNo:int",
+          "ItemNo:int",
+          "P_ItemNo:int",
+          "B_ItemNo:int",
+          "T_ItemNo:int"
+        ]
+      },
+      {
+        "table": "dbo.CBT__UserTutorial",
+        "columns": [
+          "oiduser:int",
+          "TutorialID:int",
+          "CompleteCount:int",
+          "RegDate:datetime"
+        ]
+      },
+      {
+        "table": "dbo.CBT__UserWeaponQuest",
+        "columns": [
+          "oidUser:int",
+          "QuestID:int",
+          "State:int",
+          "ProgressCount:int",
+          "Time:datetime"
+        ]
+      },
+      {
+        "table": "dbo.CBT_ClanDeleteLog",
+        "columns": [
+          "ClanDeleteLogSeq:int",
+          "oiduser_group:int",
+          "Exp:int",
+          "Point:int",
+          "MissionCompleteCnt:int",
+          "KillCnt:int",
+          "DeadCnt:int",
+          "WinCnt:int",
+          "LoseCnt:int",
+          "Notice:nvarchar",
+          "DeleteDate:datetime"
+        ]
+      },
+      {
+        "table": "dbo.CBT_ClanGradeInfo",
+        "columns": [
+          "GradeLevel:int",
+          "GradeName:nvarchar",
+          "MinExp:int",
+          "MaxExp:int",
+          "MemberCnt:int"
+        ]
+      },
+      {
+        "table": "dbo.CBT_ClanInfo",
+        "columns": [
+          "ClanInfoSeqNo:int",
+          "oiduser_group:int",
+          "Exp:int",
+          "Point:int",
+          "MissionCompleteCnt:int",
+          "KillCnt:int",
+          "DeadCnt:int",
+          "WinCnt:int",
+          "LoseCnt:int",
+          "DrawCnt:int",
+          "Notice:nvarchar",
+          "TDMWinCnt:int",
+          "TDMLoseCnt:int",
+          "TMMWinCnt:int",
+          "TMMLoseCnt:int",
+          "CTFWinCnt:int",
+          "CTFLoseCnt:int",
+          "CaptureFlagCnt:int",
+          "ForfeitedCnt:int",
+          "Emblem:int",
+          "Background:int",
+          "namecolor:int",
+          "colorenddate:datetime",
+          "markenddate:datetime",
+          "TSVWinCnt:int",
+          "TSVLoseCnt:int"
+        ]
+      },
+      {
+        "table": "dbo.CBT_ClanInfoLog",
+        "columns": [
+          "oiduser_group:int",
+          "Name:nvarchar",
+          "WinCnt:int",
+          "LoseCnt:int",
+          "DrawCnt:int",
+          "Emblem:int",
+          "Background:int",
+          "CreateDate:datetime",
+          "namecolor:int"
+        ]
+      },
+      {
+        "table": "dbo.CBT_ClanLadderInfo",
+        "columns": [
+          "ClanLadderInfoSeq:int",
+          "ClanUID:int",
+          "SeasonID:int",
+          "LadderPoint:int",
+          "WinCount:int",
+          "LoseCount:int",
+          "LastGameTime:datetime"
+        ]
+      },
+      {
+        "table": "dbo.CBT_ClanLadderRanking",
+        "columns": [
+          "ClanUID:int",
+          "SeasonID:int",
+          "ClanRank:int",
+          "ClanRank_Prev:int"
+        ]
+      },
+      {
+        "table": "dbo.CBT_ClanMarkInfo",
+        "columns": [
+          "MaxEmblemNo:int",
+          "MaxBackgroundNo:int"
+        ]
+      },
+      {
+        "table": "dbo.CBT_ClanRanking",
+        "columns": [
+          "oidUser_Group:int",
+          "ClanRank:int",
+          "ClanRank_Prev:int"
+        ]
+      },
+      {
+        "table": "dbo.CBT_ClanRival",
+        "columns": [
+          "oiduser_group:int",
+          "rival_oiduser_group:int",
+          "WinCnt:int",
+          "LoseCnt:int"
+        ]
+      },
+      {
+        "table": "dbo.CBT_ClanSeasonalRanking_1",
+        "columns": [
+          "oidUserGroup:int",
+          "ClanRanking:int"
+        ]
+      },
+      {
+        "table": "dbo.CBT_ClanSeasonalRanking_2",
+        "columns": [
+          "oidUserGroup:int",
+          "ClanRanking:int"
+        ]
+      },
+      {
+        "table": "dbo.CBT_ClanSeasonalRanking_BlockList",
+        "columns": [
+          "oidUserGroup:int"
+        ]
+      },
+      {
+        "table": "dbo.CBT_ClanSeasonalRanking_Clan_1",
+        "columns": [
+          "Ranking:int",
+          "oidUserGroup:int",
+          "DisplayRanking:int",
+          "Blocked:bit"
+        ]
+      },
+      {
+        "table": "dbo.CBT_ClanSeasonalRanking_Clan_2",
+        "columns": [
+          "Ranking:int",
+          "oidUserGroup:int",
+          "DisplayRanking:int",
+          "Blocked:bit"
+        ]
+      },
+      {
+        "table": "dbo.CBT_ClanSeasonalRanking_DailyLog_1",
+        "columns": [
+          "oidUserGroup:int",
+          "Exp:int",
+          "MatchCount:int",
+          "KillCount:int",
+          "DeathCount:int",
+          "ClanPoint:float",
+          "KDR:float"
+        ]
+      },
+      {
+        "table": "dbo.CBT_ClanSeasonalRanking_DailyLog_2",
+        "columns": [
+          "oidUserGroup:int",
+          "Exp:int",
+          "MatchCount:int",
+          "KillCount:int",
+          "DeathCount:int",
+          "ClanPoint:float",
+          "KDR:float"
+        ]
+      },
+      {
+        "table": "dbo.CBT_ClanSeasonalRanking_FinalPoint_1",
+        "columns": [
+          "oidUserGroup:int",
+          "ClanPoint:float"
+        ]
+      },
+      {
+        "table": "dbo.CBT_ClanSeasonalRanking_FinalPoint_2",
+        "columns": [
+          "oidUserGroup:int",
+          "ClanPoint:float"
+        ]
+      },
+      {
+        "table": "dbo.CBT_DailyAttendance_Event",
+        "columns": [
+          "EventID:int",
+          "Start:datetime",
+          "End:datetime",
+          "EventType:int",
+          "Option:int",
+          "RewardID:int",
+          "InfoMsg:nvarchar",
+          "RewardDuration:int",
+          "InboxMsg:nvarchar"
+        ]
+      },
+      {
+        "table": "dbo.CBT_DefaultEquipmentItemForNewUser",
+        "columns": [
+          "SeqNo:int",
+          "ItemNo:int",
+          "Period:int",
+          "BeginTime:datetime",
+          "EndTime:datetime",
+          "Enable:int"
+        ]
+      },
+      {
+        "table": "dbo.CBT_DT_Event",
+        "columns": [
+          "EventID:int",
+          "RewardID:int",
+          "BeginTime:datetime",
+          "EndTime:datetime",
+          "Enable:int",
+          "EventType:int"
+        ]
+      },
+      {
+        "table": "dbo.CBT_DT_UserReward",
+        "columns": [
+          "oidUser:int",
+          "BaseTime:datetime",
+          "EventID:int",
+          "Level:int",
+          "TimeElapsedSec:int"
+        ]
+      },
+      {
+        "table": "dbo.CBT_ESLItem",
+        "columns": [
+          "ItemNo:int",
+          "Allowed:int"
+        ]
+      },
+      {
+        "table": "dbo.CBT_EventEXPGP",
+        "columns": [
+          "EventID:int",
+          "LobbyServerID:int",
+          "ModeID:int",
+          "MapID:int",
+          "EXPRate:real",
+          "GPRate:real",
+          "BeginTime:datetime",
+          "EndTime:datetime",
+          "Enable:int",
+          "Desc:nvarchar"
+        ]
+      },
+      {
+        "table": "dbo.CBT_FastRespawn_User",
+        "columns": [
+          "oidUser:int",
+          "RemainCount:int",
+          "CheckOutTime:datetime"
+        ]
+      },
+      {
+        "table": "dbo.CBT_FireTeamModeReward",
+        "columns": [
+          "ModeNo:int",
+          "MapNo:int",
+          "Difficulty:int",
+          "ProductID:int",
+          "Expire:int",
+          "InboxMsg:nvarchar"
+        ]
+      },
+      {
+        "table": "dbo.CBT_FreeItemRotation_Event",
+        "columns": [
+          "EventID:int",
+          "StartDate:datetime",
+          "EndDate:datetime",
+          "Enable:int",
+          "GroupID:int",
+          "Description:nvarchar"
+        ]
+      },
+      {
+        "table": "dbo.CBT_FreeItemRotation_GroupItems",
+        "columns": [
+          "GroupID:int",
+          "UserGroupID:int",
+          "WeaponGroupID:int",
+          "ItemNo:int"
+        ]
+      },
+      {
+        "table": "dbo.CBT_FreeItemRotation_UserGroupCondition",
+        "columns": [
+          "GroupID:int",
+          "UserGroupID:int",
+          "minKDR:float",
+          "maxKDR:float",
+          "minNxGrade:int",
+          "maxNxGrade:int",
+          "minGradeLevel:int",
+          "maxGradeLevel:int"
+        ]
+      },
+      {
+        "table": "dbo.CBT_GachaponeItemList",
+        "columns": [
+          "GachaponItemNo:int",
+          "GachaponSeqNo:int",
+          "GachaponNo:int"
+        ]
+      },
+      {
+        "table": "dbo.CBT_GameMap",
+        "columns": [
+          "MapID:int",
+          "Name:nvarchar"
+        ]
+      },
+      {
+        "table": "dbo.CBT_GameMode",
+        "columns": [
+          "Mode:int",
+          "ModeType:int",
+          "Name:nvarchar"
+        ]
+      },
+      {
+        "table": "dbo.CBT_GameModeType",
+        "columns": [
+          "ModeType:int",
+          "Name:nvarchar"
+        ]
+      },
+      {
+        "table": "dbo.CBT_GradeInfo",
+        "columns": [
+          "GradeLevel:int",
+          "GradeName:nvarchar",
+          "MinExp:int",
+          "MaxExp:int",
+          "GPBonus:int",
+          "RewardMessage:nvarchar",
+          "ProductID0:int",
+          "ProductID1:int",
+          "ProductID2:int",
+          "ProductID3:int",
+          "ProductID4:int"
+        ]
+      },
+      {
+        "table": "dbo.CBT_HiSecEvent",
+        "columns": [
+          "EventID:int",
+          "HiSecID:int",
+          "HiSecCaseID:int",
+          "TodayLimit:int",
+          "DropRateBase:float",
+          "BeginTime:datetime",
+          "EndTime:datetime",
+          "Enable:int",
+          "Desc:nvarchar"
+        ]
+      },
+      {
+        "table": "dbo.CBT_HiSecRateMode",
+        "columns": [
+          "ModeID:int",
+          "HiSecID:int",
+          "ModeMult:float"
+        ]
+      },
+      {
+        "table": "dbo.CBT_InboxGift_UserCount",
+        "columns": [
+          "oidUser:int",
+          "Count:int",
+          "RegDate:datetime"
+        ]
+      },
+      {
+        "table": "dbo.CBT_InGameErrorCodeInfo",
+        "columns": [
+          "ErrorCode:int",
+          "BanType:int",
+          "BanPeriod:int"
+        ]
+      },
+      {
+        "table": "dbo.CBT_ItemInfo",
+        "columns": [
+          "ItemNo:int",
+          "Name:nvarchar",
+          "ItemType:int",
+          "Detailtype:int",
+          "Functioninfo:int",
+          "OptionType:int",
+          "SlotNum:int",
+          "GPUnlock:int",
+          "NXUnlock:int",
+          "ClanUnlock:int",
+          "ItemGrade:int"
+        ]
+      },
+      {
+        "table": "dbo.CBT_ItemInfo_ForgeRecipe",
+        "columns": [
+          "ForgeRecipeNo:int",
+          "SourceItemNo0:int",
+          "SourceItemCount0:int",
+          "SourceItemNo1:int",
+          "SourceItemCount1:int",
+          "SourceItemNo2:int",
+          "SourceItemCount2:int",
+          "ResultItemNo:int",
+          "Use:int",
+          "Revision:tinyint"
+        ]
+      },
+      {
+        "table": "dbo.CBT_ItemInfo_FreePass",
+        "columns": [
+          "FreePassItemNo:int",
+          "ItemNo:int"
+        ]
+      },
+      {
+        "table": "dbo.CBT_ItemInfo_GachaponInfo_Item",
+        "columns": [
+          "GachaponItemNo:int",
+          "Percentage:int",
+          "ItemNo:int",
+          "ConsumeType:int",
+          "Period:int",
+          "Broadcast:int"
+        ]
+      },
+      {
+        "table": "dbo.CBT_ItemInfo_GachaponInfo_Item_Double",
+        "columns": [
+          "DoubleGachaponItemNo:int",
+          "GachaponItemNo0:int",
+          "GachaponItemNo1:int",
+          "GachaponItemNo2:int",
+          "GachaponItemNo3:int",
+          "GachaponItemNo4:int",
+          "ConsumeType:int"
+        ]
+      },
+      {
+        "table": "dbo.CBT_ItemInfo_GachaponInfo_Product",
+        "columns": [
+          "GachaponItemNo:int",
+          "Percentage:int",
+          "ProductID:int",
+          "ConsumeType:int",
+          "Period:int",
+          "Broadcast:int"
+        ]
+      },
+      {
+        "table": "dbo.CBT_ItemInfo_GachaponInfo_Product_Double",
+        "columns": [
+          "DoubleGachaponItemNo:int",
+          "GachaponItemNo0:int",
+          "GachaponItemNo1:int",
+          "GachaponItemNo2:int",
+          "GachaponItemNo3:int",
+          "GachaponItemNo4:int",
+          "ConsumeType:int"
+        ]
+      },
+      {
+        "table": "dbo.CBT_ItemInfo_OpenSlotCount",
+        "columns": [
+          "Count:int"
+        ]
+      },
+      {
+        "table": "dbo.CBT_ItemInfo_RenewalItemList",
+        "columns": [
+          "RenewalKitItemNo:int",
+          "ItemNo:int"
+        ]
+      },
+      {
+        "table": "dbo.CBT_ItemInfo_RenewalKitInfo",
+        "columns": [
+          "RenewalKitItemNo:int",
+          "Percentage:int",
+          "Minute:int",
+          "Broadcast:int"
+        ]
+      },
+      {
+        "table": "dbo.CBT_ItemInfo_SellBackPrice",
+        "columns": [
+          "ItemNo:int",
+          "SellBackPrice:int"
+        ]
+      },
+      {
+        "table": "dbo.CBT_ItemInfo_TradeReward",
+        "columns": [
+          "ItemNo:int"
+        ]
+      },
+      {
+        "table": "dbo.CBT_ItemTypeToEquipType",
+        "columns": [
+          "ItemType:int",
+          "EquipType:nvarchar"
+        ]
+      },
+      {
+        "table": "dbo.CBT_Ladder_ModeMap",
+        "columns": [
+          "modeId:int",
+          "mapId:int",
+          "chance:int"
+        ]
+      },
+      {
+        "table": "dbo.CBT_Ladder_User",
+        "columns": [
+          "oidUser:int",
+          "ladderId:int",
+          "penaltyEndTime:datetime",
+          "mmr:real",
+          "win:int",
+          "lose:int",
+          "kill:int",
+          "death:int",
+          "exit:int",
+          "totalExit:int",
+          "lastGameResultType:int",
+          "lastGameBeginTime:datetime",
+          "lastMmrIncrement:real"
+        ]
+      },
+      {
+        "table": "dbo.CBT_LadderReward_Product",
+        "columns": [
+          "SeasonID:int",
+          "Type:int",
+          "Target:int",
+          "ProductID:int",
+          "MatchCountCondition:int"
+        ]
+      },
+      {
+        "table": "dbo.CBT_LastLoginMacAddress",
+        "columns": [
+          "oiduser:int",
+          "MacAddress:nvarchar",
+          "LastLoginDate:datetime",
+          "HWID:nvarchar"
+        ]
+      },
+      {
+        "table": "dbo.CBT_LevelRankerLog",
+        "columns": [
+          "LevelRankerLogSeqno:int",
+          "MapSubNo:int",
+          "GameMode:int",
+          "oiduser:int",
+          "nickname:nvarchar",
+          "clanname:nvarchar",
+          "Exp:int",
+          "KillCnt:int",
+          "DeadCnt:int",
+          "FriendPlayerCnt:int",
+          "EnemyPlayerCnt:int",
+          "WinRoundCnt:int",
+          "RankPoint:int",
+          "createdate:datetime",
+          "GameType:int",
+          "nationindex:int"
+        ]
+      },
+      {
+        "table": "dbo.CBT_LevelRankerLog01",
+        "columns": [
+          "LevelRankerLogSeqno:int",
+          "MapSubNo:int",
+          "GameMode:int",
+          "oiduser:int",
+          "nickname:nvarchar",
+          "clanname:nvarchar",
+          "Exp:int",
+          "KillCnt:int",
+          "DeadCnt:int",
+          "FriendPlayerCnt:int",
+          "EnemyPlayerCnt:int",
+          "WinRoundCnt:int",
+          "RankPoint:int",
+          "createdate:datetime",
+          "GameType:int",
+          "nationindex:int",
+          "lastTimestamp:timestamp"
+        ]
+      },
+      {
+        "table": "dbo.CBT_LevelRankerLog02",
+        "columns": [
+          "LevelRankerLogSeqno:int",
+          "MapSubNo:int",
+          "GameMode:int",
+          "oiduser:int",
+          "nickname:nvarchar",
+          "clanname:nvarchar",
+          "Exp:int",
+          "KillCnt:int",
+          "DeadCnt:int",
+          "FriendPlayerCnt:int",
+          "EnemyPlayerCnt:int",
+          "WinRoundCnt:int",
+          "RankPoint:int",
+          "createdate:datetime",
+          "GameType:int",
+          "nationindex:int",
+          "lastTimestamp:timestamp"
+        ]
+      },
+      {
+        "table": "dbo.CBT_MapOpen",
+        "columns": [
+          "ClearanceLevel:int",
+          "ModeID:int",
+          "MapID:int",
+          "IsDefaultMap:int",
+          "Enable:int",
+          "IsOfficial:int"
+        ]
+      },
+      {
+        "table": "dbo.CBT_Marble_User",
+        "columns": [
+          "EventID:int",
+          "oidUser:int",
+          "ArrivedTile:int",
+          "CurrentTile:int",
+          "MissionValue:int",
+          "Mileage:int"
+        ]
+      },
+      {
+        "table": "dbo.CBT_Marble_UserReward",
+        "columns": [
+          "EventID:int",
+          "oidUser:int",
+          "Recved:int",
+          "RegDate:datetime",
+          "ProductID:int",
+          "ProductPeriod:int",
+          "RecvDate:datetime",
+          "IsMileage:int"
+        ]
+      },
+      {
+        "table": "dbo.CBT_MgmUserInfo",
+        "columns": [
+          "oidUser:int",
+          "userType:int",
+          "followCount:int",
+          "leadCount:int",
+          "notifyDate:datetime",
+          "enableRecv:int",
+          "scoreAvailableCount:int",
+          "lastLoginDate:datetime",
+          "scoreRefillDate:datetime",
+          "regDate:datetime"
+        ]
+      },
+      {
+        "table": "dbo.CBT_MgmUserMission",
+        "columns": [
+          "seqNo:int",
+          "relationSeqNo:int",
+          "missionNo:int",
+          "leadLevel:int",
+          "followLevel:int",
+          "progress:int",
+          "leadOid:int",
+          "followOid:int",
+          "regDate:datetime"
+        ]
+      },
+      {
+        "table": "dbo.CBT_MonthlyPass_DailyReward_User",
+        "columns": [
+          "oidUser:int",
+          "checkout:datetime",
+          "receiveTimes:int",
+          "receiveProducts:int"
+        ]
+      },
+      {
+        "table": "dbo.CBT_NXGradeCurrentNo",
+        "columns": [
+          "CurrentGradeNo:int"
+        ]
+      },
+      {
+        "table": "dbo.CBT_NXGradeInfo",
+        "columns": [
+          "GradeIndex:int",
+          "NXGradeName:nvarchar",
+          "MinNX:int",
+          "MaxNX:int"
+        ]
+      },
+      {
+        "table": "dbo.CBT_NxProductOrderNo",
+        "columns": [
+          "orderNo:int"
+        ]
+      },
+      {
+        "table": "dbo.CBT_NXSale_Block",
+        "columns": [
+          "ItemType:int",
+          "IsSale:int"
+        ]
+      },
+      {
+        "table": "dbo.CBT_NXSale_Unlock",
+        "columns": [
+          "ItemNo:int",
+          "NXUnlock:int"
+        ]
+      },
+      {
+        "table": "dbo.CBT_OFCR_ItemList",
+        "columns": [
+          "AllowType:int",
+          "ValueType:int",
+          "Value:int"
+        ]
+      },
+      {
+        "table": "dbo.CBT_PartnerUser",
+        "columns": [
+          "oiduser:int",
+          "PartnerCode:int",
+          "MacAddress:nvarchar",
+          "RegDate:datetime"
+        ]
+      },
+      {
+        "table": "dbo.CBT_PcRoomList",
+        "columns": [
+          "IP:nvarchar",
+          "Enable:bit"
+        ]
+      },
+      {
+        "table": "dbo.CBT_ProductFailLog",
+        "columns": [
+          "oiduser:int",
+          "productno:int",
+          "productid:int",
+          "orderno:int",
+          "createdate:datetime",
+          "recevieroiduser:int",
+          "errorcode:int",
+          "strnexonid:nvarchar",
+          "message:nvarchar"
+        ]
+      },
+      {
+        "table": "dbo.CBT_ProductInfo",
+        "columns": [
+          "ProductID:int",
+          "ProductName:nvarchar",
+          "SaleType:int",
+          "Price:int",
+          "SalePrice:int",
+          "BonusGP:int",
+          "ItemNum:int",
+          "ItemNo00:int",
+          "ConsumeType00:int",
+          "Period00:int",
+          "ItemNo01:int",
+          "ConsumeType01:int",
+          "Period01:int",
+          "ItemNo02:int",
+          "ConsumeType02:int",
+          "Period02:int",
+          "ItemNo03:int",
+          "ConsumeType03:int",
+          "Period03:int",
+          "ItemNo04:int",
+          "ConsumeType04:int",
+          "Period04:int",
+          "ActivationUnlock:int",
+          "InboxGift:int"
+        ]
+      },
+      {
+        "table": "dbo.CBT_ProductInfo_FirstBuy",
+        "columns": [
+          "ProductID:int"
+        ]
+      },
+      {
+        "table": "dbo.CBT_ProductInfo_Gift",
+        "columns": [
+          "ProductID:int",
+          "Gift:int"
+        ]
+      },
+      {
+        "table": "dbo.CBT_ProductInfo_HotTag",
+        "columns": [
+          "ProductID:int",
+          "HotTag:int"
+        ]
+      },
+      {
+        "table": "dbo.CBT_ProductInfo_LimitedSale",
+        "columns": [
+          "ProductID:int",
+          "MaxCount:int",
+          "SaleCount:int",
+          "Enable:int"
+        ]
+      },
+      {
+        "table": "dbo.CBT_ProductInfo_NewTag",
+        "columns": [
+          "ProductID:int",
+          "NewTag:int"
+        ]
+      },
+      {
+        "table": "dbo.CBT_ProductInfo_Price",
+        "columns": [
+          "ProductID:int",
+          "Price:int",
+          "BasePrice:int"
+        ]
+      },
+      {
+        "table": "dbo.CBT_ProductInfo_SaleTag",
+        "columns": [
+          "ProductID:int",
+          "SaleTag:int"
+        ]
+      },
+      {
+        "table": "dbo.CBT_ProductInfo_ShopEvent",
+        "columns": [
+          "ProductID:int",
+          "EventType:int",
+          "Start:datetime",
+          "End:datetime",
+          "EventProductID:int",
+          "Message:nvarchar"
+        ]
+      },
+      {
+        "table": "dbo.CBT_ProductInfo_ShopView",
+        "columns": [
+          "ProductID:int",
+          "ShopView:int"
+        ]
+      },
+      {
+        "table": "dbo.CBT_ProductLog",
+        "columns": [
+          "oiduser:int",
+          "ProductNo:int",
+          "ProductID:int",
+          "OrderNo:int",
+          "Price:int",
+          "CreateDate:datetime",
+          "RecevierOiduser:int",
+          "Commission:int"
+        ]
+      },
+      {
+        "table": "dbo.CBT_ProductSetItems",
+        "columns": [
+          "ProductID:int",
+          "AddProductID:int",
+          "InboxMsg:nvarchar",
+          "MsgOption:int"
+        ]
+      },
+      {
+        "table": "dbo.CBT_RecommendEvent",
+        "columns": [
+          "EventID:int",
+          "StartDate:datetime",
+          "EndDate:datetime",
+          "ReturnDay:int",
+          "MaxRecommendedCount:int"
+        ]
+      },
+      {
+        "table": "dbo.CBT_RecommendEventReward",
+        "columns": [
+          "RewardType:int",
+          "ProductID:int",
+          "InboxMsgStringID:int",
+          "InboxDuration:int"
+        ]
+      },
+      {
+        "table": "dbo.CBT_SeasonalRanking_Clan_Rank_PrevSeason",
+        "columns": [
+          "Rank:int",
+          "ClanID:int",
+          "Value:float"
+        ]
+      },
+      {
+        "table": "dbo.CBT_SeasonalRanking_ClanReward",
+        "columns": [
+          "SeasonID:int",
+          "minCount:int"
+        ]
+      },
+      {
+        "table": "dbo.CBT_SeasonalRanking_ModeSetting",
+        "columns": [
+          "GameMode:int",
+          "MinPlayerCount:int"
+        ]
+      },
+      {
+        "table": "dbo.CBT_SeasonalRanking_User_FavoriteType",
+        "columns": [
+          "oidUser:int",
+          "SeasonID:int",
+          "Type:int"
+        ]
+      },
+      {
+        "table": "dbo.CBT_SeasonalRanking_UserAbusingSetting",
+        "columns": [
+          "AbusingCount:int",
+          "AbusingPoint:float"
+        ]
+      },
+      {
+        "table": "dbo.CBT_SeedEventDetail",
+        "columns": [
+          "StepID:int",
+          "ImageID:int",
+          "MissionType:int",
+          "GoalCount:int"
+        ]
+      },
+      {
+        "table": "dbo.CBT_SeedEventInfo",
+        "columns": [
+          "EventID:int",
+          "RewardID:int",
+          "BeginTime:datetime",
+          "EndTime:datetime",
+          "Enable:int",
+          "DailyBeginHour:int"
+        ]
+      },
+      {
+        "table": "dbo.CBT_SeedEventReward",
+        "columns": [
+          "RewardID:int",
+          "StepID:int",
+          "ProductID:int",
+          "DurationHour:int",
+          "InboxMsg:nvarchar"
+        ]
+      },
+      {
+        "table": "dbo.CBT_ServerCurrentMode",
+        "columns": [
+          "ModeSetID:int",
+          "CurrentModeNo:int",
+          "ServerLevel:int"
+        ]
+      },
+      {
+        "table": "dbo.CBT_SpFailLog",
+        "columns": [
+          "spname:nvarchar",
+          "sperrorcode:int",
+          "systemerrorcode:int",
+          "regdate:datetime",
+          "oiduser:int",
+          "errordesc:nvarchar"
+        ]
+      },
+      {
+        "table": "dbo.CBT_SVSEvent",
+        "columns": [
+          "EventID:int",
+          "Start:datetime",
+          "End:datetime"
+        ]
+      },
+      {
+        "table": "dbo.CBT_TagMapInfo",
+        "columns": [
+          "ClearanceLevel:int",
+          "ModeID:int",
+          "MapID:int",
+          "NewTag:int",
+          "HotTag:int",
+          "OfficialNewTag:int",
+          "OfficialHotTag:int"
+        ]
+      },
+      {
+        "table": "dbo.CBT_TagModeInfo",
+        "columns": [
+          "ClearanceLevel:int",
+          "ModeID:int",
+          "NewTag:int",
+          "HotTag:int",
+          "OfficialNewTag:int",
+          "OfficialHotTag:int"
+        ]
+      },
+      {
+        "table": "dbo.CBT_User",
+        "columns": [
+          "oidUser:int",
+          "strNexonID:varchar",
+          "NickName:nvarchar",
+          "CreateDate:datetime",
+          "FaceType:int",
+          "ClassType:int",
+          "Money:int",
+          "Exp:int",
+          "HeadShotCnt:int",
+          "KillCnt:int",
+          "DeadCnt:int",
+          "DoubleKillCnt:int",
+          "MultiKillCnt:int",
+          "UnbelievableCnt:int",
+          "PlayRoundCnt:int",
+          "WinCnt:int",
+          "LoseCnt:int",
+          "DeleteDate:datetime",
+          "UserType:int",
+          "Status:int",
+          "genderType:int",
+          "LastLogoutDate:datetime",
+          "StatusEndDate:datetime",
+          "CreateIP:nvarchar",
+          "lastLoginDate:datetime",
+          "UltraKillCnt:int",
+          "FantasticKillCnt:int",
+          "UnbelievablePlusCnt:int",
+          "GameOption:int",
+          "RevengeCnt:int",
+          "FirstKill:int",
+          "KillsStreak:int",
+          "DeathsStreak:int",
+          "MostKills:int",
+          "BombsPlanted:int",
+          "BombsExploded:int",
+          "BombsDefused:int",
+          "CaptureFlag:int",
+          "RecoverFlag:int",
+          "ClanWin:int",
+          "ClanLose:int",
+          "ClanDraw:int",
+          "Forfeited:int",
+          "ClanKill:int",
+          "ClanDead:int",
+          "TotalGainMoney:int",
+          "ClanForfeited:int",
+          "nicknamecolor:int",
+          "colorenddate:datetime",
+          "BountyCnt:int",
+          "SuperRoomMaster:int",
+          "AgreeCnt:int",
+          "DisagreeCnt:int",
+          "KickedCnt:int",
+          "superroommasterenddate:datetime",
+          "NationCode:nvarchar",
+          "SilenceEndDate:datetime",
+          "CrossHairColorID:int",
+          "CrossHairUID:int",
+          "usedNX:int",
+          "nationindex:int",
+          "SuperRoomMasterEx:int",
+          "SuperRoomMasterExEndDate:datetime",
+          "EmType:int",
+          "Rec_HeadShotCnt:int",
+          "Rec_KillCnt:int",
+          "Rec_DeadCnt:int",
+          "Rec_DoubleKillCnt:int",
+          "Rec_MultiKillCnt:int",
+          "Rec_UltraKillCnt:int",
+          "Rec_FantasticKillCnt:int",
+          "Rec_UnbelievableCnt:int",
+          "Rec_UnbelievablePlusCnt:int",
+          "Rec_RevengeCnt:int",
+          "Rec_FirstKill:int",
+          "Rec_KillsStreak:int",
+          "Rec_DeathsStreak:int",
+          "Rec_BombsPlanted:int",
+          "Rec_BombsExploded:int",
+          "Rec_BombsDefused:int",
+          "Rec_CaptureFlag:int",
+          "Rec_RecoverFlag:int",
+          "Rec_WinCnt:int",
+          "Rec_LoseCnt:int",
+          "Rec_Forfeited:int",
+          "Rec_PlayRoundCnt:int",
+          "Rec_MostKills:int",
+          "Rec_ClanWin:int",
+          "Rec_ClanLose:int",
+          "Rec_ClanDraw:int",
+          "Rec_ClanKill:int",
+          "Rec_ClanDead:int",
+          "Rec_ClanForfeited:int",
+          "Rec_BountyCnt:int",
+          "SuperRoomMasterRestricted:bit",
+          "SuperRoomMasterRestrictEndDate:datetime",
+          "Submission:int",
+          "Assist:int",
+          "SinglePlayRewardCnt:int",
+          "LastSinglePlayDate:datetime"
+        ]
+      },
+      {
+        "table": "dbo.CBT_User_DefaultEquipmentItemForNewUser",
+        "columns": [
+          "oidUser:int",
+          "InventorySeqNo:bigint",
+          "InventoryStartDate:datetime",
+          "InventoryEndDate:datetime",
+          "ItemNo:int",
+          "Period:int",
+          "EventSeqNo:int"
+        ]
+      },
+      {
+        "table": "dbo.CBT_User_LadderPoint",
+        "columns": [
+          "oidUser:int",
+          "LadderPoint:real",
+          "LastGameTime:datetime"
+        ]
+      },
+      {
+        "table": "dbo.CBT_User_LoginReward",
+        "columns": [
+          "userId:int",
+          "rewardTime:datetime"
+        ]
+      },
+      {
+        "table": "dbo.CBT_User_NickName_Background",
+        "columns": [
+          "oidUser:int",
+          "Emblem:int",
+          "Background:int",
+          "EndDate:datetime"
+        ]
+      },
+      {
+        "table": "dbo.CBT_UserAdvertise",
+        "columns": [
+          "BeginNo:int",
+          "ReadNo:int"
+        ]
+      },
+      {
+        "table": "dbo.CBT_UserAdvertiseMessage",
+        "columns": [
+          "ADSeqNo:int",
+          "oiduser:int",
+          "InventorySeqNo:int",
+          "AdMax:int",
+          "ADCur:int",
+          "FirstFunc:int",
+          "SecondFunc:int",
+          "RegDate:datetime",
+          "ADMessage:nvarchar",
+          "ADColor:nvarchar"
+        ]
+      },
+      {
+        "table": "dbo.CBT_UserAuth",
+        "columns": [
+          "oidUser:int",
+          "strNexonID:nvarchar",
+          "strLNexonID:nvarchar",
+          "strPassword:nvarchar",
+          "strEmail:nvarchar",
+          "bIsMailActive:bit",
+          "BlockStartDate:datetime",
+          "BlockEndDate:datetime",
+          "RegDate:datetime",
+          "UpdDate:datetime",
+          "strLastMacAddress:nvarchar",
+          "strLastLoginIP:nvarchar",
+          "strLastHWID:nvarchar"
+        ]
+      },
+      {
+        "table": "dbo.CBT_UserAuthPwd",
+        "columns": [
+          "oidUser:int",
+          "pwdAlgo:tinyint",
+          "pwdIter:int",
+          "pwdSalt:varbinary",
+          "pwdHash:varbinary",
+          "pwdLegacyAtUpgrade:varbinary",
+          "pwdUpgradedAt:datetime"
+        ]
+      },
+      {
+        "table": "dbo.CBT_UserBillTran",
+        "columns": [
+          "oidUser:int",
+          "orderId:nvarchar"
+        ]
+      },
+      {
+        "table": "dbo.CBT_UserClanInfo",
+        "columns": [
+          "oiduser:int",
+          "oiduserclan:int",
+          "WinCnt:int",
+          "LoseCnt:int",
+          "DrawCnt:int",
+          "KillCnt:int",
+          "DeadCnt:int",
+          "ClanForfeited:int",
+          "Rec_WinCnt:int",
+          "Rec_LoseCnt:int",
+          "Rec_DrawCnt:int",
+          "Rec_KillCnt:int",
+          "Rec_DeadCnt:int",
+          "Rec_ClanForfeited:int"
+        ]
+      },
+      {
+        "table": "dbo.CBT_UserDailyAttendance",
+        "columns": [
+          "oidUser:int",
+          "Attendance:int",
+          "CheckDate:datetime"
+        ]
+      },
+      {
+        "table": "dbo.CBT_UserDetailInfo",
+        "columns": [
+          "oiduser:int",
+          "NutShotCnt:int",
+          "NutShotDeadCnt:int",
+          "SpyKillCnt:int",
+          "SpyDeadCnt:int",
+          "SpyUploading:int",
+          "CoopKill:int",
+          "CoopDead:int",
+          "CoopHeadShot:int",
+          "CoopCombo:int",
+          "CoopSuccess:int",
+          "CoopPlayNum:int",
+          "HumanKillCnt:int",
+          "HumanDeathCnt:int",
+          "HumanWin:int",
+          "InfectKillCnt:int",
+          "InfectDeathCnt:int",
+          "InfectWin:int",
+          "QuaRanTinePlayNum:int",
+          "CoopInfectKillCnt:int",
+          "CoopInfectDeadCnt:int",
+          "CoopInfectHeadshotCnt:int",
+          "CoopInfectComboCnt:int",
+          "CoopInfectPlaynumCnt:int",
+          "CoopInfectSuccessCnt:int",
+          "Rec_NutShotCnt:int",
+          "Rec_NutShotDeadCnt:int",
+          "Rec_SpyKillCnt:int",
+          "Rec_SpyDeadCnt:int",
+          "Rec_SpyUploading:int",
+          "Rec_CoopKill:int",
+          "Rec_CoopDead:int",
+          "Rec_CoopHeadShot:int",
+          "Rec_CoopCombo:int",
+          "Rec_CoopSuccess:int",
+          "Rec_CoopPlayNum:int",
+          "Rec_HumanKillCnt:int",
+          "Rec_HumanDeathCnt:int",
+          "Rec_HumanWin:int",
+          "Rec_InfectKillCnt:int",
+          "Rec_InfectDeathCnt:int",
+          "Rec_InfectWin:int",
+          "Rec_QuaRanTinePlayNum:int",
+          "Rec_CoopInfectKillCnt:int",
+          "Rec_CoopInfectDeadCnt:int",
+          "Rec_CoopInfectHeadshotCnt:int",
+          "Rec_CoopInfectComboCnt:int",
+          "Rec_CoopInfectPlaynumCnt:int",
+          "Rec_CoopInfectSuccessCnt:int",
+          "HQPoint:int",
+          "CoopMineShaftKillCnt:int",
+          "CoopMineShaftDeadCnt:int",
+          "CoopMineShaftHeadshotCnt:int",
+          "CoopMineShaftComboCnt:int",
+          "CoopMineShaftPlaynumCnt:int",
+          "CoopMineShaftSuccessCnt:int",
+          "Rec_CoopMineShaftKillCnt:int",
+          "Rec_CoopMineShaftDeadCnt:int",
+          "Rec_CoopMineShaftHeadshotCnt:int",
+          "Rec_CoopMineShaftComboCnt:int",
+          "Rec_CoopMineShaftPlaynumCnt:int",
+          "Rec_CoopMineShaftSuccessCnt:int",
+          "CoopDesertFoxKillCnt:int",
+          "CoopDesertFoxDeadCnt:int",
+          "CoopDesertFoxHeadshotCnt:int",
+          "CoopDesertFoxComboCnt:int",
+          "CoopDesertFoxPlaynumCnt:int",
+          "CoopDesertFoxSuccessCnt:int",
+          "Rec_CoopDesertFoxKillCnt:int",
+          "Rec_CoopDesertFoxDeadCnt:int",
+          "Rec_CoopDesertFoxHeadshotCnt:int",
+          "Rec_CoopDesertFoxComboCnt:int",
+          "Rec_CoopDesertFoxPlaynumCnt:int",
+          "Rec_CoopDesertFoxSuccessCnt:int",
+          "SaveBullionNum:int",
+          "Rec_SaveBullionNum:int",
+          "Rec_HQPoint:int",
+          "SQPoint:int",
+          "Rec_SQPoint:int",
+          "CoopNemexisKillCnt:int",
+          "CoopNemexisDeadCnt:int",
+          "CoopNemexisHeadshotCnt:int",
+          "CoopNemexisComboCnt:int",
+          "CoopNemexisPlaynumCnt:int",
+          "CoopNemexisSuccessCnt:int",
+          "Rec_CoopNemexisKillCnt:int",
+          "Rec_CoopNemexisDeadCnt:int",
+          "Rec_CoopNemexisHeadshotCnt:int",
+          "Rec_CoopNemexisComboCnt:int",
+          "Rec_CoopNemexisPlaynumCnt:int",
+          "Rec_CoopNemexisSuccessCnt:int",
+          "CoopLabsKillCnt:int",
+          "CoopLabsDeadCnt:int",
+          "CoopLabsHeadshotCnt:int",
+          "CoopLabsComboCnt:int",
+          "CoopLabsPlaynumCnt:int",
+          "CoopLabsSuccessCnt:int",
+          "Rec_CoopLabsKillCnt:int",
+          "Rec_CoopLabsDeadCnt:int",
+          "Rec_CoopLabsHeadshotCnt:int",
+          "Rec_CoopLabsComboCnt:int",
+          "Rec_CoopLabsPlaynumCnt:int",
+          "Rec_CoopLabsSuccessCnt:int",
+          "CoopInfectedShipKillCnt:int",
+          "CoopInfectedShipDeadCnt:int",
+          "CoopInfectedShipHeadShotCnt:int",
+          "CoopInfectedShipComboCnt:int",
+          "CoopInfectedShipPlayNumCnt:int",
+          "CoopInfectedShipSuccessCnt:int",
+          "Rec_CoopInfectedShipKillCnt:int",
+          "Rec_CoopInfectedShipDeadCnt:int",
+          "Rec_CoopInfectedShipHeadShotCnt:int",
+          "Rec_CoopInfectedShipComboCnt:int",
+          "Rec_CoopInfectedShipPlayNumCnt:int",
+          "Rec_CoopInfectedShipSuccessCnt:int",
+          "CoopNewCabinFever2KillCnt:int",
+          "CoopNewCabinFever2DeadCnt:int",
+          "CoopNewCabinFever2HeadShotCnt:int",
+          "CoopNewCabinFever2ComboCnt:int",
+          "CoopNewCabinFever2PlayNumCnt:int",
+          "CoopNewCabinFever2SuccessCnt:int",
+          "Rec_CoopNewCabinFever2KillCnt:int",
+          "Rec_CoopNewCabinFever2DeadCnt:int",
+          "Rec_CoopNewCabinFever2HeadShotCnt:int",
+          "Rec_CoopNewCabinFever2ComboCnt:int",
+          "Rec_CoopNewCabinFever2PlayNumCnt:int",
+          "Rec_CoopNewCabinFever2SuccessCnt:int"
+        ]
+      },
+      {
+        "table": "dbo.CBT_UserEM",
+        "columns": [
+          "oidUser:int",
+          "ableKick:int",
+          "lastUseDate:datetime"
+        ]
+      },
+      {
+        "table": "dbo.CBT_UserEquipItems",
+        "columns": [
+          "oidUser:int",
+          "AssultItemNo:int",
+          "SubGunItemNo:int",
+          "KnifeItemNo:int",
+          "BombItemNo:int",
+          "HelmetItemNo:int",
+          "FaceItemNo:int",
+          "GoggleItemNo:int",
+          "CamoItemNo:int",
+          "VestItemNo:int",
+          "BackPackItemNo:int",
+          "BackPack00:int",
+          "BackPack01:int",
+          "BackPack02:int",
+          "BackPack03:int",
+          "LastModifiedDate:datetime",
+          "FigureItemNo:int",
+          "FreePassAssultItem:int",
+          "FreePassSubGunItem:int",
+          "FreePassKnifeItem:int",
+          "FreePassBombItem:int",
+          "FreePassHelmetItem:int",
+          "FreePassFaceItem:int",
+          "FreePassGoggleItem:int",
+          "FreePassCamoItemNo:int",
+          "FreePassVestItemNo:int",
+          "FreePassBackPackItemNo:int",
+          "FreePassBackPack00:int",
+          "FreePassBackPack01:int",
+          "FreePassBackPack02:int",
+          "FreePassBackPack03:int",
+          "FreePassFigureItem:int",
+          "CustomReticle:int",
+          "BonusEXP:int",
+          "BonusGP:int",
+          "BonusEXPGP:int",
+          "SpecialBackPack:int",
+          "InfectdMercenary:int",
+          "RespawnToken:int",
+          "EmItemNo:int",
+          "KDRVision:int",
+          "SkillSlotExtender:int",
+          "Skill00:int",
+          "Skill01:int",
+          "Skill02:int",
+          "Skill03:int",
+          "PartyRespawnToken:int",
+          "Cosmetic_CHARACTER:int",
+          "Cosmetic_HEAD:int",
+          "Cosmetic_FACE:int",
+          "Cosmetic_VEST:int",
+          "Cosmetic_BACKPACK:int",
+          "NoSpecialist:int",
+          "WeaponSetChange:int",
+          "AutoEquipAssult:int",
+          "AutoEquipSubGun:int",
+          "AutoEquipKnife:int",
+          "AutoEquipBomb:int",
+          "AutoEquipBackPack00:int",
+          "AutoEquipBackPack01:int",
+          "AutoEquipBackPack02:int",
+          "AutoEquipBackPack03:int",
+          "PrevEquipAssult:int",
+          "PrevEquipSubGun:int",
+          "PrevEquipKnife:int",
+          "PrevEquipBomb:int",
+          "PrevEquipBackPack00:int",
+          "PrevEquipBackPack01:int",
+          "PrevEquipBackPack02:int",
+          "PrevEquipBackPack03:int"
+        ]
+      },
+      {
+        "table": "dbo.CBT_UserEquipItems_OFCR",
+        "columns": [
+          "oidUser:int",
+          "AssultItemNo:int",
+          "SubGunItemNo:int",
+          "KnifeItemNo:int",
+          "BombItemNo:int",
+          "HelmetItemNo:int",
+          "FaceItemNo:int",
+          "GoggleItemNo:int",
+          "CamoItemNo:int",
+          "VestItemNo:int",
+          "BackPackItemNo:int",
+          "BackPack00:int",
+          "BackPack01:int",
+          "BackPack02:int",
+          "BackPack03:int",
+          "LastModifiedDate:datetime",
+          "FigureItemNo:int",
+          "FreePassAssultItem:int",
+          "FreePassSubGunItem:int",
+          "FreePassKnifeItem:int",
+          "FreePassBombItem:int",
+          "FreePassHelmetItem:int",
+          "FreePassFaceItem:int",
+          "FreePassGoggleItem:int",
+          "FreePassCamoItemNo:int",
+          "FreePassVestItemNo:int",
+          "FreePassBackPackItemNo:int",
+          "FreePassBackPack00:int",
+          "FreePassBackPack01:int",
+          "FreePassBackPack02:int",
+          "FreePassBackPack03:int",
+          "FreePassFigureItem:int",
+          "Skill00:int",
+          "Skill01:int",
+          "Skill02:int",
+          "Skill03:int",
+          "Cosmetic_CHARACTER:int",
+          "Cosmetic_HEAD:int",
+          "Cosmetic_FACE:int",
+          "Cosmetic_VEST:int",
+          "Cosmetic_BACKPACK:int",
+          "AutoEquipAssult:int",
+          "AutoEquipSubGun:int",
+          "AutoEquipKnife:int",
+          "AutoEquipBomb:int",
+          "AutoEquipBackPack00:int",
+          "AutoEquipBackPack01:int",
+          "AutoEquipBackPack02:int",
+          "AutoEquipBackPack03:int",
+          "PrevEquipAssult:int",
+          "PrevEquipSubGun:int",
+          "PrevEquipKnife:int",
+          "PrevEquipBomb:int",
+          "PrevEquipBackPack00:int",
+          "PrevEquipBackPack01:int",
+          "PrevEquipBackPack02:int",
+          "PrevEquipBackPack03:int"
+        ]
+      },
+      {
+        "table": "dbo.CBT_UserEx",
+        "columns": [
+          "oidUser:int",
+          "InventoryVersionNo:int",
+          "CampType:int",
+          "CampLevel:int",
+          "CampWarSeasonID:int",
+          "CampWarRoundID:int",
+          "LanguageCode:nvarchar",
+          "TradeMileage:int"
+        ]
+      },
+      {
+        "table": "dbo.CBT_UserFakeMark",
+        "columns": [
+          "oidUser:int",
+          "RankEmblem:int",
+          "RankEnddate:datetime",
+          "NationEmblem:int",
+          "NationEnddate:datetime"
+        ]
+      },
+      {
+        "table": "dbo.CBT_UserFreeItemRotation",
+        "columns": [
+          "oidUser:int",
+          "EventID:int",
+          "UserGroupID:int",
+          "EndDate:datetime",
+          "AR:int",
+          "SMG:int",
+          "SR:int",
+          "MG:int",
+          "Pistol:int",
+          "Support:int",
+          "Melee:int",
+          "ETC:int",
+          "SG:int",
+          "AssaultItemNo:int",
+          "SubGunItemNo:int",
+          "KnifeItemNo:int",
+          "BombItemNo:int",
+          "BackPack00:int",
+          "BackPack01:int",
+          "BackPack02:int",
+          "Backpack03:int",
+          "OFCR_AssaultItemNo:int",
+          "OFCR_SubGunItemNo:int",
+          "OFCR_KnifeItemNo:int",
+          "OFCR_BombItemNo:int",
+          "OFCR_BackPack00:int",
+          "OFCR_BackPack01:int",
+          "OFCR_BackPack02:int",
+          "OFCR_Backpack03:int"
+        ]
+      },
+      {
+        "table": "dbo.CBT_UserFreePassGold",
+        "columns": [
+          "FreePassGoldSeqNo:int",
+          "oidUser:int",
+          "InventorySeqNo:int",
+          "FreePassItemNo:int",
+          "CreateDate:datetime",
+          "UpdateDate:datetime",
+          "EndDate:datetime",
+          "AR:int",
+          "SMG:int",
+          "SR:int",
+          "MG:int",
+          "Pistol:int",
+          "Support:int",
+          "Melee:int",
+          "ETC:int",
+          "SG:int"
+        ]
+      },
+      {
+        "table": "dbo.CBT_UserFreePassGoldEquip",
+        "columns": [
+          "oidUser:int",
+          "AssaultItemNo:int",
+          "SubGunItemNo:int",
+          "KnifeItemNo:int",
+          "BombItemNo:int",
+          "BackPack00:int",
+          "BackPack01:int",
+          "BackPack02:int",
+          "Backpack03:int",
+          "OFCR_AssaultItemNo:int",
+          "OFCR_SubGunItemNo:int",
+          "OFCR_KnifeItemNo:int",
+          "OFCR_BombItemNo:int",
+          "OFCR_BackPack00:int",
+          "OFCR_BackPack01:int",
+          "OFCR_BackPack02:int",
+          "OFCR_Backpack03:int"
+        ]
+      },
+      {
+        "table": "dbo.CBT_UserGameModeInfo",
+        "columns": [
+          "oiduser:int",
+          "MapNo:int",
+          "GameMode:int",
+          "WinCnt:int",
+          "LoseCnt:int",
+          "KillCnt:int",
+          "DeadCnt:int",
+          "BombsPlanted:int",
+          "BombsExploded:int",
+          "BombsDefused:int",
+          "CaptureFlag:int",
+          "RecoverFlag:int",
+          "MostKillCnt:int",
+          "BountyCnt:int",
+          "InfectKillCnt:int",
+          "InfectDeathCnt:int",
+          "InfectWin:int",
+          "HumanWin:int",
+          "Rec_WinCnt:int",
+          "Rec_LoseCnt:int",
+          "Rec_KillCnt:int",
+          "Rec_DeadCnt:int",
+          "Rec_BombsPlanted:int",
+          "Rec_BombsExploded:int",
+          "Rec_BombsDefused:int",
+          "Rec_CaptureFlag:int",
+          "Rec_RecoverFlag:int",
+          "Rec_MostKillCnt:int",
+          "Rec_BountyCnt:int",
+          "Rec_InfectKillCnt:int",
+          "Rec_InfectDeathCnt:int",
+          "Rec_InfectWin:int",
+          "Rec_HumanWin:int"
+        ]
+      },
+      {
+        "table": "dbo.CBT_UserGoldPackage",
+        "columns": [
+          "oidUser:int",
+          "checkout:datetime",
+          "receiveTimes:int",
+          "receiveProducts:int"
+        ]
+      },
+      {
+        "table": "dbo.CBT_UserGoldPackageTicket",
+        "columns": [
+          "oidUser:int",
+          "currentInvenSeqNo:int",
+          "endDate:datetime",
+          "totalPeriod:int"
+        ]
+      },
+      {
+        "table": "dbo.CBT_UserHardwareInfo",
+        "columns": [
+          "oidUser:int",
+          "HWID:nvarchar",
+          "Indifiter:nvarchar",
+          "ProcessorType:nvarchar",
+          "VideoCard:nvarchar",
+          "OS:nvarchar",
+          "CPUSpeed:int",
+          "TotalMem:int",
+          "UseMem:int"
+        ]
+      },
+      {
+        "table": "dbo.CBT_UserInventory",
+        "columns": [
+          "oidUser:int",
+          "InventorySeqNo:int",
+          "ItemNo:int",
+          "ParentInventorySeqNo:int",
+          "DStyleType:int",
+          "StartDate:datetime",
+          "EndDate:datetime",
+          "UseType:int",
+          "ParentSeqNo:int",
+          "Period:int",
+          "defaultweapon:int",
+          "remaincount:int",
+          "Functioninfo:int",
+          "ProductID:int",
+          "ParentInventorySeqNo_OFCR:int",
+          "Functioninfo_OFCR:int"
+        ]
+      },
+      {
+        "table": "dbo.CBT_UserKickReason",
+        "columns": [
+          "oiduser:int",
+          "nomanercnt:int",
+          "bugplaycnt:int",
+          "defamationcnt:int",
+          "hackprogramusecnt:int",
+          "etc:int",
+          "kicktype:int",
+          "kicktypedecription:nvarchar"
+        ]
+      },
+      {
+        "table": "dbo.CBT_UserLog",
+        "columns": [
+          "oidUser:int",
+          "strNexonID:varchar",
+          "NickName:nvarchar",
+          "ModifyDate:datetime",
+          "FaceType:int",
+          "Exp:int",
+          "HeadShotCnt:int",
+          "KillCnt:int",
+          "DeadCnt:int",
+          "DoubleKillCnt:int",
+          "MultiKillCnt:int",
+          "UnbelievableCnt:int",
+          "PlayRoundCnt:int",
+          "WinCnt:int",
+          "LoseCnt:int",
+          "UltraKillCnt:int",
+          "FantasticKillCnt:int",
+          "UnbelievablePlusCnt:int",
+          "RevengeCnt:int",
+          "FirstKill:int",
+          "KillsStreak:int",
+          "DeathsStreak:int",
+          "MostKills:int",
+          "BombsPlanted:int",
+          "BombsExploded:int",
+          "BombsDefused:int",
+          "CaptureFlag:int",
+          "RecoverFlag:int",
+          "ClanWin:int",
+          "ClanLose:int",
+          "ClanDraw:int",
+          "Forfeited:int",
+          "ClanKill:int",
+          "ClanDead:int",
+          "ClanForfeited:int",
+          "nicknamecolor:int",
+          "BountyCnt:int",
+          "money:int",
+          "TotalGainMoney:int",
+          "reason:nvarchar"
+        ]
+      },
+      {
+        "table": "dbo.CBT_UserMVPInfo",
+        "columns": [
+          "oidUser:int",
+          "HeadShot:int",
+          "Revenge:int",
+          "SRKill:int",
+          "ExplodeKill:int",
+          "MissionKill:int",
+          "FlagKill:int",
+          "HQKill:int",
+          "LongestLife:int",
+          "Healing:int",
+          "SaveBullion:int",
+          "SpyKill:int",
+          "Infect:int",
+          "ZombiKill:int",
+          "AliveHuman:int"
+        ]
+      },
+      {
+        "table": "dbo.CBT_UserMystChoice",
+        "columns": [
+          "oidUser:int",
+          "Point:int"
+        ]
+      },
+      {
+        "table": "dbo.CBT_UserNicknames",
+        "columns": [
+          "nickname:nvarchar"
+        ]
+      },
+      {
+        "table": "dbo.CBT_UserRanking",
+        "columns": [
+          "oidUser:int",
+          "TotRank:int",
+          "GradeLevel:int",
+          "Totrank_Prev:int"
+        ]
+      },
+      {
+        "table": "dbo.CBT_UserRecieve",
+        "columns": [
+          "oidUser:int",
+          "startPackLevel:int"
+        ]
+      },
+      {
+        "table": "dbo.CBT_UserRecommendEvent_RecommendedCount",
+        "columns": [
+          "EventID:int",
+          "oidUser:int",
+          "RecommendedCount:int"
+        ]
+      },
+      {
+        "table": "dbo.CBT_UserRecommendEvent_UserType",
+        "columns": [
+          "EventID:int",
+          "oidUser:int",
+          "Type:int"
+        ]
+      },
+      {
+        "table": "dbo.CBT_UserRival",
+        "columns": [
+          "oiduser:int",
+          "Rival_oiduser:int",
+          "KillCnt:int",
+          "Type:int"
+        ]
+      },
+      {
+        "table": "dbo.CBT_UserRoulette",
+        "columns": [
+          "oidUser:int",
+          "lastItemNo:int",
+          "retainCount:int",
+          "opened:int",
+          "grade:int",
+          "rareSound:int",
+          "rotate:int",
+          "createDate:datetime",
+          "supply_type_0:int",
+          "supply_id_0:int",
+          "supply_prop_0:int",
+          "supply_type_1:int",
+          "supply_id_1:int",
+          "supply_prop_1:int",
+          "supply_type_2:int",
+          "supply_id_2:int",
+          "supply_prop_2:int",
+          "supply_type_3:int",
+          "supply_id_3:int",
+          "supply_prop_3:int",
+          "supply_type_4:int",
+          "supply_id_4:int",
+          "supply_prop_4:int",
+          "supply_type_5:int",
+          "supply_id_5:int",
+          "supply_prop_5:int",
+          "supply_type_6:int",
+          "supply_id_6:int",
+          "supply_prop_6:int",
+          "supply_type_7:int",
+          "supply_id_7:int",
+          "supply_prop_7:int",
+          "supply_type_8:int",
+          "supply_id_8:int",
+          "supply_prop_8:int",
+          "supply_type_9:int",
+          "supply_id_9:int",
+          "supply_prop_9:int",
+          "supply_type_10:int",
+          "supply_id_10:int",
+          "supply_prop_10:int",
+          "supply_type_11:int",
+          "supply_id_11:int",
+          "supply_prop_11:int"
+        ]
+      },
+      {
+        "table": "dbo.CBT_UserSeasonalRanking_1",
+        "columns": [
+          "oidUser:int",
+          "oidUserGroup:int",
+          "PersonalRanking:int",
+          "TeamRanking:int",
+          "FireTeamRanking:int",
+          "QuarantineRanking:int",
+          "LadderRanking:int"
+        ]
+      },
+      {
+        "table": "dbo.CBT_UserSeasonalRanking_2",
+        "columns": [
+          "oidUser:int",
+          "oidUserGroup:int",
+          "PersonalRanking:int",
+          "TeamRanking:int",
+          "FireTeamRanking:int",
+          "QuarantineRanking:int",
+          "LadderRanking:int"
+        ]
+      },
+      {
+        "table": "dbo.CBT_UserSeasonalRanking_Abusing",
+        "columns": [
+          "oidUser:int",
+          "SeasonID:int",
+          "AbusingCount:int",
+          "AbusingPoint:float"
+        ]
+      },
+      {
+        "table": "dbo.CBT_UserSeasonalRanking_BlockList",
+        "columns": [
+          "oidUser:int"
+        ]
+      },
+      {
+        "table": "dbo.CBT_UserSeasonalRanking_BlockList_Ladder",
+        "columns": [
+          "oidUser:int"
+        ]
+      },
+      {
+        "table": "dbo.CBT_UserSeasonalRanking_DailyLog_1",
+        "columns": [
+          "oidUser:int",
+          "FFA_WinCount:int",
+          "FFA_MatchCount:int",
+          "FFA_KillCount:int",
+          "FFA_DeathCount:int",
+          "FFA_Point:float",
+          "BNT_WinCount:int",
+          "BNT_MatchCount:int",
+          "BNT_KillCount:int",
+          "BNT_DeathCount:int",
+          "BNT_Point:float",
+          "LMS_WinCount:int",
+          "LMS_MatchCount:int",
+          "LMS_KillCount:int",
+          "LMS_DeathCount:int",
+          "LMS_Point:float",
+          "WRM_WinCount:int",
+          "WRM_MatchCount:int",
+          "WRM_KillCount:int",
+          "WRM_DeathCount:int",
+          "WRM_Point:float",
+          "TDM_WinCount:int",
+          "TDM_MatchCount:int",
+          "TDM_KillCount:int",
+          "TDM_DeathCount:int",
+          "TDM_Point:float",
+          "TMM_WinCount:int",
+          "TMM_MatchCount:int",
+          "TMM_KillCount:int",
+          "TMM_DeathCount:int",
+          "TMM_Point:float",
+          "CTF_WinCount:int",
+          "CTF_MatchCount:int",
+          "CTF_KillCount:int",
+          "CTF_DeathCount:int",
+          "CTF_Point:float",
+          "TSV_WinCount:int",
+          "TSV_MatchCount:int",
+          "TSV_KillCount:int",
+          "TSV_DeathCount:int",
+          "TSV_Point:float",
+          "SBT_WinCount:int",
+          "SBT_MatchCount:int",
+          "SBT_KillCount:int",
+          "SBT_DeathCount:int",
+          "SBT_Point:float",
+          "HQM_WinCount:int",
+          "HQM_MatchCount:int",
+          "HQM_KillCount:int",
+          "HQM_DeathCount:int",
+          "HQM_Point:float",
+          "BMM_WinCount:int",
+          "BMM_MatchCount:int",
+          "BMM_KillCount:int",
+          "BMM_DeathCount:int",
+          "BMM_Point:float",
+          "ESC_WinCount:int",
+          "ESC_MatchCount:int",
+          "ESC_KillCount:int",
+          "ESC_DeathCount:int",
+          "ESC_Point:float",
+          "VTDM_WinCount:int",
+          "VTDM_MatchCount:int",
+          "VTDM_KillCount:int",
+          "VTDM_DeathCount:int",
+          "VTDM_Point:float",
+          "COP_WinCount:int",
+          "COP_MatchCount:int",
+          "COP_KillCount:int",
+          "COP_DeathCount:int",
+          "COP_Point:float",
+          "QRT_WinCount:int",
+          "QRT_MatchCount:int",
+          "QRT_KillCount:int",
+          "QRT_DeathCount:int",
+          "QRT_Point:float"
+        ]
+      },
+      {
+        "table": "dbo.CBT_UserSeasonalRanking_DailyLog_2",
+        "columns": [
+          "oidUser:int",
+          "FFA_WinCount:int",
+          "FFA_MatchCount:int",
+          "FFA_KillCount:int",
+          "FFA_DeathCount:int",
+          "FFA_Point:float",
+          "BNT_WinCount:int",
+          "BNT_MatchCount:int",
+          "BNT_KillCount:int",
+          "BNT_DeathCount:int",
+          "BNT_Point:float",
+          "LMS_WinCount:int",
+          "LMS_MatchCount:int",
+          "LMS_KillCount:int",
+          "LMS_DeathCount:int",
+          "LMS_Point:float",
+          "WRM_WinCount:int",
+          "WRM_MatchCount:int",
+          "WRM_KillCount:int",
+          "WRM_DeathCount:int",
+          "WRM_Point:float",
+          "TDM_WinCount:int",
+          "TDM_MatchCount:int",
+          "TDM_KillCount:int",
+          "TDM_DeathCount:int",
+          "TDM_Point:float",
+          "TMM_WinCount:int",
+          "TMM_MatchCount:int",
+          "TMM_KillCount:int",
+          "TMM_DeathCount:int",
+          "TMM_Point:float",
+          "CTF_WinCount:int",
+          "CTF_MatchCount:int",
+          "CTF_KillCount:int",
+          "CTF_DeathCount:int",
+          "CTF_Point:float",
+          "TSV_WinCount:int",
+          "TSV_MatchCount:int",
+          "TSV_KillCount:int",
+          "TSV_DeathCount:int",
+          "TSV_Point:float",
+          "SBT_WinCount:int",
+          "SBT_MatchCount:int",
+          "SBT_KillCount:int",
+          "SBT_DeathCount:int",
+          "SBT_Point:float",
+          "HQM_WinCount:int",
+          "HQM_MatchCount:int",
+          "HQM_KillCount:int",
+          "HQM_DeathCount:int",
+          "HQM_Point:float",
+          "BMM_WinCount:int",
+          "BMM_MatchCount:int",
+          "BMM_KillCount:int",
+          "BMM_DeathCount:int",
+          "BMM_Point:float",
+          "ESC_WinCount:int",
+          "ESC_MatchCount:int",
+          "ESC_KillCount:int",
+          "ESC_DeathCount:int",
+          "ESC_Point:float",
+          "VTDM_WinCount:int",
+          "VTDM_MatchCount:int",
+          "VTDM_KillCount:int",
+          "VTDM_DeathCount:int",
+          "VTDM_Point:float",
+          "COP_WinCount:int",
+          "COP_MatchCount:int",
+          "COP_KillCount:int",
+          "COP_DeathCount:int",
+          "COP_Point:float",
+          "QRT_WinCount:int",
+          "QRT_MatchCount:int",
+          "QRT_KillCount:int",
+          "QRT_DeathCount:int",
+          "QRT_Point:float"
+        ]
+      },
+      {
+        "table": "dbo.CBT_UserSeasonalRanking_FinalPoint_1",
+        "columns": [
+          "oidUser:int",
+          "PersonalPoint:float",
+          "TeamPoint:float",
+          "FireTeamPoint:float",
+          "QuarantinePoint:float",
+          "LadderPoint:float"
+        ]
+      },
+      {
+        "table": "dbo.CBT_UserSeasonalRanking_FinalPoint_2",
+        "columns": [
+          "oidUser:int",
+          "PersonalPoint:float",
+          "TeamPoint:float",
+          "FireTeamPoint:float",
+          "QuarantinePoint:float",
+          "LadderPoint:float"
+        ]
+      },
+      {
+        "table": "dbo.CBT_UserSeasonalRanking_FireTeam_1",
+        "columns": [
+          "Ranking:int",
+          "oidUser:int",
+          "DisplayRanking:int",
+          "Blocked:bit"
+        ]
+      },
+      {
+        "table": "dbo.CBT_UserSeasonalRanking_FireTeam_2",
+        "columns": [
+          "Ranking:int",
+          "oidUser:int",
+          "DisplayRanking:int",
+          "Blocked:bit"
+        ]
+      },
+      {
+        "table": "dbo.CBT_UserSeasonalRanking_Ladder_1",
+        "columns": [
+          "Ranking:int",
+          "oidUser:int",
+          "DisplayRanking:int",
+          "Blocked:bit"
+        ]
+      },
+      {
+        "table": "dbo.CBT_UserSeasonalRanking_Ladder_2",
+        "columns": [
+          "Ranking:int",
+          "oidUser:int",
+          "DisplayRanking:int",
+          "Blocked:bit"
+        ]
+      },
+      {
+        "table": "dbo.CBT_UserSeasonalRanking_Personal_1",
+        "columns": [
+          "Ranking:int",
+          "oidUser:int",
+          "DisplayRanking:int",
+          "Blocked:bit"
+        ]
+      },
+      {
+        "table": "dbo.CBT_UserSeasonalRanking_Personal_2",
+        "columns": [
+          "Ranking:int",
+          "oidUser:int",
+          "DisplayRanking:int",
+          "Blocked:bit"
+        ]
+      },
+      {
+        "table": "dbo.CBT_UserSeasonalRanking_Quarantine_1",
+        "columns": [
+          "Ranking:int",
+          "oidUser:int",
+          "DisplayRanking:int",
+          "Blocked:bit"
+        ]
+      },
+      {
+        "table": "dbo.CBT_UserSeasonalRanking_Quarantine_2",
+        "columns": [
+          "Ranking:int",
+          "oidUser:int",
+          "DisplayRanking:int",
+          "Blocked:bit"
+        ]
+      },
+      {
+        "table": "dbo.CBT_UserSeasonalRanking_Team_1",
+        "columns": [
+          "Ranking:int",
+          "oidUser:int",
+          "DisplayRanking:int",
+          "Blocked:bit"
+        ]
+      },
+      {
+        "table": "dbo.CBT_UserSeasonalRanking_Team_2",
+        "columns": [
+          "Ranking:int",
+          "oidUser:int",
+          "DisplayRanking:int",
+          "Blocked:bit"
+        ]
+      },
+      {
+        "table": "dbo.CBT_UserSeedEvent",
+        "columns": [
+          "oidUser:int",
+          "EventID:int",
+          "OrderID:int",
+          "State:int",
+          "ProgressCount:int",
+          "Time:datetime"
+        ]
+      },
+      {
+        "table": "dbo.CBT_UserSEM",
+        "columns": [
+          "oidUser:int",
+          "ableKick:int",
+          "lastUseDate:datetime"
+        ]
+      },
+      {
+        "table": "dbo.CBT_UserSinglePlayInfo",
+        "columns": [
+          "oidUser:int",
+          "ModeId:int",
+          "MapId:int",
+          "PlayCount:int",
+          "WinCount:int",
+          "TotalKills:int",
+          "TotalDeaths:int",
+          "TotalHeadShot:int",
+          "Normal_Rank:int",
+          "Hard_Rank:int",
+          "Extreme_Rank:int",
+          "Normal_RankDate:datetime",
+          "Hard_RankDate:datetime",
+          "Extreme_RankDate:datetime",
+          "Normal_TimeRecord:int",
+          "Hard_TimeRecord:int",
+          "Extreme_TimeRecord:int"
+        ]
+      },
+      {
+        "table": "dbo.CBT_UserStore",
+        "columns": [
+          "UserStoreSeqNo:int",
+          "OidUser:int",
+          "ProductID:int",
+          "ProductNo:int",
+          "GiftType:int",
+          "ConfirmType:int",
+          "InventorySeqno:int",
+          "UseDate:datetime",
+          "SendOidUser:int",
+          "SendNickname:nvarchar",
+          "Message:nvarchar",
+          "RecvDate:datetime",
+          "orderno:int",
+          "ordernofaillog:int",
+          "enddate:datetime"
+        ]
+      },
+      {
+        "table": "dbo.CBT_UserStoreFailLog",
+        "columns": [
+          "oiduser:int",
+          "sendoiduser:int",
+          "sendnickname:nvarchar",
+          "productid:int",
+          "productno:int",
+          "gifttype:int",
+          "message:nvarchar",
+          "faildate:datetime",
+          "errorcode:int"
+        ]
+      },
+      {
+        "table": "dbo.CBT_UserSuperRoomMasterInfo",
+        "columns": [
+          "oiduser:int",
+          "agreecnt:int",
+          "disagreecnt:int",
+          "createdate:datetime",
+          "orderingno:int",
+          "Type:int"
+        ]
+      },
+      {
+        "table": "dbo.CBT_UserTutorialLog",
+        "columns": [
+          "oiduser:int",
+          "CreateDate:datetime",
+          "CompleteCount:int"
+        ]
+      },
+      {
+        "table": "dbo.VISMS_GameList",
+        "columns": [
+          "SRL:int",
+          "ServiceCode:varchar",
+          "Active:bit",
+          "RegDate:datetime"
+        ]
+      }
+    ]
+  },
+  "COMBATARMS_LOG": {
+    "count": 80,
+    "all": [
+      "dbo.CBT_abuse_UserGameLog",
+      "dbo.CBT_AchieveBase",
+      "dbo.CBT_AchieveCondition",
+      "dbo.CBT_AchieveReward",
+      "dbo.CBT_AchieveUnlock",
+      "dbo.CBT_AutoBanLog",
+      "dbo.CBT_BanUserList",
+      "dbo.CBT_BlockCommandList",
+      "dbo.CBT_CashError",
+      "dbo.CBT_CharacterActivateProductLog",
+      "dbo.CBT_CharacterBuyProductLog",
+      "dbo.CBT_CharacterChangeFaceLog",
+      "dbo.CBT_CharacterChangeNicknameColorLog",
+      "dbo.CBT_CharacterInputBlockCommand",
+      "dbo.CBT_CharacterKickedLog",
+      "dbo.CBT_CharacterReceiveDailyIngameCountRewardLog",
+      "dbo.CBT_CharacterReceiveDailyIngamePointRewardLog",
+      "dbo.CBT_CharacterReceiveEventProductLog",
+      "dbo.CBT_CharacterResetKillDeathScoreLog",
+      "dbo.CBT_CharacterUseCouponLog",
+      "dbo.CBT_ClanChangeEmblemLog",
+      "dbo.CBT_ClanChangeNameColorLog",
+      "dbo.CBT_ClanChangeNameLog",
+      "dbo.CBT_ClanDeleteLog",
+      "dbo.CBT_ClanGameLog",
+      "dbo.CBT_ClanResetScoreLog",
+      "dbo.CBT_DT_UserRewardLog",
+      "dbo.CBT_GameRoomLog01",
+      "dbo.CBT_GameRoomLog02",
+      "dbo.CBT_GlobalQuickJoinResult",
+      "dbo.CBT_HiSecDropLog",
+      "dbo.CBT_InboxGiftLog",
+      "dbo.CBT_InGameBanUserLog",
+      "dbo.CBT_ItemPurchaseLog",
+      "dbo.CBT_ItemTradeLog",
+      "dbo.CBT_LanguageUsageLog",
+      "dbo.CBT_LastLoginMacAddressLog",
+      "dbo.CBT_LobbyReport",
+      "dbo.CBT_LobbyServerName",
+      "dbo.CBT_LocalInfo_LOGDB",
+      "dbo.CBT_Marble_User_Log",
+      "dbo.CBT_MgmRelationLog",
+      "dbo.CBT_MystChoiceRetryIndexLog",
+      "dbo.CBT_NationCCU",
+      "dbo.CBT_SA_MigrationInfo",
+      "dbo.CBT_SA_MigrationLog",
+      "dbo.CBT_SeasonalRanking_Abusing_Log",
+      "dbo.CBT_SeasonalRanking_Log",
+      "dbo.CBT_SeasonalRanking_Reward_Log",
+      "dbo.CBT_ServerHistory",
+      "dbo.CBT_ServerReport",
+      "dbo.CBT_Stat_CU_Ex",
+      "dbo.CBT_SuperRoomMasterRestrict_Log",
+      "dbo.CBT_UserAchieve",
+      "dbo.CBT_UserDailyQuestLog",
+      "dbo.CBT_UserDeltaServerInfo",
+      "dbo.CBT_UserExpRankRewardLog",
+      "dbo.CBT_UserForgeItemLog",
+      "dbo.CBT_UserFreeItemRotationLog",
+      "dbo.CBT_UserGameLog01",
+      "dbo.CBT_UserGameLog02",
+      "dbo.CBT_UserGradeUpLog",
+      "dbo.CBT_UserInventoryItemConsumeLog",
+      "dbo.CBT_UserItemDicardLog",
+      "dbo.CBT_UserLoginLog01",
+      "dbo.CBT_UserLoginLog02",
+      "dbo.CBT_UserMissHitLog",
+      "dbo.CBT_UserNickNameChangeHistory",
+      "dbo.CBT_UserRecommendLog",
+      "dbo.CBT_UserReportChatLog",
+      "dbo.CBT_UserReportCommon",
+      "dbo.CBT_UserReportInGameLog",
+      "dbo.CBT_UserSeasonalRanking_Clan_Log",
+      "dbo.CBT_UserSeedEventLog",
+      "dbo.CBT_UserSinglePlayLog",
+      "dbo.CBT_UserStoreItemDicardLog",
+      "dbo.cbt_userWeapon_log01",
+      "dbo.cbt_userWeapon_log02",
+      "dbo.CBT_UserWeaponQuestLog",
+      "dbo.CBT_WeaponRenewalKitLog"
+    ],
+    "interesting": [
+      {
+        "table": "dbo.CBT_abuse_UserGameLog",
+        "columns": [
+          "oiduser:int",
+          "nickname:nvarchar",
+          "LobbyServerNo:int",
+          "LaunchServerNo:int",
+          "RoomNo:int",
+          "Exp:int",
+          "Money:int",
+          "KillCnt:int",
+          "DeadCnt:int",
+          "UnbelievableCnt:int",
+          "BombPlantCnt:int",
+          "BombDefuseCnt:int",
+          "CaptureFlag:int",
+          "RecoverFlag:int",
+          "WinType:int",
+          "GameMode:int",
+          "StartDate:datetime",
+          "EndDate:datetime",
+          "RoomKeyNo:int",
+          "AbuseType:int"
+        ]
+      },
+      {
+        "table": "dbo.CBT_AutoBanLog",
+        "columns": [
+          "LogSeqNo:int",
+          "oidUser:int",
+          "RoomKeyNo:int",
+          "BanType:int",
+          "CreateDate:datetime"
+        ]
+      },
+      {
+        "table": "dbo.CBT_BanUserList",
+        "columns": [
+          "GMOidUser:int",
+          "BanOidUser:int",
+          "BanNickName:nvarchar",
+          "BanType:nchar",
+          "BanPeriod:int",
+          "BanDate:datetime",
+          "Reason:nvarchar",
+          "BanDetailType:int",
+          "HWID:nvarchar"
+        ]
+      },
+      {
+        "table": "dbo.CBT_CharacterActivateProductLog",
+        "columns": [
+          "logId:int",
+          "loggedAt:datetime",
+          "owner:int",
+          "userInboxElementId:int",
+          "productId:int",
+          "unitType:nchar",
+          "unitGachaClass:int",
+          "unitClass:int",
+          "unitInstance:int",
+          "unitItemValidUntil:datetime",
+          "unitItemUseCount:int"
+        ]
+      },
+      {
+        "table": "dbo.CBT_CharacterBuyProductLog",
+        "columns": [
+          "logId:int",
+          "loggedAt:datetime",
+          "cashOrderNo:int",
+          "buyer:int",
+          "receiver:int",
+          "productId:int",
+          "currency:nchar",
+          "price:int",
+          "commission:int",
+          "Normal:int"
+        ]
+      },
+      {
+        "table": "dbo.CBT_CharacterChangeFaceLog",
+        "columns": [
+          "logId:int",
+          "loggedAt:datetime",
+          "userId:int",
+          "faceBefore:int",
+          "faceAfter:int"
+        ]
+      },
+      {
+        "table": "dbo.CBT_CharacterChangeNicknameColorLog",
+        "columns": [
+          "logId:int",
+          "loggedAt:datetime",
+          "userId:int",
+          "colorBefore:int",
+          "colorAfter:int"
+        ]
+      },
+      {
+        "table": "dbo.CBT_CharacterKickedLog",
+        "columns": [
+          "logId:int",
+          "loggedAt:datetime",
+          "userId:int",
+          "kickReason:int",
+          "forfeited:int"
+        ]
+      },
+      {
+        "table": "dbo.CBT_CharacterReceiveDailyIngameCountRewardLog",
+        "columns": [
+          "logId:int",
+          "loggedAt:datetime",
+          "userId:int",
+          "modeId:int",
+          "mapId:int",
+          "productId:int",
+          "userInboxElementId:int"
+        ]
+      },
+      {
+        "table": "dbo.CBT_CharacterReceiveDailyIngamePointRewardLog",
+        "columns": [
+          "logId:int",
+          "loggedAt:datetime",
+          "userId:int",
+          "modeId:int",
+          "mapId:int",
+          "productId:int",
+          "userInboxElementId:int"
+        ]
+      },
+      {
+        "table": "dbo.CBT_CharacterReceiveEventProductLog",
+        "columns": [
+          "logId:int",
+          "loggedAt:datetime",
+          "userId:int",
+          "eventType:int",
+          "mainProductId:int",
+          "bonusProductId:int",
+          "bonusUserInboxElementId:int",
+          "bonusProductCount:int"
+        ]
+      },
+      {
+        "table": "dbo.CBT_CharacterResetKillDeathScoreLog",
+        "columns": [
+          "logId:int",
+          "loggedAt:datetime",
+          "userId:int",
+          "killCount:int",
+          "deathCount:int",
+          "headshotCount:int"
+        ]
+      },
+      {
+        "table": "dbo.CBT_CharacterUseCouponLog",
+        "columns": [
+          "logId:int",
+          "logDate:datetime",
+          "oidUser:int",
+          "orderNo:int",
+          "orderId:nvarchar",
+          "buyProductId:int",
+          "buyProductUid:int",
+          "buyProductGrade:int",
+          "basePrice:int",
+          "price:int",
+          "discount:int",
+          "grade:int",
+          "nxRank:int",
+          "kdr:real",
+          "balanceType:int",
+          "beforeNx:int",
+          "afterNx:int",
+          "loginIP:nvarchar",
+          "couponProductId:int",
+          "couponProductUid:int",
+          "isCompensation:int",
+          "couponFromItemNo:int",
+          "couponFromItemGrade:int",
+          "couponRemainingDays:int"
+        ]
+      },
+      {
+        "table": "dbo.CBT_ClanChangeEmblemLog",
+        "columns": [
+          "logId:int",
+          "loggedAt:datetime",
+          "clanId:int",
+          "userId:int",
+          "emblemBefore:int",
+          "backgroundBefore:int",
+          "emblemAfter:int",
+          "backgroundAfter:int"
+        ]
+      },
+      {
+        "table": "dbo.CBT_ClanChangeNameColorLog",
+        "columns": [
+          "logId:int",
+          "loggedAt:datetime",
+          "clanId:int",
+          "userId:int",
+          "colorBefore:int",
+          "colorAfter:int"
+        ]
+      },
+      {
+        "table": "dbo.CBT_ClanChangeNameLog",
+        "columns": [
+          "logId:int",
+          "loggedAt:datetime",
+          "clanId:int",
+          "userId:int",
+          "nameBefore:nvarchar",
+          "nameAfter:nvarchar"
+        ]
+      },
+      {
+        "table": "dbo.CBT_ClanDeleteLog",
+        "columns": [
+          "ClanDeleteLogSeq:int",
+          "oiduser_group:int",
+          "Exp:int",
+          "Point:int",
+          "MissionCompleteCnt:int",
+          "KillCnt:int",
+          "DeadCnt:int",
+          "WinCnt:int",
+          "LoseCnt:int",
+          "Notice:nvarchar",
+          "DeleteDate:datetime"
+        ]
+      },
+      {
+        "table": "dbo.CBT_ClanGameLog",
+        "columns": [
+          "ClanGameLogSeq:int",
+          "CreateDate:datetime",
+          "ClanServerNo:int",
+          "LaunchServerNo:int",
+          "RoomName:nvarchar",
+          "RoomNo:int",
+          "MapNo:int",
+          "GameMode:int",
+          "AlphaOiduserGroup:int",
+          "BravoOiduserGroup:int",
+          "AlphaExp:int",
+          "BravoExp:int",
+          "AlphaPoint:int",
+          "BravoPoint:int",
+          "AlphaMissionCompleteCnt:int",
+          "BravoMissionCompleteCnt:int",
+          "AlphaKillCnt:int",
+          "BravoKillCnt:int",
+          "AlphaDeadCnt:int",
+          "BravoDeadCnt:int",
+          "WinTeam:int",
+          "LoseTeam:int",
+          "MaxPlayerCnt:int",
+          "RoundCnt:int",
+          "MaxKillCnt:int",
+          "GameResultStat:int",
+          "StartDate:datetime",
+          "EndDate:datetime",
+          "PlayTime:int",
+          "RoomKeyNo:int",
+          "Alphawinpoint:int",
+          "Bravowinpoint:int",
+          "AlphaUserNum:int",
+          "BravoUserNum:int",
+          "RestrictWeapon:int",
+          "MVPMissionNo0:int",
+          "MVPMissionNo1:int",
+          "MVPMissionNo2:int",
+          "MVPUserOid0:int",
+          "MVPUserOid1:int",
+          "MVPUserOid2:int",
+          "CampWar:int"
+        ]
+      },
+      {
+        "table": "dbo.CBT_ClanResetScoreLog",
+        "columns": [
+          "logId:int",
+          "loggedAt:datetime",
+          "clanId:int",
+          "userId:int",
+          "winCount:int",
+          "drawCount:int",
+          "lossCount:int"
+        ]
+      },
+      {
+        "table": "dbo.CBT_DT_UserRewardLog",
+        "columns": [
+          "oidUser:int",
+          "EventID:int",
+          "RewardID:int",
+          "Level:int",
+          "ProductID:int"
+        ]
+      },
+      {
+        "table": "dbo.CBT_GameRoomLog01",
+        "columns": [
+          "GameRoomLogSeqNo:int",
+          "LobbyServerNo:int",
+          "LaunchServerNo:int",
+          "RoomName:nvarchar",
+          "RoomNo:int",
+          "MapNo:int",
+          "GameType:int",
+          "GameModeType:int",
+          "PlayerCnt:int",
+          "MaxPlayerCnt:int",
+          "RoundCnt:int",
+          "MaxKillCnt:int",
+          "WinTeamType:int",
+          "StartDate:datetime",
+          "EndDate:datetime",
+          "PlayTime:int",
+          "RoomKeyNo:int",
+          "AlphaWinPoint:int",
+          "BravoWinPoint:int",
+          "RestrictWeapon:int",
+          "lastTimestamp:timestamp",
+          "MVPMissionNo0:int",
+          "MVPMissionNo1:int",
+          "MVPMissionNo2:int",
+          "MVPUserOid0:int",
+          "MVPUserOid1:int",
+          "MVPUserOid2:int",
+          "CampWar:int"
+        ]
+      },
+      {
+        "table": "dbo.CBT_GameRoomLog02",
+        "columns": [
+          "GameRoomLogSeqNo:int",
+          "LobbyServerNo:int",
+          "LaunchServerNo:int",
+          "RoomName:nvarchar",
+          "RoomNo:int",
+          "MapNo:int",
+          "GameType:int",
+          "GameModeType:int",
+          "PlayerCnt:int",
+          "MaxPlayerCnt:int",
+          "RoundCnt:int",
+          "MaxKillCnt:int",
+          "WinTeamType:int",
+          "StartDate:datetime",
+          "EndDate:datetime",
+          "PlayTime:int",
+          "RoomKeyNo:int",
+          "AlphaWinPoint:int",
+          "BravoWinPoint:int",
+          "RestrictWeapon:int",
+          "lastTimestamp:timestamp",
+          "MVPMissionNo0:int",
+          "MVPMissionNo1:int",
+          "MVPMissionNo2:int",
+          "MVPUserOid0:int",
+          "MVPUserOid1:int",
+          "MVPUserOid2:int",
+          "CampWar:int"
+        ]
+      },
+      {
+        "table": "dbo.CBT_HiSecDropLog",
+        "columns": [
+          "HiSecSeqNo:int",
+          "oiduser:int",
+          "ServerID:int",
+          "HiSecID:int",
+          "ProductID:int",
+          "RegDate:datetime"
+        ]
+      },
+      {
+        "table": "dbo.CBT_InboxGiftLog",
+        "columns": [
+          "LogSeq:int",
+          "Error:int",
+          "ProductID:int",
+          "SenderOidUser:int",
+          "SenderInboxUProductID:int",
+          "RecieverOidUser:int",
+          "RecieverInboxUProductID:int",
+          "RegDate:datetime"
+        ]
+      },
+      {
+        "table": "dbo.CBT_InGameBanUserLog",
+        "columns": [
+          "BanUserSeqNo:int",
+          "Banoiduser:int",
+          "BanType:int",
+          "BanPeriod:int",
+          "errorcode:int",
+          "RoomID:int",
+          "ModeID:int",
+          "MapID:int",
+          "RegDate:datetime"
+        ]
+      },
+      {
+        "table": "dbo.CBT_ItemPurchaseLog",
+        "columns": [
+          "LogNo:int",
+          "LogDate:datetime",
+          "oidUser:int",
+          "Grade:tinyint",
+          "NXRank:tinyint",
+          "LoginIP:nvarchar",
+          "LoginDate:datetime",
+          "KDR:real",
+          "ProductID:int",
+          "SaleType:tinyint",
+          "Price:int",
+          "BeforeMoney:int",
+          "AfterNoney:int",
+          "IsRenting:tinyint",
+          "IsGift:tinyint"
+        ]
+      },
+      {
+        "table": "dbo.CBT_ItemTradeLog",
+        "columns": [
+          "oidUser:int",
+          "RegDate:datetime",
+          "UItemID0:int",
+          "UItemID1:int",
+          "UItemID2:int",
+          "UItemID3:int",
+          "UItemID4:int",
+          "UItemID5:int",
+          "UItemID6:int",
+          "UItemID7:int",
+          "UItemID8:int",
+          "UItemID9:int",
+          "in_RewardUItemID:int",
+          "out_RewardUItemID:int"
+        ]
+      },
+      {
+        "table": "dbo.CBT_LanguageUsageLog",
+        "columns": [
+          "oidUser:int",
+          "LanguageCode:nvarchar",
+          "CreateDate:datetime"
+        ]
+      },
+      {
+        "table": "dbo.CBT_LastLoginMacAddressLog",
+        "columns": [
+          "MacSeqNo:int",
+          "oiduser:int",
+          "MacAddress:nvarchar",
+          "LastLoginDate:datetime",
+          "HWID:nvarchar"
+        ]
+      },
+      {
+        "table": "dbo.CBT_LobbyReport",
+        "columns": [
+          "LobbyReportSeqNo:int",
+          "CreateDate:datetime",
+          "LobbyServerID:int",
+          "LobbyServer:tinyint",
+          "Lobby_DB_Connection:tinyint",
+          "Lobby_Auth:tinyint",
+          "Lobby_Session:tinyint",
+          "Lobby_Launch_Connection_No:tinyint",
+          "Lobby_Launch0:tinyint",
+          "Lobby_Launch1:tinyint",
+          "Lobby_Launch2:tinyint",
+          "Lobby_Launch3:tinyint",
+          "Lobby_Launch4:tinyint",
+          "Lobby_Launch5:tinyint",
+          "Lobby_Launch6:tinyint",
+          "Lobby_Launch7:tinyint",
+          "Lobby_Launch8:tinyint",
+          "Lobby_Launch9:tinyint",
+          "Lobby_Bill:tinyint"
+        ]
+      },
+      {
+        "table": "dbo.CBT_LocalInfo_LOGDB",
+        "columns": [
+          "codeGame:int",
+          "LocalCode:nvarchar"
+        ]
+      },
+      {
+        "table": "dbo.CBT_Marble_User_Log",
+        "columns": [
+          "EventID:int",
+          "oidUser:int",
+          "RegDate:datetime",
+          "UsedInventorySeqNo:int",
+          "DiceValue:int",
+          "ArriveTile:int",
+          "PassStartTile:int",
+          "ClearTile:int"
+        ]
+      },
+      {
+        "table": "dbo.CBT_MgmRelationLog",
+        "columns": [
+          "logId:int",
+          "logDate:datetime",
+          "relationId:int",
+          "state:int"
+        ]
+      },
+      {
+        "table": "dbo.CBT_MystChoiceRetryIndexLog",
+        "columns": [
+          "SeqNo:int",
+          "CreateDate:datetime",
+          "Index:int"
+        ]
+      },
+      {
+        "table": "dbo.CBT_SA_MigrationLog",
+        "columns": [
+          "oidUser:int",
+          "saID:varchar",
+          "migrationCode:varchar",
+          "processed:int",
+          "createDate:datetime"
+        ]
+      },
+      {
+        "table": "dbo.CBT_SeasonalRanking_Abusing_Log",
+        "columns": [
+          "SeqNo:int",
+          "CreateTime:datetime",
+          "oidUser:int",
+          "SeasonID:int",
+          "PreviousAbusingCount:int",
+          "PreviousAbusingPoint:float",
+          "GameMode:int",
+          "AbuseType:int",
+          "KillCnt:int",
+          "DeadCnt:int",
+          "KillsStreak:int",
+          "HeadShotCnt:int",
+          "AbusePoint:float"
+        ]
+      },
+      {
+        "table": "dbo.CBT_SeasonalRanking_Log",
+        "columns": [
+          "CreateTime:datetime",
+          "Message:nvarchar"
+        ]
+      },
+      {
+        "table": "dbo.CBT_SeasonalRanking_Reward_Log",
+        "columns": [
+          "SeasonID:int",
+          "Type:int"
+        ]
+      },
+      {
+        "table": "dbo.CBT_ServerReport",
+        "columns": [
+          "ServerReportSeqNo:int",
+          "CreateDate:datetime",
+          "UpdateServer:tinyint",
+          "AuthServer:tinyint",
+          "Auth_DB_Connection:tinyint",
+          "Auth_Lobby_Connection_No:int",
+          "Auth_Lobby0:tinyint",
+          "Auth_Lobby1:tinyint",
+          "Auth_Lobby2:tinyint",
+          "Auth_Lobby3:tinyint",
+          "Auth_Lobby4:tinyint",
+          "Auth_Lobby5:tinyint",
+          "Auth_Lobby6:tinyint",
+          "Auth_Lobby7:tinyint",
+          "Auth_Lobby8:tinyint",
+          "Auth_Lobby9:tinyint",
+          "SessionServer:tinyint",
+          "Session_NexonAuthServer:tinyint",
+          "Session_Auth:tinyint",
+          "Session_Lobby_Conection_No:int",
+          "Session_Lobby0:tinyint",
+          "Session_Lobby1:tinyint",
+          "Session_Lobby2:tinyint",
+          "Session_Lobby3:tinyint",
+          "Session_Lobby4:tinyint",
+          "Session_Lobby5:tinyint",
+          "Session_Lobby6:tinyint",
+          "Session_Lobby7:tinyint",
+          "Session_Lobby8:tinyint",
+          "Session_Lobby9:tinyint",
+          "Auth_Lobby10:tinyint",
+          "Auth_Lobby11:tinyint",
+          "Auth_Lobby12:tinyint",
+          "Auth_Lobby13:tinyint",
+          "Auth_Lobby14:tinyint",
+          "Auth_Lobby15:tinyint",
+          "Auth_Lobby16:tinyint",
+          "Auth_Lobby17:tinyint",
+          "Auth_Lobby18:tinyint",
+          "Auth_Lobby19:tinyint",
+          "Session_Lobby10:tinyint",
+          "Session_Lobby11:tinyint",
+          "Session_Lobby12:tinyint",
+          "Session_Lobby13:tinyint",
+          "Session_Lobby14:tinyint",
+          "Session_Lobby15:tinyint",
+          "Session_Lobby16:tinyint",
+          "Session_Lobby17:tinyint",
+          "Session_Lobby18:tinyint",
+          "Session_Lobby19:tinyint"
+        ]
+      },
+      {
+        "table": "dbo.CBT_SuperRoomMasterRestrict_Log",
+        "columns": [
+          "RestrictUser:int",
+          "RestrictDate:datetime",
+          "EndDate:datetime",
+          "Reason:int"
+        ]
+      },
+      {
+        "table": "dbo.CBT_UserAchieve",
+        "columns": [
+          "oidUser:int",
+          "AchieveID:int",
+          "State:int",
+          "UnlockCount:int",
+          "ProgressCount:int",
+          "Time:datetime"
+        ]
+      },
+      {
+        "table": "dbo.CBT_UserDailyQuestLog",
+        "columns": [
+          "SeqNo:int",
+          "LogTime:datetime",
+          "oidUser:int",
+          "QuestMainID:int",
+          "QuestSeqNo:int",
+          "QuestOrderID:int",
+          "State:int",
+          "ProgressCount:int",
+          "UserSelection:int",
+          "QuestID:int"
+        ]
+      },
+      {
+        "table": "dbo.CBT_UserDeltaServerInfo",
+        "columns": [
+          "oiduser:int",
+          "ServerID:int",
+          "GameMode:int",
+          "Exp:int",
+          "GP:int",
+          "KillCnt:int",
+          "DeadCnt:int",
+          "CaptureFlagCnt:int",
+          "BombExplodedCnt:int",
+          "BombDefusedCnt:int",
+          "UploadCnt:int",
+          "SpyKillCnt:int",
+          "HeadShotCnt:int",
+          "NutShotCnt:int",
+          "RegDate:datetime",
+          "Win:int",
+          "Lose:int",
+          "Forfeit:int",
+          "KillsStreak:int",
+          "CoopKill:int",
+          "CoopDead:int",
+          "CoopHeadShot:int",
+          "ComboCnt:int",
+          "RecoverFlag:int",
+          "InfectKillCnt:int",
+          "InfectDeathCnt:int",
+          "InfectWin:int",
+          "HumanWin:int",
+          "AbuseCnt:int",
+          "BombsPlanted:int"
+        ]
+      },
+      {
+        "table": "dbo.CBT_UserExpRankRewardLog",
+        "columns": [
+          "SeqNo:int",
+          "Time:datetime",
+          "OidUser:int",
+          "Rank:int",
+          "RewardType:int",
+          "RewardValue:int",
+          "OutError:int"
+        ]
+      },
+      {
+        "table": "dbo.CBT_UserForgeItemLog",
+        "columns": [
+          "SeqNo:int",
+          "LogTime:datetime",
+          "oidUser:int",
+          "SourceMainId:int",
+          "SourceSub0Id:int",
+          "SourceSub0Count:int",
+          "SourceSub1Id:int",
+          "SourceSub1Count:int",
+          "TargetItemNo:int",
+          "TargetExpiration:datetime",
+          "TargetId:int",
+          "SourceMainCount:int"
+        ]
+      },
+      {
+        "table": "dbo.CBT_UserFreeItemRotationLog",
+        "columns": [
+          "oidUser:int",
+          "EventID:int",
+          "EndDate:datetime",
+          "AR:int",
+          "SMG:int",
+          "SR:int",
+          "MG:int",
+          "Pistol:int",
+          "Support:int",
+          "Melee:int",
+          "ETC:int",
+          "SG:int",
+          "CreateDate:datetime"
+        ]
+      },
+      {
+        "table": "dbo.CBT_UserGameLog01",
+        "columns": [
+          "GameUserLogSeqNo:int",
+          "oidUser:int",
+          "NickName:nvarchar",
+          "LobbyServerNo:int",
+          "LaunchServerNo:int",
+          "RoomNo:int",
+          "TeamType:int",
+          "Money:int",
+          "Exp:int",
+          "HeadShotCnt:int",
+          "KillCnt:int",
+          "DeadCnt:int",
+          "DoubleKillCnt:int",
+          "MultiKillCnt:int",
+          "UnbelievableCnt:int",
+          "BombPlantCnt:int",
+          "BombDefusedCnt:int",
+          "WinType:int",
+          "StartDate:datetime",
+          "EndDate:datetime",
+          "PlayTime:int",
+          "PlayEndType:int",
+          "RoomKeyNo:int",
+          "GameType:int",
+          "UltraKillCnt:int",
+          "FantasticKillCnt:int",
+          "UnbelievablePlusCnt:int",
+          "RevengeCnt:int",
+          "BombsExploded:int",
+          "FirstKill:int",
+          "KillsStreak:int",
+          "DeathsStreak:int",
+          "CaptureFlag:int",
+          "RecoverFlag:int",
+          "GameMode:int",
+          "agreecnt:int",
+          "disagreecnt:int",
+          "kickreason:int",
+          "nutshotcnt:int",
+          "NutShotDeadCnt:int",
+          "SpyKillCnt:int",
+          "SpyDeadCnt:int",
+          "SpyUploading:int",
+          "Difficulty:int",
+          "ComboCnt:int",
+          "MissionCnt:int",
+          "SpareLiveCnt:int",
+          "LastScore:int",
+          "InfectKillCnt:int",
+          "InfectDeathCnt:int",
+          "InfectWin:int",
+          "HumanWin:int",
+          "AbuseCnt:int",
+          "RestrictWeapon:int",
+          "PlayType:int",
+          "HQPoint:int",
+          "SQPoint:int",
+          "SaveBullionNum:int",
+          "lastTimestamp:timestamp",
+          "MinPing:float",
+          "MaxPing:float",
+          "AvgPing:float",
+          "MVPMissionNo0:int",
+          "MVPMissionNo1:int",
+          "MVPMissionNo2:int",
+          "CampWar:int",
+          "Submission:int",
+          "Assist:int",
+          "MoneyNoBoost:int",
+          "ExpNoBoost:int",
+          "MapNo:int",
+          "mmr:real",
+          "mmrIncrement:real",
+          "RubberBandingCnt:int"
+        ]
+      },
+      {
+        "table": "dbo.CBT_UserGameLog02",
+        "columns": [
+          "GameUserLogSeqNo:int",
+          "oidUser:int",
+          "NickName:nvarchar",
+          "LobbyServerNo:int",
+          "LaunchServerNo:int",
+          "RoomNo:int",
+          "TeamType:int",
+          "Money:int",
+          "Exp:int",
+          "HeadShotCnt:int",
+          "KillCnt:int",
+          "DeadCnt:int",
+          "DoubleKillCnt:int",
+          "MultiKillCnt:int",
+          "UnbelievableCnt:int",
+          "BombPlantCnt:int",
+          "BombDefusedCnt:int",
+          "WinType:int",
+          "StartDate:datetime",
+          "EndDate:datetime",
+          "PlayTime:int",
+          "PlayEndType:int",
+          "RoomKeyNo:int",
+          "GameType:int",
+          "UltraKillCnt:int",
+          "FantasticKillCnt:int",
+          "UnbelievablePlusCnt:int",
+          "RevengeCnt:int",
+          "BombsExploded:int",
+          "FirstKill:int",
+          "KillsStreak:int",
+          "DeathsStreak:int",
+          "CaptureFlag:int",
+          "RecoverFlag:int",
+          "GameMode:int",
+          "agreecnt:int",
+          "disagreecnt:int",
+          "kickreason:int",
+          "nutshotcnt:int",
+          "NutShotDeadCnt:int",
+          "SpyKillCnt:int",
+          "SpyDeadCnt:int",
+          "SpyUploading:int",
+          "Difficulty:int",
+          "ComboCnt:int",
+          "MissionCnt:int",
+          "SpareLiveCnt:int",
+          "LastScore:int",
+          "InfectKillCnt:int",
+          "InfectDeathCnt:int",
+          "InfectWin:int",
+          "HumanWin:int",
+          "AbuseCnt:int",
+          "RestrictWeapon:int",
+          "PlayType:int",
+          "HQPoint:int",
+          "SQPoint:int",
+          "SaveBullionNum:int",
+          "lastTimestamp:timestamp",
+          "MinPing:float",
+          "MaxPing:float",
+          "AvgPing:float",
+          "MVPMissionNo0:int",
+          "MVPMissionNo1:int",
+          "MVPMissionNo2:int",
+          "CampWar:int",
+          "Submission:int",
+          "Assist:int",
+          "MoneyNoBoost:int",
+          "ExpNoBoost:int",
+          "MapNo:int",
+          "mmr:real",
+          "mmrIncrement:real",
+          "RubberBandingCnt:int"
+        ]
+      },
+      {
+        "table": "dbo.CBT_UserGradeUpLog",
+        "columns": [
+          "UserGradeUpLogSeqNo:int",
+          "oiduser:int",
+          "PrevExp:int",
+          "AddExp:int",
+          "CurExp:int",
+          "PrevGrade:int",
+          "CurGrade:int",
+          "BonusMoney:int",
+          "CreateDate:datetime"
+        ]
+      },
+      {
+        "table": "dbo.CBT_UserInventoryItemConsumeLog",
+        "columns": [
+          "oidUser:int",
+          "InventorySeqNo:int",
+          "ItemNo:int",
+          "RemainCount:int",
+          "CreateDate:datetime"
+        ]
+      },
+      {
+        "table": "dbo.CBT_UserItemDicardLog",
+        "columns": [
+          "oiduser:int",
+          "inventoryseqno:int",
+          "itemno:int",
+          "remaincount:int",
+          "startdate:datetime",
+          "enddate:datetime",
+          "discarddate:datetime",
+          "RefundGp:int",
+          "exchangeCouponProductId:int",
+          "exchangeCouponInboxPeriod:int",
+          "exchangeCouponProductUid:int"
+        ]
+      },
+      {
+        "table": "dbo.CBT_UserLoginLog01",
+        "columns": [
+          "UserLoginLogSeqNo:int",
+          "oidUser:int",
+          "strNexonID:nvarchar",
+          "NickName:nvarchar",
+          "IP:nvarchar",
+          "LoginDate:datetime",
+          "LogoutDate:datetime",
+          "LogoutStatus:int",
+          "LobbyServerNo:int",
+          "PlayEndType:int",
+          "AssultItemNo:int",
+          "SubGunItemNo:int",
+          "KnifeItemNo:int",
+          "BombItemNo:int",
+          "HelmetItemNo:int",
+          "FaceType:int",
+          "GoggleItemNo:int",
+          "CamoItemNo:int",
+          "VestItemNo:int",
+          "BackPackItemNo:int",
+          "BackPack00:int",
+          "BackPack01:int",
+          "BackPack02:int",
+          "BackPack03:int",
+          "JoinFailCnt:int",
+          "PcBang:int",
+          "FigureItemNo:int",
+          "lastTimestamp:timestamp"
+        ]
+      },
+      {
+        "table": "dbo.CBT_UserLoginLog02",
+        "columns": [
+          "UserLoginLogSeqNo:int",
+          "oidUser:int",
+          "strNexonID:nvarchar",
+          "NickName:nvarchar",
+          "IP:nvarchar",
+          "LoginDate:datetime",
+          "LogoutDate:datetime",
+          "LogoutStatus:int",
+          "LobbyServerNo:int",
+          "PlayEndType:int",
+          "AssultItemNo:int",
+          "SubGunItemNo:int",
+          "KnifeItemNo:int",
+          "BombItemNo:int",
+          "HelmetItemNo:int",
+          "FaceType:int",
+          "GoggleItemNo:int",
+          "CamoItemNo:int",
+          "VestItemNo:int",
+          "BackPackItemNo:int",
+          "BackPack00:int",
+          "BackPack01:int",
+          "BackPack02:int",
+          "BackPack03:int",
+          "JoinFailCnt:int",
+          "PcBang:int",
+          "FigureItemNo:int",
+          "lastTimestamp:timestamp"
+        ]
+      },
+      {
+        "table": "dbo.CBT_UserMissHitLog",
+        "columns": [
+          "MissHitSeqNo:int",
+          "oiduser:int",
+          "LobbyServerNo:int",
+          "RoomNo:int",
+          "MissHitCnt:int",
+          "GameEndDate:datetime"
+        ]
+      },
+      {
+        "table": "dbo.CBT_UserNickNameChangeHistory",
+        "columns": [
+          "oiduser:int",
+          "PreviousNickName:nvarchar",
+          "CurrentNickName:nvarchar",
+          "RegDate:datetime"
+        ]
+      },
+      {
+        "table": "dbo.CBT_UserRecommendLog",
+        "columns": [
+          "EventID:int",
+          "oiduser:int",
+          "recommendoiduser:int",
+          "createdate:datetime",
+          "Type:int",
+          "expSnapshot:int"
+        ]
+      },
+      {
+        "table": "dbo.CBT_UserReportChatLog",
+        "columns": [
+          "SeqNo:int",
+          "ReportCommonSeqNo:int",
+          "RegDate:datetime",
+          "ChatLog:ntext"
+        ]
+      },
+      {
+        "table": "dbo.CBT_UserReportCommon",
+        "columns": [
+          "SeqNo:int",
+          "ReporterOiduser:int",
+          "MainCategory:int",
+          "SubCategory:int",
+          "TargetOiduser:int",
+          "TargetNickName:nvarchar",
+          "Message:nvarchar",
+          "RegDate:datetime"
+        ]
+      },
+      {
+        "table": "dbo.CBT_UserReportInGameLog",
+        "columns": [
+          "SeqNo:int",
+          "ReportCommonSeqNo:int",
+          "RoomID:int",
+          "ModeID:int",
+          "GoalScore:int",
+          "AlphaScore:int",
+          "BravoScore:int",
+          "MaxUserNum:int",
+          "UserNum:int",
+          "KillCnt:int",
+          "DeadCnt:int",
+          "MissionCnt:int",
+          "HeadShotCnt:int",
+          "KillStreak:int",
+          "DeadStreak:int",
+          "DoubleKillCnt:int",
+          "MultiKillCnt:int",
+          "UltraCnt:int",
+          "FantasticCnt:int",
+          "UnbelievableCnt:int",
+          "UnbelievablePlusCnt:int",
+          "RegDate:datetime"
+        ]
+      },
+      {
+        "table": "dbo.CBT_UserSeasonalRanking_Clan_Log",
+        "columns": [
+          "oidUser:int",
+          "oidUserGroup:int",
+          "Count:int"
+        ]
+      },
+      {
+        "table": "dbo.CBT_UserSeedEventLog",
+        "columns": [
+          "SeqNo:int",
+          "oidUser:int",
+          "EventID:int",
+          "OrderID:int",
+          "StepID:int",
+          "State:int",
+          "ProgressCount:int",
+          "CreateDate:datetime",
+          "Result:int",
+          "ProductCount:int"
+        ]
+      },
+      {
+        "table": "dbo.CBT_UserSinglePlayLog",
+        "columns": [
+          "GameUserLogSeqNo:int",
+          "oidUser:int",
+          "StartDate:datetime",
+          "EndDate:datetime",
+          "LobbyServerNo:int",
+          "ModeId:int",
+          "MapId:int",
+          "Goal:int",
+          "MaxPlayer:int",
+          "Team:int",
+          "Winned:int",
+          "Abuse:int",
+          "PlayEndType:int",
+          "PlayTimeMsc:int",
+          "HeadShotCnt:int",
+          "KillCnt:int",
+          "DeadCnt:int",
+          "Difficulty:int",
+          "BestComboCnt:int",
+          "Score:int",
+          "TicketUItemID:int",
+          "TicketItemNo:int",
+          "ErrorCode:int",
+          "Rank:int",
+          "NormalReward0:int",
+          "NormalReward1:int",
+          "NormalReward2:int",
+          "NormalReward3:int",
+          "NormalReward4:int",
+          "TicketReward0:int",
+          "TicketReward1:int",
+          "TicketReward2:int",
+          "TicketReward3:int",
+          "TicketReward4:int",
+          "RankPoint:float"
+        ]
+      },
+      {
+        "table": "dbo.CBT_UserStoreItemDicardLog",
+        "columns": [
+          "oiduser:int",
+          "UserStoreSeqNo:int",
+          "ProductID:int",
+          "discarddate:datetime",
+          "RefundGp:int",
+          "exchangeCouponProductId:int",
+          "exchangeCouponInboxPeriod:int",
+          "exchangeCouponProductUid:int"
+        ]
+      },
+      {
+        "table": "dbo.cbt_userWeapon_log01",
+        "columns": [
+          "oidUser:int",
+          "itemNo:int",
+          "KillCnt:int",
+          "HeadshotCnt:int",
+          "hitCnt:int",
+          "shotCnt:int",
+          "CreateDate:datetime",
+          "GameMode:int",
+          "MapNo:int",
+          "lastTimestamp:timestamp"
+        ]
+      },
+      {
+        "table": "dbo.cbt_userWeapon_log02",
+        "columns": [
+          "oidUser:int",
+          "itemNo:int",
+          "KillCnt:int",
+          "HeadshotCnt:int",
+          "hitCnt:int",
+          "shotCnt:int",
+          "CreateDate:datetime",
+          "GameMode:int",
+          "MapNo:int",
+          "lastTimestamp:timestamp"
+        ]
+      },
+      {
+        "table": "dbo.CBT_UserWeaponQuestLog",
+        "columns": [
+          "SeqNo:int",
+          "LogTime:datetime",
+          "oidUser:int",
+          "QuestID:int",
+          "State:int",
+          "ProgressCount:int",
+          "target_itemNo:int",
+          "target_inventoryId:int",
+          "out_target_inventoryId:int",
+          "out_target_expiration:datetime"
+        ]
+      },
+      {
+        "table": "dbo.CBT_WeaponRenewalKitLog",
+        "columns": [
+          "UseTime:datetime",
+          "oiduser:int",
+          "ItemNo:int",
+          "InventorySeqNo:int",
+          "TargetItemNo:int",
+          "TargetInventorySeqNo:int",
+          "EndTime_before:datetime",
+          "EndTime_after:datetime"
+        ]
+      }
+    ]
+  },
+  "NX_GuildMaster": {
+    "count": 7,
+    "all": [
+      "dbo.gdt_BanWord",
+      "dbo.gdt_Code",
+      "dbo.gdt_Guild",
+      "dbo.gdt_GuildKey",
+      "dbo.gdt_Member",
+      "dbo.gdt_Statistics",
+      "dbo.gdt_WaitingMember"
+    ],
+    "interesting": [
+      {
+        "table": "dbo.gdt_BanWord",
+        "columns": [
+          "strBanWord:nvarchar"
+        ]
+      },
+      {
+        "table": "dbo.gdt_Guild",
+        "columns": [
+          "codeGame:int",
+          "codeServer:int",
+          "oidGuild:int",
+          "strName:nvarchar",
+          "strID:varchar",
+          "strNotice:nvarchar",
+          "dateCreated:smalldatetime",
+          "dateLastModified:datetime",
+          "codeGuildStatus:tinyint",
+          "codeGuildType:tinyint",
+          "oidUser_master:int",
+          "oidCharacter_master:int",
+          "dn_strCharacterName_master:nvarchar",
+          "dn_n4TotalRegularMember:int",
+          "dn_n4TotalAssociateMember:int",
+          "codeMarkStatus:tinyint"
+        ]
+      },
+      {
+        "table": "dbo.gdt_GuildKey",
+        "columns": [
+          "oidGuild:int",
+          "strDescription:varchar",
+          "codeServer:int",
+          "codeGame:int"
+        ]
+      }
+    ]
+  },
+  "VISMS": {
+    "count": 5,
+    "all": [
+      "dbo.VISMS_AllowedServerList",
+      "dbo.VISMS_ProductList",
+      "dbo.VISMS_PurchaseLog",
+      "dbo.VISMS_ServiceList",
+      "dbo.VISMS_UserList"
+    ],
+    "interesting": [
+      {
+        "table": "dbo.VISMS_ProductList",
+        "columns": [
+          "SRL:int",
+          "ServiceCode:nvarchar",
+          "ProductNo:int",
+          "ProductName:nvarchar",
+          "RelationProductNo:int",
+          "RegDate:datetime",
+          "ProductExpire:int",
+          "ProductPieces:int",
+          "PaymentType:int",
+          "SalePrice:int",
+          "CategoryNo:int",
+          "BonusProductCount:int",
+          "ProductID:nvarchar",
+          "ProductGUID:nvarchar",
+          "ProductType:nvarchar"
+        ]
+      },
+      {
+        "table": "dbo.VISMS_PurchaseLog",
+        "columns": [
+          "SRL:int",
+          "ServiceCode:nvarchar",
+          "OrderID:nvarchar",
+          "ProductNo:int",
+          "PaymentType:int",
+          "PaymentRuleID:int",
+          "TotalPrice:int",
+          "OrderAmmount:int",
+          "oid:int",
+          "strNexonID:nvarchar",
+          "IPAddress:nvarchar",
+          "IsGift:bit",
+          "Receiver_oid:int",
+          "Receiver_strNexonID:nvarchar",
+          "RegDate:datetime",
+          "UpdDate:datetime"
+        ]
+      },
+      {
+        "table": "dbo.VISMS_UserList",
+        "columns": [
+          "SRL:int",
+          "ServiceCode:nvarchar",
+          "oid:int",
+          "strNexonID:nvarchar",
+          "strLNexonID:nvarchar",
+          "RealBalance:int",
+          "BonusBalance:int",
+          "TotalBalance:bigint",
+          "RegDate:datetime",
+          "UpdDate:datetime"
+        ]
+      }
+    ]
+  },
+  "combatarms_web": {
+    "count": 26,
+    "all": [
+      "dbo.activity",
+      "dbo.admin_audit",
+      "dbo.admin_users",
+      "dbo.BirthdayRewards",
+      "dbo.ClaimedLevelRewards",
+      "dbo.credential_challenges",
+      "dbo.download_daily",
+      "dbo.download_releases",
+      "dbo.download_settings",
+      "dbo.download_tickets",
+      "dbo.download_uploads",
+      "dbo.email_verifications",
+      "dbo.login_challenges",
+      "dbo.password_resets",
+      "dbo.PaymentCodes",
+      "dbo.punishments",
+      "dbo.rate_limits",
+      "dbo.recovery_codes",
+      "dbo.RefundRequests",
+      "dbo.report_reviews",
+      "dbo.schema_version",
+      "dbo.sessions",
+      "dbo.SupportTickets",
+      "dbo.TicketMessages",
+      "dbo.two_factor",
+      "dbo.two_factor_pending"
+    ],
+    "interesting": [
+      {
+        "table": "dbo.admin_users",
+        "columns": [
+          "userId:int",
+          "role:varchar",
+          "grantedBy:int",
+          "grantedAt:datetime2"
+        ]
+      },
+      {
+        "table": "dbo.email_verifications",
+        "columns": [
+          "userId:int",
+          "tokenHash:varchar",
+          "email:nvarchar",
+          "passwordStamp:varchar",
+          "expiresAt:bigint"
+        ]
+      },
+      {
+        "table": "dbo.login_challenges",
+        "columns": [
+          "tokenHash:varchar",
+          "userId:int",
+          "passwordStamp:varchar",
+          "mfaVersion:varchar",
+          "expiresAt:bigint"
+        ]
+      },
+      {
+        "table": "dbo.PaymentCodes",
+        "columns": [
+          "id:int",
+          "oidUser:int",
+          "username:nvarchar",
+          "NickName:nvarchar",
+          "paymentCode:nvarchar",
+          "nxAmount:int",
+          "dollarAmount:decimal",
+          "status:nvarchar",
+          "createdAt:datetime",
+          "approvedAt:datetime",
+          "rejectedAt:datetime",
+          "rejectionReason:nvarchar",
+          "approvedBy:nvarchar"
+        ]
+      },
+      {
+        "table": "dbo.punishments",
+        "columns": [
+          "id:bigint",
+          "userId:int",
+          "nickname:nvarchar",
+          "type:varchar",
+          "reason:nvarchar",
+          "proof:nvarchar",
+          "issuedBy:int",
+          "issuedByName:nvarchar",
+          "startsAt:datetime2",
+          "endsAt:datetime2",
+          "liftedAt:datetime2",
+          "liftedBy:int",
+          "liftedByName:nvarchar",
+          "liftReason:nvarchar",
+          "createdAt:datetime2"
+        ]
+      },
+      {
+        "table": "dbo.report_reviews",
+        "columns": [
+          "reportSeq:int",
+          "status:varchar",
+          "note:nvarchar",
+          "reviewedBy:int",
+          "reviewedByName:nvarchar",
+          "reviewedAt:datetime2"
+        ]
+      },
+      {
+        "table": "dbo.sessions",
+        "columns": [
+          "tokenHash:varchar",
+          "userId:int",
+          "passwordStamp:varchar",
+          "expiresAt:bigint",
+          "mfaVersion:varchar"
+        ]
+      }
+    ]
+  },
+  "COMBATARMS_WEB": {
+    "count": 26,
+    "all": [
+      "dbo.activity",
+      "dbo.admin_audit",
+      "dbo.admin_users",
+      "dbo.BirthdayRewards",
+      "dbo.ClaimedLevelRewards",
+      "dbo.credential_challenges",
+      "dbo.download_daily",
+      "dbo.download_releases",
+      "dbo.download_settings",
+      "dbo.download_tickets",
+      "dbo.download_uploads",
+      "dbo.email_verifications",
+      "dbo.login_challenges",
+      "dbo.password_resets",
+      "dbo.PaymentCodes",
+      "dbo.punishments",
+      "dbo.rate_limits",
+      "dbo.recovery_codes",
+      "dbo.RefundRequests",
+      "dbo.report_reviews",
+      "dbo.schema_version",
+      "dbo.sessions",
+      "dbo.SupportTickets",
+      "dbo.TicketMessages",
+      "dbo.two_factor",
+      "dbo.two_factor_pending"
+    ],
+    "interesting": [
+      {
+        "table": "dbo.admin_users",
+        "columns": [
+          "userId:int",
+          "role:varchar",
+          "grantedBy:int",
+          "grantedAt:datetime2"
+        ]
+      },
+      {
+        "table": "dbo.email_verifications",
+        "columns": [
+          "userId:int",
+          "tokenHash:varchar",
+          "email:nvarchar",
+          "passwordStamp:varchar",
+          "expiresAt:bigint"
+        ]
+      },
+      {
+        "table": "dbo.login_challenges",
+        "columns": [
+          "tokenHash:varchar",
+          "userId:int",
+          "passwordStamp:varchar",
+          "mfaVersion:varchar",
+          "expiresAt:bigint"
+        ]
+      },
+      {
+        "table": "dbo.PaymentCodes",
+        "columns": [
+          "id:int",
+          "oidUser:int",
+          "username:nvarchar",
+          "NickName:nvarchar",
+          "paymentCode:nvarchar",
+          "nxAmount:int",
+          "dollarAmount:decimal",
+          "status:nvarchar",
+          "createdAt:datetime",
+          "approvedAt:datetime",
+          "rejectedAt:datetime",
+          "rejectionReason:nvarchar",
+          "approvedBy:nvarchar"
+        ]
+      },
+      {
+        "table": "dbo.punishments",
+        "columns": [
+          "id:bigint",
+          "userId:int",
+          "nickname:nvarchar",
+          "type:varchar",
+          "reason:nvarchar",
+          "proof:nvarchar",
+          "issuedBy:int",
+          "issuedByName:nvarchar",
+          "startsAt:datetime2",
+          "endsAt:datetime2",
+          "liftedAt:datetime2",
+          "liftedBy:int",
+          "liftedByName:nvarchar",
+          "liftReason:nvarchar",
+          "createdAt:datetime2"
+        ]
+      },
+      {
+        "table": "dbo.report_reviews",
+        "columns": [
+          "reportSeq:int",
+          "status:varchar",
+          "note:nvarchar",
+          "reviewedBy:int",
+          "reviewedByName:nvarchar",
+          "reviewedAt:datetime2"
+        ]
+      },
+      {
+        "table": "dbo.sessions",
+        "columns": [
+          "tokenHash:varchar",
+          "userId:int",
+          "passwordStamp:varchar",
+          "expiresAt:bigint",
+          "mfaVersion:varchar"
+        ]
+      }
+    ]
+  }
+}

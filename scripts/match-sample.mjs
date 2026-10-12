@@ -1,0 +1,10 @@
+import { query, queryLog, disconnect } from '../server/db.js';
+const r = await queryLog(`SELECT TOP 8 GameRoomLogSeqNo, RoomName, MapNo, GameType, GameModeType, PlayerCnt, WinTeamType, EndDate, PlayTime, RestrictWeapon, RoomKeyNo FROM CBT_GameRoomLog01 ORDER BY EndDate DESC`);
+console.log(r.recordset);
+const modes = await query(`SELECT Mode, ModeType, Name FROM CBT_GameMode`);
+console.log('modes', modes.recordset);
+const maps = await query(`SELECT TOP 15 MapID, Name FROM CBT_GameMap`);
+console.log('maps', maps.recordset);
+const cnt = await queryLog(`SELECT COUNT(*) as n FROM CBT_GameRoomLog01 WHERE EndDate >= DATEADD(day,-7,GETDATE())`);
+console.log('7d', cnt.recordset);
+await disconnect();

@@ -1,0 +1,10 @@
+import { query, disconnect } from '../server/db.js';
+const t = await query(`SELECT TOP 20 * FROM CBT_AdvertiseMessage ORDER BY ADMessageNo`);
+console.log('ticker', t.recordset);
+const i = await query(`SELECT TOP 20 * FROM CBT_AdvertiseMessageInfo ORDER BY ViewDate DESC`);
+console.log('info', i.recordset);
+const s = await query(`SELECT * FROM CBT_Advertise`);
+console.log('settings', s.recordset);
+const cols = await query(`SELECT TABLE_NAME, COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME LIKE 'CBT_Advertise%'`);
+console.log(cols.recordset);
+await disconnect();

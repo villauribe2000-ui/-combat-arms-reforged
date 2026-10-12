@@ -1,0 +1,10 @@
+import { queryLog, disconnect } from '../server/db.js';
+const st = await queryLog(`SELECT TOP 30 LogoutStatus, COUNT(*) n FROM CBT_UserLoginLog01 GROUP BY LogoutStatus ORDER BY n DESC`);
+console.log('status', st.recordset);
+const pet = await queryLog(`SELECT TOP 20 PlayEndType, COUNT(*) n FROM CBT_UserLoginLog01 GROUP BY PlayEndType ORDER BY n DESC`);
+console.log('end', pet.recordset);
+const rows = await queryLog(`SELECT TOP 12 NickName, LoginDate, LogoutDate, LogoutStatus, PlayEndType, DATEDIFF(minute, LoginDate, LogoutDate) stay FROM CBT_UserLoginLog01 ORDER BY LoginDate DESC`);
+console.log(rows.recordset);
+const cnt = await queryLog(`SELECT COUNT(*) n FROM CBT_UserLoginLog01 WHERE LoginDate >= DATEADD(day, -7, GETDATE())`);
+console.log('7d', cnt.recordset);
+await disconnect();
