@@ -323,7 +323,7 @@ export default function AdminPlayerAccount({ id, onBack }: { id: number; onBack:
               }
               setGiftBusy(true);
               try {
-                const d = await api.giftAdminNx(id, amount, giftMessage.trim());
+                const d = await api.giftAdminNx(id, amount, giftMessage.trim(), { userId: profile?.userId || profile?.id, username: profile?.username });
                 setGiftQuota(d.quota);
                 const log = await api.getAdminStaffGifts();
                 setGiftLog((log?.gifts || []).filter((g: any) => Number(g.toUserId) === Number(id)));

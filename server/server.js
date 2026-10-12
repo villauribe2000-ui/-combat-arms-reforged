@@ -79,6 +79,7 @@ app.use('/api/protected', authMiddleware, dataRoutes);
 
 // Catch-all: servir index.html para rutas del frontend (SPA)
 app.get('*', (req, res) => {
+  res.set('Cache-Control', 'no-cache, no-store, must-revalidate');
   res.sendFile(path.join(__dirname, '../dist/index.html'));
 });
 

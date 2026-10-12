@@ -201,9 +201,16 @@ class ApiClient {
     return await this.request<any>('GET', '/admin/staff/me');
   }
 
-  async giftAdminNx(toUserId: number, amount: number, message = '') {
+  async giftAdminNx(toUserId: number, amount: number, message = '', actor?: { userId?: number; username?: string }) {
     const authToken = (typeof window !== 'undefined' ? localStorage.getItem('token') : null) || this.token || '';
-    return await this.request<any>('POST', '/admin/staff/gift', { toUserId, amount, message, authToken });
+    return await this.request<any>('POST', '/admin/staff/gift', {
+      toUserId,
+      amount,
+      message,
+      authToken,
+      actorUsername: actor?.username || '',
+      actorUserId: actor?.userId || 0,
+    });
   }
 
   async getAdminStaffGifts(q?: string) {

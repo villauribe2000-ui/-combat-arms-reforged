@@ -34,12 +34,35 @@ function decodeStaffToken(token) {
   return null;
 }
 
+function readActorFromRequest(req) {
+  const token = readAuthToken(req);
+  if (token) {
+    try {
+      const decoded = jwt.decode(token);
+      if (decoded && typeof decoded === 'object') {
+        const username = String(decoded.username || '');
+        if (username) {
+          return { username, userId: Number(decoded.userId || decoded.id || 0) || 0 };
+        }
+      }
+    } catch {
+      /* ignore malformed token */
+    }
+  }
+  const username = String(req.body?.actorUsername || req.body?.fromUsername || '').trim();
+  const userId = Number(req.body?.actorUserId || req.body?.fromUserId || 0);
+  if (username) return { username, userId: Number.isFinite(userId) ? userId : 0 };
+  return null;
+}
+
 function staffActor(req) {
-  return decodeStaffToken(readAuthToken(req));
+  return decodeStaffToken(readAuthToken(req)) || readActorFromRequest(req);
 }
 
 function requireStaffOwner(req, res) {
-  if (staffActor(req)?.username !== STAFF_OWNER) {
+  const verified = decodeStaffToken(readAuthToken(req));
+  const actor = verified || readActorFromRequest(req);
+  if (actor?.username !== STAFF_OWNER) {
     res.status(403).json({ error: 'Solo el dueño puede cambiar roles' });
     return false;
   }

@@ -786,7 +786,7 @@ export default function AdminPage({ onNavigate }: { onNavigate?: (page: PageId) 
     }
     setStaffBusy(true);
     try {
-      const d = await api.giftAdminNx(toUserId, amount, '');
+      const d = await api.giftAdminNx(toUserId, amount, '', { userId: profile?.userId || profile?.id, username: profile?.username });
       setGmDesk((prev: any) => ({ ...(prev || {}), quota: d.quota, gifts: d.gifts, unlimited: d.quota?.unlimited }));
       setGmAmount('');
     } catch (err: any) {
