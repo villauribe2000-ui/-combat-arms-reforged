@@ -12,7 +12,7 @@ interface LevelReward {
 }
 
 export default function LevelRewardsPage() {
-  const { profile } = useAuth();
+  const { profile, refreshProfile } = useAuth();
   const [rewards, setRewards] = useState<LevelReward[]>([]);
   const [currentLevel, setCurrentLevel] = useState(0);
   const [claimedLevelRewards, setClaimedLevelRewards] = useState<number[]>([]);
@@ -187,6 +187,7 @@ export default function LevelRewardsPage() {
       
       // Llamar al backend para sumar NX
       await api.claimLevelReward(profile?.username || '', level, nxReward);
+      await refreshProfile();
 
       // Marcar como reclamado
       const newClaimed = [...claimedLevelRewards, level];
