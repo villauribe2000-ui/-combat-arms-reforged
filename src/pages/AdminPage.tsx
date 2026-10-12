@@ -2185,10 +2185,21 @@ export default function AdminPage({ onNavigate }: { onNavigate?: (page: PageId) 
                   <p className="staff-alert">No tienes saldo para regalar</p>
                 )}
                 <form className="staff-toolbar" onSubmit={searchGmPlayers}>
-                  <input value={gmQ} onChange={(e) => setGmQ(e.target.value)} placeholder="Jugador que recibe NX" />
-                  <input value={gmAmount} onChange={(e) => setGmAmount(e.target.value)} placeholder="Cantidad NX" style={{ minWidth: 140, flex: '0 0 160px' }} />
+                  <input value={gmQ} onChange={(e) => setGmQ(e.target.value)} placeholder="Jugador nick, usuario o #id" />
                   <button className="staff-btn staff-btn-gold" type="submit" disabled={staffBusy}>Buscar</button>
                 </form>
+                <div className="staff-amount-bar">
+                  <label htmlFor="gm-nx-amount">CANTIDAD NX</label>
+                  <input
+                    id="gm-nx-amount"
+                    className="staff-amount-input"
+                    inputMode="numeric"
+                    autoComplete="off"
+                    value={gmAmount}
+                    onChange={(e) => setGmAmount(e.target.value.replace(/[^\d]/g, ''))}
+                    placeholder="Ej. 50000"
+                  />
+                </div>
                 <div className="staff-results">
                   {gmHits.map((p: any) => (
                     <article key={p.id} className="staff-card">
@@ -2202,6 +2213,14 @@ export default function AdminPage({ onNavigate }: { onNavigate?: (page: PageId) 
                         <small>NX EN CUENTA</small>
                         <strong>{nxFmt(p.nx)}</strong>
                       </div>
+                      <input
+                        className="staff-amount-input"
+                        inputMode="numeric"
+                        autoComplete="off"
+                        value={gmAmount}
+                        onChange={(e) => setGmAmount(e.target.value.replace(/[^\d]/g, ''))}
+                        placeholder="Cantidad"
+                      />
                       <div className="staff-quota-actions">
                         <button className="staff-btn staff-btn-gold" type="button" disabled={staffBusy || (!isStaffOwner && Number(gmDesk.quota?.remaining || 0) <= 0)} onClick={() => sendGmGift(p.id)}>
                           Regalar {gmAmount || '0'} NX
