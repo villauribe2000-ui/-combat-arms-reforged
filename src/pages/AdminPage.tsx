@@ -281,6 +281,7 @@ export default function AdminPage({ onNavigate }: { onNavigate?: (page: PageId) 
   const [economyCur, setEconomyCur] = useState<'gp' | 'nx'>('gp');
   const [reportTab, setReportTab] = useState<'open' | 'handled' | 'dismissed' | 'all'>('open');
   const [openReport, setOpenReport] = useState<any>(null);
+  const [shopQ, setShopQ] = useState('');
 
   const READ_SECTIONS: Section[] = ['players', 'online', 'clans', 'shop', 'economy', 'reports', 'matches', 'logins', 'linked', 'announcements', 'maps', 'boosts'];
 
@@ -349,6 +350,15 @@ export default function AdminPage({ onNavigate }: { onNavigate?: (page: PageId) 
       tick();
       const id = setInterval(tick, 15000);
       return () => { live = false; clearInterval(id); };
+    }
+    if (section === 'shop') {
+      let live = true;
+      setRoomLoading(true);
+      api.getAdminSection('shop', { q: shopQ || undefined })
+        .then((d) => { if (live) setRoom(d || {}); })
+        .catch(() => { if (live) setRoom({}); })
+        .finally(() => { if (live) setRoomLoading(false); });
+      return () => { live = false; };
     }
     if (section === 'economy') {
       let live = true;
@@ -945,17 +955,125 @@ export default function AdminPage({ onNavigate }: { onNavigate?: (page: PageId) 
         )}
 
         {section === 'shop' && (
-          <div className="admin-panel">
-            <div className="admin-toolbar"><h1>SHOP</h1><span className="admin-chip">{room.source}</span></div>
-            <Grid rows={room.data} cols={[
-              { key: 'ProductID', label: 'ID' },
-              { key: 'ProductName', label: 'ITEM' },
-              { key: 'Price', label: 'PRICE' },
-              { key: 'SalePrice', label: 'SALE' },
-              { key: 'BonusGP', label: 'GP' },
-              { key: 'ShopView', label: 'VIEW' },
-            ]} />
-          </div>
+          <>
+            <div className="pl-hero">
+              <div className="pl-hero-ico"><Store /></div>
+              <div>
+                <p className="eyebrow">GAME CONTROL / COMBAT ARMS</p>
+                <h1>SHOP</h1>
+                <p>What the in-game shop shows, badges, prices and buy-one-get-one events. Changes reach the game within about a minute. ({Number(room.inShop || 0).toLocaleString()} products in the shop now)</p>
+              </div>
+            </div>
+            <form className="pl-filters" onSubmit={(e) => { e.preventDefault(); setRoomLoading(true); api.getAdminSection('shop', { q: shopQ || undefined }).then(setRoom).catch(() => setRoom({})).finally(() => setRoomLoading(false)); }}>
+              <input value={shopQ} onChange={(e) => setShopQ(e.target.value)} placeholder="Product name or number" />
+              <button className="pl-apply" type="submit">Find</button>
+            </form>
+            {roomLoading ? <Empty text="Leyendo tienda..." /> : (
+              <>
+                <section className="ol-panel">
+                  <div className="pd-card-top">
+                    <h2><Store /> BADGES AND PRICE CHANGES</h2>
+                    <span className="pd-chip">Products with HOT, NEW, SALE or a changed price</span>
+                  </div>
+                  {(room.groups || []).length === 0 ? (
+                    <p className="pd-empty">No matching shop products.</p>
+                  ) : room.groups.map((g: any) => (
+                    <article key={g.itemNo || g.name} className="shop-card">
+                      <div className="shop-card-top">
+                        {g.image ? (
+                          <img src={g.image} alt="" onError={(e) => { e.currentTarget.style.display = 'none'; }} />
+                        ) : null}
+                        <span className="inv-thumb">{String(g.name || '?').slice(0, 1)}</span>
+                        <div>
+                          <b>{g.name}</b>
+                          <small>Function item · Item #{g.itemNo || '—'}</small>
+                        </div>
+                      </div>
+                      {(g.variants || []).map((v: any) => (
+                        <div key={v.id} className="shop-var">
+                          <span className="shop-pill">{v.period}</span>
+                          <span>{v.currency} #{v.id}</span>
+                          <span className="shop-price">
+                            {v.sale ? <><strong>{Number(v.price).toLocaleString()}</strong> <s>{Number(v.base).toLocaleString()}</s></> : <strong>{Number(v.price).toLocaleString()}</strong>}
+                          </span>
+                          <span className={v.inShop ? 'pl-status' : 'pd-left'}>{v.inShop ? 'IN THE SHOP' : 'HIDDEN'}</span>
+                          {v.hot && <span className="shop-tag">HOT</span>}
+                          {v.neu && <span className="shop-tag">NEW</span>}
+                          {v.sale && <span className="shop-tag">SALE</span>}
+                          {v.giftable && <span className="shop-tag">GIFTABLE</span>}
+                        </div>
+                      ))}
+                    </article>
+                  ))}
+                </section>
+                <section className="ol-panel">
+                  <div className="pd-card-top">
+                    <h2>SHOP EVENTS</h2>
+                    <span className="pd-chip">Buy one, get one</span>
+                  </div>
+                  <table className="pl-table">
+                    <thead>
+                      <tr>
+                        <th>BUY</th>
+                        <th>GET FREE</th>
+                        <th>FOR</th>
+                        <th>STARTS</th>
+                        <th>ENDS</th>
+                        <th>STATUS</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {(room.events || []).length === 0 ? (
+                        <tr><td colSpan={6} className="pd-empty">No shop events.</td></tr>
+                      ) : room.events.map((e: any, i: number) => (
+                        <tr key={`${e.ProductID}-${i}`}>
+                          <td>{e.ProductName || e.ProductID} <small>#{e.ProductID}</small></td>
+                          <td>{e.GiftName || e.EventProductID} <small>#{e.EventProductID}</small></td>
+                          <td>{e.for}</td>
+                          <td className="pd-time">{stampSec(e.Start)}</td>
+                          <td className="pd-time">{stampSec(e.Ends)}</td>
+                          <td><span className={e.status === 'ACTIVE' ? 'pl-status' : 'pd-left'}>{e.status}</span></td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </section>
+                <section className="ol-panel">
+                  <div className="pd-card-top">
+                    <h2>PLAYER PURCHASES</h2>
+                    <span className="pd-chip">CBT_CharacterBuyProductLog</span>
+                  </div>
+                  <table className="pl-table">
+                    <thead>
+                      <tr>
+                        <th>WHEN</th>
+                        <th>PLAYER</th>
+                        <th>PRODUCT</th>
+                        <th>PAY</th>
+                        <th>PRICE</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {(room.purchases || []).length === 0 ? (
+                        <tr><td colSpan={5} className="pd-empty">No purchases yet.</td></tr>
+                      ) : room.purchases.map((p: any, i: number) => (
+                        <tr key={i} className="pl-row" onClick={() => { setSection('players'); setPlayerId(p.buyer); }}>
+                          <td className="pd-time">{stampSec(p.loggedAt)}</td>
+                          <td className="login-nick">{p.NickName}</td>
+                          <td>
+                            <b>{p.ProductName}</b>
+                            <small style={{ display: 'block', color: '#888' }}>#{p.productId}{p.ItemNo ? ` · Item ${p.ItemNo}` : ''}</small>
+                          </td>
+                          <td>{p.currency}</td>
+                          <td>{Number(p.price || 0).toLocaleString()}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </section>
+              </>
+            )}
+          </>
         )}
 
         {section === 'economy' && (
@@ -1325,22 +1443,90 @@ export default function AdminPage({ onNavigate }: { onNavigate?: (page: PageId) 
         )}
 
         {section === 'announcements' && (
-          <div className="admin-panel">
-            <div className="admin-toolbar"><h1>ANNOUNCEMENTS</h1><span className="admin-chip">{room.source}</span></div>
-            <p className="sub">In-game advertise ticker. Read only — not edited from the web.</p>
-            <Grid rows={room.ticker} cols={[
-              { key: 'ADMessageNo', label: '#' },
-              { key: 'ADMessage', label: 'MESSAGE' },
-              { key: 'Enable', label: 'ON' },
-              { key: 'ADURL', label: 'URL' },
-            ]} />
-            <h2>MESSAGE SETS</h2>
-            <Grid rows={room.messages} cols={[
-              { key: 'Message', label: 'MESSAGE' },
-              { key: 'Enable', label: 'ON' },
-              { key: 'ViewDate', label: 'DATE', fmt: dt },
-            ]} />
-          </div>
+          <>
+            <div className="pl-hero">
+              <div className="pl-hero-ico"><Megaphone /></div>
+              <div>
+                <p className="eyebrow">GAME CONTROL / COMBAT ARMS</p>
+                <h1>ANNOUNCEMENTS</h1>
+                <p>Server-wide messages. A new or edited message goes out within about 10 seconds, after that the game sends one message every 60 seconds, going through the list in order. Game server time now: {stampSec(room.serverNow)}</p>
+              </div>
+            </div>
+            {roomLoading ? <Empty text="Leyendo anuncios..." /> : (
+              <>
+                <section className="ol-panel">
+                  <div className="pd-card-top">
+                    <h2><Megaphone /> WHERE PLAYERS SEE THEM</h2>
+                    <span className="pd-chip">{room.showingNow ? 'Showing now' : 'Nothing is showing right now'}</span>
+                  </div>
+                  {room.current?.ADMessage ? (
+                    <p className="pd-note" style={{ color: '#e6c36a' }}>{room.current.ADMessage}</p>
+                  ) : null}
+                  <p className="pd-note">In the lobby (channel list, lobby rooms, shop) it scrolls across the banner at the top of the screen for 15 seconds.</p>
+                  <p className="pd-note">In a match, this same text scrolls across the top of the screen as a notice.</p>
+                  <p className="pd-note">A message that goes out while a player is loading into a match or on the results screen is skipped for them.</p>
+                </section>
+                <section className="ol-panel">
+                  <div className="pd-card-top">
+                    <h2><Megaphone /> MESSAGES</h2>
+                    <span className="pd-chip">In the order the game rotates them</span>
+                  </div>
+                  <table className="pl-table">
+                    <thead>
+                      <tr>
+                        <th>#</th>
+                        <th>MESSAGE</th>
+                        <th>WHEN CLICKED</th>
+                        <th>STATUS</th>
+                        <th>ACTIONS</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {(room.ticker || []).length === 0 ? (
+                        <tr><td colSpan={5} className="pd-empty">No messages yet</td></tr>
+                      ) : room.ticker.map((m: any) => (
+                        <tr key={m.ADMessageNo}>
+                          <td>{m.ADMessageNo}</td>
+                          <td>{m.ADMessage}</td>
+                          <td>{m.click}</td>
+                          <td><span className={m.status === 'ON' ? 'pl-status' : 'pd-left'}>{m.status}</span></td>
+                          <td className="pd-left">Read only</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </section>
+                <section className="ol-panel">
+                  <div className="pd-card-top">
+                    <h2>SCHEDULED</h2>
+                    <span className="pd-chip">Applied by the game at the time given</span>
+                  </div>
+                  <table className="pl-table">
+                    <thead>
+                      <tr>
+                        <th>AT</th>
+                        <th>CHANGE</th>
+                        <th>MESSAGE</th>
+                        <th>WHEN CLICKED</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {(room.scheduled || []).length === 0 ? (
+                        <tr><td colSpan={4} className="pd-empty">No scheduled changes</td></tr>
+                      ) : room.scheduled.map((m: any, i: number) => (
+                        <tr key={m.MessageSetID || i}>
+                          <td className="pd-time">{stampSec(m.ViewDate)}</td>
+                          <td>{m.change}</td>
+                          <td>{m.Message}</td>
+                          <td>{m.click}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </section>
+              </>
+            )}
+          </>
         )}
 
         {section === 'maps' && (

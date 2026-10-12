@@ -502,13 +502,132 @@ router.get('/clans/:id', async (req, res) => {
   });
 });
 
-router.get('/shop', async (_req, res) => {
-  const list = await ca(`
-    SELECT TOP 80 p.ProductID, p.ProductName, p.Price, p.SalePrice, p.SaleType, p.BonusGP, v.ShopView
-    FROM CBT_ProductInfo p
-    LEFT JOIN CBT_ProductInfo_ShopView v ON v.ProductID = p.ProductID
-    ORDER BY p.ProductID DESC`);
-  res.json({ data: list, source: 'CBT_ProductInfo + CBT_ProductInfo_ShopView' });
+function saleLabel(type) {
+  const n = Number(type);
+  if (n === 1) return 'GP';
+  if (n === 0) return 'NX';
+  if (n === 3) return 'NX';
+  return 'GP';
+}
+
+function periodLabel(period, consume) {
+  const p = Number(period || 0);
+  const c = Number(consume || 0);
+  if (c === 3 || p >= 200 || p <= 0) return 'PERM';
+  return `X${p}`;
+}
+
+router.get('/shop', async (req, res) => {
+  const q = String(req.query.q || '').trim();
+  const inShop = n(await ca(`SELECT COUNT(*) as n FROM CBT_ProductInfo_ShopView WHERE ShopView = 1`));
+  let products = [];
+  if (q) {
+    const params = { q: `%${q}%` };
+    let where = `p.ProductName LIKE @q`;
+    if (/^\d+$/.test(q)) {
+      params.id = parseInt(q, 10);
+      where += ` OR p.ProductID = @id OR p.ItemNo00 = @id`;
+    }
+    products = await ca(`
+      SELECT TOP 80 p.ProductID, p.ProductName, p.Price, p.SalePrice, p.SaleType, p.ItemNo00, p.Period00, p.ConsumeType00, v.ShopView,
+        CASE WHEN g.Gift = 1 THEN 1 ELSE 0 END as giftable
+      FROM CBT_ProductInfo p
+      LEFT JOIN CBT_ProductInfo_ShopView v ON v.ProductID = p.ProductID
+      LEFT JOIN CBT_ProductInfo_Gift g ON g.ProductID = p.ProductID
+      WHERE ${where}
+      ORDER BY CASE WHEN v.ShopView = 1 THEN 0 ELSE 1 END, p.ProductID`, params);
+  } else {
+    products = await ca(`
+      SELECT TOP 120 p.ProductID, p.ProductName, p.Price, p.SalePrice, p.SaleType, p.ItemNo00, p.Period00, p.ConsumeType00, v.ShopView,
+        CASE WHEN g.Gift = 1 THEN 1 ELSE 0 END as giftable
+      FROM CBT_ProductInfo p
+      INNER JOIN CBT_ProductInfo_ShopView v ON v.ProductID = p.ProductID AND v.ShopView = 1
+      LEFT JOIN CBT_ProductInfo_Gift g ON g.ProductID = p.ProductID
+      LEFT JOIN CBT_ProductInfo_FirstBuy f ON f.ProductID = p.ProductID
+      WHERE g.Gift = 1 OR f.ProductID IS NOT NULL
+         OR p.ProductID IN (SELECT ProductID FROM CBT_ProductInfo_ShopEvent UNION SELECT EventProductID FROM CBT_ProductInfo_ShopEvent)
+      ORDER BY p.ProductID`);
+    if (products.length < 8) {
+      products = await ca(`
+        SELECT TOP 60 p.ProductID, p.ProductName, p.Price, p.SalePrice, p.SaleType, p.ItemNo00, p.Period00, p.ConsumeType00, v.ShopView,
+          CASE WHEN g.Gift = 1 THEN 1 ELSE 0 END as giftable
+        FROM CBT_ProductInfo p
+        INNER JOIN CBT_ProductInfo_ShopView v ON v.ProductID = p.ProductID AND v.ShopView = 1
+        LEFT JOIN CBT_ProductInfo_Gift g ON g.ProductID = p.ProductID
+        WHERE p.ItemNo00 IN (9049, 9040, 9041) OR g.Gift = 1
+        ORDER BY p.ItemNo00, p.Period00`);
+    }
+  }
+
+  const eventsRaw = await ca(`
+    SELECT e.ProductID, e.EventType, e.Start, e.[End] as Ends, e.EventProductID, e.Message,
+      p.ProductName, g.ProductName as GiftName
+    FROM CBT_ProductInfo_ShopEvent e
+    LEFT JOIN CBT_ProductInfo p ON p.ProductID = e.ProductID
+    LEFT JOIN CBT_ProductInfo g ON g.ProductID = e.EventProductID
+    ORDER BY e.[End] DESC`);
+  const now = Date.now();
+  const events = eventsRaw.map((e) => ({
+    ...e,
+    for: 'Own use',
+    status: e.Ends && new Date(e.Ends).getTime() < now ? 'ENDED' : 'ACTIVE',
+  }));
+
+  const buyRows = await log(`
+    SELECT TOP 80 loggedAt, buyer, productId, currency, price
+    FROM CBT_CharacterBuyProductLog ORDER BY loggedAt DESC`);
+  const pids = [...new Set(buyRows.map((b) => b.productId).filter((n) => Number.isFinite(n)))];
+  const uids = [...new Set(buyRows.map((b) => b.buyer).filter((n) => Number.isFinite(n)))];
+  let pmap = {};
+  let umap = {};
+  if (pids.length) {
+    const names = await ca(`SELECT ProductID, ProductName, ItemNo00 FROM CBT_ProductInfo WHERE ProductID IN (${pids.join(',')})`);
+    pmap = Object.fromEntries(names.map((p) => [p.ProductID, p]));
+  }
+  if (uids.length) {
+    const users = await ca(`SELECT oidUser as id, NickName, strNexonID as username FROM CBT_User WHERE oidUser IN (${uids.join(',')})`);
+    umap = Object.fromEntries(users.map((u) => [u.id, u]));
+  }
+  const purchases = buyRows.map((b) => ({
+    ...b,
+    ProductName: pmap[b.productId]?.ProductName || `Product #${b.productId}`,
+    ItemNo: pmap[b.productId]?.ItemNo00 || null,
+    NickName: umap[b.buyer]?.NickName || umap[b.buyer]?.username || `#${b.buyer}`,
+    currency: String(b.currency || '').trim().toUpperCase(),
+  }));
+
+  const groups = {};
+  for (const p of products) {
+    const key = p.ItemNo00 || p.ProductID;
+    if (!groups[key]) {
+      groups[key] = {
+        itemNo: p.ItemNo00,
+        name: p.ProductName,
+        image: p.ItemNo00 ? `https://caevo.net/items/${p.ItemNo00}.png` : null,
+        variants: [],
+      };
+    }
+    groups[key].variants.push({
+      id: p.ProductID,
+      period: periodLabel(p.Period00, p.ConsumeType00),
+      currency: saleLabel(p.SaleType),
+      price: p.SalePrice || p.Price,
+      base: p.Price,
+      inShop: Number(p.ShopView) === 1,
+      giftable: Number(p.giftable) === 1,
+      hot: false,
+      neu: false,
+      sale: Number(p.SalePrice) > 0 && Number(p.SalePrice) < Number(p.Price),
+    });
+  }
+
+  res.json({
+    groups: Object.values(groups),
+    events,
+    purchases,
+    inShop,
+    source: 'CBT_ProductInfo + ShopView/Gift/ShopEvent + CBT_CharacterBuyProductLog',
+  });
 });
 
 function ymdAdd(ymd, delta) {
@@ -878,12 +997,33 @@ router.get('/linked', async (_req, res) => {
 });
 
 router.get('/announcements', async (_req, res) => {
-  const ticker = await ca(`SELECT ADMessageNo, ADCommandID, ADMessage, ADURL, Enable FROM CBT_AdvertiseMessage ORDER BY ADMessageNo`);
-  const messages = await ca(`
-    SELECT TOP 40 MessageSetID, MessageType, MessageNo, CommandID, ViewEnable, ViewDate, Enable, Message, URL
+  const ticker = await ca(`
+    SELECT ADMessageNo, ADCommandID, ADMessage, ADURL, Enable
+    FROM CBT_AdvertiseMessage ORDER BY ADMessageNo`);
+  const scheduled = await ca(`
+    SELECT MessageSetID, MessageType, MessageNo, CommandID, ViewEnable, ViewDate, Enable, Message, URL
     FROM CBT_AdvertiseMessageInfo ORDER BY ViewDate DESC`);
-  const settings = await ca(`SELECT ADReady, CurrentADNo, ADCount, Color, Speed, ShowType FROM CBT_Advertise`);
-  res.json({ ticker, messages, settings: settings[0] || null, source: 'CBT_Advertise / CBT_AdvertiseMessage' });
+  const settings = (await ca(`SELECT ADReady, CurrentADNo, ADCount, Color, Speed, ShowType FROM CBT_Advertise`))[0] || {};
+  const nowRow = await ca(`SELECT GETDATE() as now`);
+  const showing = ticker.filter((m) => Number(m.Enable) === 1);
+  const current = showing.find((m) => m.ADMessageNo === settings.CurrentADNo) || showing[0] || null;
+  res.json({
+    ticker: ticker.map((m) => ({
+      ...m,
+      status: Number(m.Enable) === 1 ? 'ON' : 'OFF',
+      click: m.ADURL || '—',
+    })),
+    scheduled: scheduled.map((m) => ({
+      ...m,
+      change: Number(m.Enable) === 1 ? 'Enable' : Number(m.ViewEnable) === 1 ? 'Show' : 'Update',
+      click: m.URL || '—',
+    })),
+    settings,
+    current,
+    showingNow: Boolean(Number(settings.ADReady) === 1 && current),
+    serverNow: nowRow[0]?.now || new Date().toISOString(),
+    source: 'CBT_Advertise + CBT_AdvertiseMessage + CBT_AdvertiseMessageInfo',
+  });
 });
 
 router.get('/maps', async (_req, res) => {
