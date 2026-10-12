@@ -1,0 +1,14 @@
+---
+description: After finishing user work, commit source and push to GitHub for Railway
+alwaysApply: true
+---
+
+# Deploy after every request
+
+When the user's request is done, commit the relevant source and `git push origin HEAD` so Railway deploys.
+
+- Do not wait for a second "súbelo" message.
+- Include the files that implement the request (`src/`, `server/`, public assets).
+- Do not commit `dist/` deletions, `scripts/*.mjs` scratch files, `.env`, or secrets.
+- If there is nothing to commit, still say so.
+- Tell the user the commit is on `main` and Railway should rebuild.
