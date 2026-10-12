@@ -227,6 +227,21 @@
 .shop-price{margin-left:auto;color:#fff}
 .shop-price s{color:#777;margin-left:6px}
 .shop-tag{font-size:9px;letter-spacing:.6px;border:1px solid #3a2c18;color:#c49a5c;padding:2px 6px}
+.map-legend{display:flex;gap:18px;color:#8a8a8a;font-size:12px;margin-bottom:14px}
+.map-legend span{display:inline-flex;align-items:center;gap:6px}
+.map-legend svg{width:13px;height:13px;color:#7dcea0}
+.map-legend .off svg{color:#555}
+.map-grid{display:flex;flex-wrap:wrap;gap:8px;padding-bottom:8px}
+.map-chip{
+  display:inline-flex;align-items:center;gap:6px;min-height:34px;padding:4px 10px;
+  border:1px solid #2a2a2a;background:#161616;color:#8a8a8a;font-size:12px;border-radius:4px
+}
+.map-chip.on{border-color:#2f4a2f;background:#142016;color:#c8e6c8}
+.map-chip.on svg:first-child{width:13px;height:13px;color:#7dcea0}
+.map-chip .star-off{width:12px;height:12px;color:#3a3a3a}
+.map-chip .star-on{width:12px;height:12px;color:#df8104;fill:#df8104}
+.map-chip.def{border-color:#6a5420}
+.map-dot{width:8px;height:8px;border-radius:50%;background:#444;display:inline-block}
 .clan-kpis{grid-template-columns:repeat(4,minmax(0,1fr))}
 .clan-leader{color:#e6c36a;font-size:10px;letter-spacing:.8px;font-weight:800;border:1px solid #6a5420;padding:4px 8px;background:#2a220e}
 .clan-public{margin-top:10px;display:inline-flex;align-items:center;gap:8px;height:36px;padding:0 12px;border:1px solid #3a2c18;background:#1b140c;color:#eee;font-size:12px;font-weight:700}

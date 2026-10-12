@@ -8,7 +8,7 @@ import AdminClanProfile from '@/components/AdminClanProfile';
 import {
   XCircle, Loader, RotateCcw, MessageSquare, Send,
   LayoutDashboard, Users, Radio, Shield, Store, Landmark, FileBarChart, Swords, LogIn,
-  Link2, Megaphone, Map, Zap, ArrowLeft, Ticket, KeyRound, CreditCard, ExternalLink, ChevronRight, Search, Activity, TrendingUp, Wallet, ShoppingBag, Coins, Flag
+  Link2, Megaphone, Map, Zap, ArrowLeft, Ticket, KeyRound, CreditCard, ExternalLink, ChevronRight, Search, Activity, TrendingUp, Wallet, ShoppingBag, Coins, Flag, Check, Star
 } from 'lucide-react';
 
 interface PaymentCode {
@@ -282,6 +282,7 @@ export default function AdminPage({ onNavigate }: { onNavigate?: (page: PageId) 
   const [reportTab, setReportTab] = useState<'open' | 'handled' | 'dismissed' | 'all'>('open');
   const [openReport, setOpenReport] = useState<any>(null);
   const [shopQ, setShopQ] = useState('');
+  const [mapLevel, setMapLevel] = useState<number | null>(null);
 
   const READ_SECTIONS: Section[] = ['players', 'online', 'clans', 'shop', 'economy', 'reports', 'matches', 'logins', 'linked', 'announcements', 'maps', 'boosts'];
 
@@ -1530,22 +1531,58 @@ export default function AdminPage({ onNavigate }: { onNavigate?: (page: PageId) 
         )}
 
         {section === 'maps' && (
-          <div className="admin-panel">
-            <div className="admin-toolbar"><h1>MAPS</h1><span className="admin-chip">{room.source}</span></div>
-            <h2>OPEN ROTATION</h2>
-            <Grid rows={room.open} cols={[
-              { key: 'MapName', label: 'MAP' },
-              { key: 'ModeName', label: 'MODE' },
-              { key: 'Enable', label: 'ON' },
-              { key: 'IsOfficial', label: 'OFFICIAL' },
-              { key: 'ClearanceLevel', label: 'LVL' },
-            ]} />
-            <h2>ALL MAPS</h2>
-            <Grid rows={room.maps} cols={[
-              { key: 'MapID', label: 'ID' },
-              { key: 'Name', label: 'NAME' },
-            ]} />
-          </div>
+          <>
+            <div className="pl-hero">
+              <div className="pl-hero-ico"><Map /></div>
+              <div>
+                <p className="eyebrow">GAME CONTROL / COMBAT ARMS</p>
+                <h1>MAPS & MODES</h1>
+                <p>The maps players can pick when they create a room. The star is the map a new room starts on. Changes reach the lobby within about a minute.</p>
+              </div>
+            </div>
+            <div className="eco-tabs">
+              {(room.levels || []).map((lv: any) => (
+                <button
+                  key={lv.id}
+                  className={(mapLevel ?? room.levels?.[0]?.id) === lv.id ? 'on' : ''}
+                  onClick={() => setMapLevel(lv.id)}
+                >
+                  {lv.label}
+                </button>
+              ))}
+            </div>
+            <p className="pd-note" style={{ marginBottom: 12 }}>
+              Each LobbyServer uses the list of its own ClearanceLevel. The live lobby uses the normal lobby list (3) unless its INI says otherwise.
+            </p>
+            <p className="map-legend">
+              <span><Check /> Enabled</span>
+              <span className="off"><Check /> Disabled</span>
+              <span><Star /> Default map</span>
+            </p>
+            {roomLoading ? <Empty text="Leyendo mapas..." /> : (
+              (room.lobbies?.[String(mapLevel ?? room.levels?.[0]?.id)] || room.lobbies?.[mapLevel ?? room.levels?.[0]?.id] || []).map((mode: any) => (
+                <section className="ol-panel" key={mode.modeId}>
+                  <div className="pd-card-top">
+                    <h2>{String(mode.name || '').toUpperCase()}</h2>
+                    <span className="pd-chip">{mode.on} of {mode.total} maps on</span>
+                  </div>
+                  <div className="map-grid">
+                    {mode.maps.map((m: any) => (
+                      <span
+                        key={m.mapId}
+                        className={`map-chip${m.enable ? ' on' : ''}${m.defaultMap ? ' def' : ''}`}
+                        title={m.enable ? 'Enabled' : 'Disabled'}
+                      >
+                        {m.enable ? <Check /> : <span className="map-dot" />}
+                        {m.name}
+                        <Star className={m.defaultMap ? 'star-on' : 'star-off'} />
+                      </span>
+                    ))}
+                  </div>
+                </section>
+              ))
+            )}
+          </>
         )}
 
         {section === 'boosts' && (

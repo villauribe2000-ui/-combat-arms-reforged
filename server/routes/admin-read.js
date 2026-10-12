@@ -1026,16 +1026,51 @@ router.get('/announcements', async (_req, res) => {
   });
 });
 
+const LOBBY_NAMES = {
+  2: 'Level 2',
+  3: 'Normal lobby (3)',
+  4: 'Clan lobby (4)',
+  5: 'Recreation lobby (5)',
+  6: 'Level 6',
+  7: 'Level 7',
+};
+
 router.get('/maps', async (_req, res) => {
-  const maps = await ca(`SELECT MapID, Name FROM CBT_GameMap ORDER BY MapID`);
   const modes = await ca(`SELECT Mode, ModeType, Name FROM CBT_GameMode ORDER BY Mode`);
   const open = await ca(`
     SELECT o.ClearanceLevel, o.ModeID, o.MapID, o.IsDefaultMap, o.Enable, o.IsOfficial, m.Name as MapName, g.Name as ModeName
     FROM CBT_MapOpen o
     LEFT JOIN CBT_GameMap m ON m.MapID = o.MapID
     LEFT JOIN CBT_GameMode g ON g.Mode = o.ModeID
-    ORDER BY o.ModeID, o.MapID`);
-  res.json({ maps, modes, open, source: 'CBT_GameMap + CBT_GameMode + CBT_MapOpen' });
+    ORDER BY o.ClearanceLevel, o.ModeID, m.Name`);
+  const levels = [...new Set(open.map((r) => r.ClearanceLevel))].sort((a, b) => a - b);
+  const lobbies = {};
+  for (const lv of levels) {
+    const rows = open.filter((r) => r.ClearanceLevel === lv);
+    const byMode = {};
+    for (const r of rows) {
+      if (!byMode[r.ModeID]) {
+        byMode[r.ModeID] = { modeId: r.ModeID, name: r.ModeName || `Mode ${r.ModeID}`, maps: [] };
+      }
+      byMode[r.ModeID].maps.push({
+        mapId: r.MapID,
+        name: r.MapName || `Map ${r.MapID}`,
+        enable: Number(r.Enable) === 1,
+        defaultMap: Number(r.IsDefaultMap) === 1,
+      });
+    }
+    lobbies[lv] = Object.values(byMode).map((m) => ({
+      ...m,
+      on: m.maps.filter((x) => x.enable).length,
+      total: m.maps.length,
+    }));
+  }
+  res.json({
+    levels: levels.map((lv) => ({ id: lv, label: LOBBY_NAMES[lv] || `Level ${lv}` })),
+    lobbies,
+    modeCount: modes.length,
+    source: 'CBT_MapOpen + CBT_GameMap + CBT_GameMode',
+  });
 });
 
 router.get('/boosts', async (_req, res) => {
