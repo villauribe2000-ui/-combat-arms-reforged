@@ -1,9 +1,10 @@
 import { useEffect, useState } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { api } from '@/lib/api';
+import { rankFromExp, rankIcon } from '@/lib/ranks';
 import type { PageId } from '@/components/Layout';
 import {
-  ChevronRight, Eye, KeyRound, LayoutDashboard, LogOut, Mail, Shield, ShieldCheck, UserRound, Calendar, Activity, Lock,
+  ChevronRight, Eye, KeyRound, LayoutDashboard, LogOut, Mail, Shield, ShieldCheck, UserRound, Calendar, Activity, Lock, Crosshair, Target, Users,
 } from 'lucide-react';
 
 type Tab = 'overview' | 'stats' | 'logs' | '2fa' | 'password';
@@ -76,7 +77,7 @@ export default function ProfilePage({ onNavigate }: { onNavigate: (page: PageId)
     (async () => {
       try {
         const dbProfile = await api.getProfile(profile.username);
-        setGame({ ...dbProfile, ...storedData, nx: profile.gameCoins, gp: profile.totalBalance });
+        setGame({ ...dbProfile, ...storedData, nx: profile.gameCoins, gp: profile.totalBalance, Exp: dbProfile.Exp ?? dbProfile.experience ?? 0 });
       } catch {
         setGame({ NickName: name, ...storedData, nx: profile.gameCoins, gp: profile.totalBalance, kills: 0, deaths: 0, wins: 0, losses: 0, level: profile.level || 0 });
       }
@@ -141,6 +142,99 @@ export default function ProfilePage({ onNavigate }: { onNavigate: (page: PageId)
   };
 
   const kd = game?.deaths > 0 ? (game.kills / game.deaths).toFixed(2) : (game?.kills || 0).toFixed(2);
+  const exp = Number(game?.Exp ?? game?.experience ?? profile?.experience ?? 0);
+  const rankLevel = Number(game?.rank) || rankFromExp(exp);
+  const rankSrc = rankIcon({ rank: game?.rank, exp, isGM: game?.isGM || game?.UserType === 1 });
+  const wins = Number(game?.wins || 0);
+  const losses = Number(game?.losses || 0);
+  const winRate = wins + losses > 0 ? ((wins / (wins + losses)) * 100).toFixed(1) : '0.0';
+  const assists = Number(game?.assists || 0);
+  const kda = game?.deaths > 0 ? ((Number(game?.kills || 0) + assists) / game.deaths).toFixed(2) : (Number(game?.kills || 0) + assists).toFixed(2);
+  const showPlayer = tab === 'overview' || tab === 'stats';
+
+  if (showPlayer) {
+    return (
+      <div className="player-profile">
+        <div className="player-profile-hero">
+          <img src="/caevo/hero.jpg" alt="" />
+        </div>
+        <div className="page-width player-profile-body">
+          <div className="player-crumb">
+            <button type="button" onClick={() => onNavigate('home')}>Home</button>
+            <span>/</span>
+            <button type="button" onClick={() => onNavigate('rankings')}>Players</button>
+            <span>/</span>
+            <span>{name}</span>
+          </div>
+          <header className="page-heading">
+            <div>
+              <p className="eyebrow"><span className="tiny-square" />COMBAT ARMS / THE CLASSIC</p>
+              <h1>PLAYER PROFILE.</h1>
+            </div>
+          </header>
+          <div className="player-identity">
+            <img src={rankSrc} alt="" className="player-rank-img" onError={e => { e.currentTarget.src = '/ranks/RANK_0.png'; }} />
+            <div>
+              <h2>
+                {name}
+                <span className="player-level">LEVEL {rankLevel}</span>
+              </h2>
+              <p>{game?.isGM || game?.UserType === 1 ? 'Game Master' : game?.rankName || 'Soldier'}</p>
+            </div>
+          </div>
+          <div className="player-metrics">
+            <article>
+              <p>CLAN</p>
+              <strong>{game?.clan || '—'}</strong>
+            </article>
+            <article>
+              <p>TOTAL EXP</p>
+              <strong>{exp.toLocaleString()}</strong>
+            </article>
+            <article>
+              <p>K/D RATIO</p>
+              <strong>{kd}</strong>
+            </article>
+            <article>
+              <p>WIN RATE</p>
+              <strong>{winRate}%</strong>
+            </article>
+          </div>
+          <section className="player-record">
+            <div className="player-record-head">
+              <div>
+                <p className="eyebrow">EVERY MATCH COUNTS</p>
+                <h2>COMBAT RECORD.</h2>
+              </div>
+              <span className="player-kda">KDA {kda}</span>
+            </div>
+            <div className="player-record-grid">
+              <article className="player-record-card">
+                <p><Crosshair size={14} /> KILLS</p>
+                <strong>{Number(game?.kills || 0).toLocaleString()}</strong>
+                <small>Eliminations recorded</small>
+              </article>
+              <article className="player-record-card">
+                <p><Target size={14} /> DEATHS</p>
+                <strong>{Number(game?.deaths || 0).toLocaleString()}</strong>
+                <small>Deaths recorded</small>
+              </article>
+              <article className="player-record-card">
+                <p><Users size={14} /> ASSISTS</p>
+                <strong>{assists.toLocaleString()}</strong>
+                <small>Assists recorded</small>
+              </article>
+              <article className="player-record-card">
+                <p><Shield size={14} /> WINS</p>
+                <strong>{wins.toLocaleString()}</strong>
+                <small>{losses.toLocaleString()} losses</small>
+              </article>
+            </div>
+          </section>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="inner-page page-width account-page">

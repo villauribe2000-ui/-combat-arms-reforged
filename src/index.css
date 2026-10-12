@@ -5,6 +5,7 @@
 @import './ranking-caevo.css';
 @import './page-loader-caevo.css';
 @import './charge-caevo.css';
+@import './player-profile-caevo.css';
 @tailwind base;
 @tailwind components;
 @tailwind utilities;

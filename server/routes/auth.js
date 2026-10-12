@@ -429,6 +429,33 @@ router.get('/profile/:username', async (req, res) => {
     }
 
     const user = result.recordset[0];
+    let rank = 0;
+    let rankName = 'TRAINEE';
+    try {
+      const gradeResult = await query(
+        `SELECT TOP 1 GradeLevel as rank, GradeName as rankName
+         FROM CBT_GradeInfo
+         WHERE @userExp >= MinExp AND @userExp <= MaxExp`,
+        { userExp: user.Exp || 0 }
+      );
+      if (gradeResult.recordset?.[0]) {
+        rank = gradeResult.recordset[0].rank || 0;
+        rankName = gradeResult.recordset[0].rankName || 'TRAINEE';
+      }
+    } catch (e) {
+      console.warn('GradeInfo lookup skipped:', e.message);
+    }
+
+    let assists = 0;
+    try {
+      const assistResult = await query(
+        `SELECT AssistCnt as assists FROM CBT_User WHERE oidUser = @id`,
+        { id: user.id }
+      );
+      assists = assistResult.recordset?.[0]?.assists || 0;
+    } catch (e) {
+      assists = 0;
+    }
 
     res.json({
       id: user.id,
@@ -438,9 +465,13 @@ router.get('/profile/:username', async (req, res) => {
       deaths: user.deaths,
       wins: user.wins,
       losses: user.losses,
+      assists,
       Money: user.Money,
       Exp: user.Exp || 0,
       UserType: user.UserType,
+      rank,
+      rankName,
+      isGM: user.UserType === 1,
       clan: null
     });
   } catch (error) {

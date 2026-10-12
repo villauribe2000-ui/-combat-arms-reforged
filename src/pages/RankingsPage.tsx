@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { api } from '@/lib/api';
+import { rankIcon } from '@/lib/ranks';
 import {
   Award, ChevronLeft, ChevronRight, Crown, RefreshCw, Search, Shield, Sword, Target, Trophy, X,
 } from 'lucide-react';
@@ -51,9 +52,13 @@ function playerName(p: Player) {
 }
 
 function playerExp(p: Player) {
-  const value = Number(p.experience ?? p.exp ?? 0);
+  const value = Number(p.experience ?? p.exp ?? (p as any).userExp ?? (p as any).Exp ?? 0);
   if (value > 0) return value;
   return (p.wins || 0) * 100 + (p.kills || 0);
+}
+
+function playerRankSrc(p: Player) {
+  return rankIcon({ rank: p.rank, exp: playerExp(p), isGM: p.isGM });
 }
 
 function playerKd(p: Player) {
@@ -239,7 +244,9 @@ export default function RankingsPage() {
                       {place === 1 ? <Crown size={18} /> : <Award size={16} />}
                     </div>
                     <div className="ranking-leader-identity">
-                      <div className="ranking-emblem"><span>{place === 1 ? '01' : place === 2 ? '02' : '03'}</span></div>
+                      <div className="ranking-emblem">
+                        <img src={playerRankSrc(player)} alt="" className="ranking-rank-icon" onError={e => { e.currentTarget.src = '/ranks/RANK_0.png'; }} />
+                      </div>
                       <div>
                         <h2>{playerName(player)}</h2>
                         <p>{player.isGM ? 'GAME MASTER' : player.rankName || 'SOLDIER'}</p>
@@ -364,7 +371,9 @@ export default function RankingsPage() {
                           </td>
                           <td>
                             <div className="ranking-row-identity">
-                              <span className="ranking-row-avatar ranking-player-emblem"><Award size={16} /></span>
+                              <span className="ranking-row-avatar ranking-player-emblem">
+                                <img src={playerRankSrc(player)} alt="" className="ranking-rank-icon" onError={e => { e.currentTarget.src = '/ranks/RANK_0.png'; }} />
+                              </span>
                               <div className="ranking-row-name">
                                 {playerName(player)}
                                 <small>{player.isGM ? 'GAME MASTER' : player.rankName || 'SOLDIER'}</small>
