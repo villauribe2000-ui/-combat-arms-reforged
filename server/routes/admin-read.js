@@ -307,6 +307,35 @@ router.get('/players/:id', async (req, res) => {
   });
 });
 
+let ccuTableReady = false;
+async function ensureCcuSamples() {
+  if (ccuTableReady) return;
+  await web(`
+    IF OBJECT_ID('ccu_samples', 'U') IS NULL
+    BEGIN
+      CREATE TABLE ccu_samples (
+        id INT IDENTITY(1,1) PRIMARY KEY,
+        sampledAt DATETIME NOT NULL DEFAULT GETDATE(),
+        onlineCount INT NOT NULL
+      );
+      CREATE INDEX idx_ccu_sampled ON ccu_samples(sampledAt);
+    END`);
+  ccuTableReady = true;
+}
+
+function hourKey(date) {
+  const d = new Date(date);
+  if (Number.isNaN(d.getTime())) return null;
+  const p = (n) => String(n).padStart(2, '0');
+  return `${d.getUTCFullYear()}-${p(d.getUTCMonth() + 1)}-${p(d.getUTCDate())} ${p(d.getUTCHours())}`;
+}
+
+function bumpHour(map, date, value) {
+  const key = hourKey(date);
+  if (!key) return;
+  map[key] = Math.max(map[key] || 0, Number(value) || 0);
+}
+
 router.get('/online', async (_req, res) => {
   const list = await ca(`
     SELECT u.oidUser as id, u.strNexonID as username, u.NickName, u.Exp, u.KillCnt as kills,
@@ -317,47 +346,68 @@ router.get('/online', async (_req, res) => {
     LEFT JOIN CBT_GeoIPDetailInfo g ON g.CountryIndex = u.nationindex
     WHERE u.DeleteDate IS NULL AND u.Status = 1
     ORDER BY ISNULL(u.lastLoginDate, u.CreateDate) DESC`);
-  const samples = await log(`
-    SELECT CreateDate, Total_UserCnt
-    FROM CBT_Stat_CU_Ex
+  const onlineNow = list.length;
+  const now = new Date();
+
+  await ensureCcuSamples().catch(() => {});
+  const lastSample = await web(`SELECT TOP 1 sampledAt FROM ccu_samples ORDER BY sampledAt DESC`);
+  const lastAt = lastSample[0]?.sampledAt ? new Date(lastSample[0].sampledAt).getTime() : 0;
+  if (!lastAt || now.getTime() - lastAt > 45000) {
+    await web(`INSERT INTO ccu_samples (sampledAt, onlineCount) VALUES (GETDATE(), @n)`, { n: onlineNow }).catch(() => {});
+  }
+
+  const stored = await web(`
+    SELECT sampledAt, onlineCount FROM ccu_samples
+    WHERE sampledAt >= DATEADD(hour, -48, GETDATE())
+    ORDER BY sampledAt`);
+  const cuSamples = await log(`
+    SELECT CreateDate, Total_UserCnt FROM CBT_Stat_CU_Ex
     WHERE CreateDate >= DATEADD(hour, -48, GETDATE())
     ORDER BY CreateDate`);
-  const latestCu = await log(`SELECT TOP 1 CreateDate, Total_UserCnt FROM CBT_Stat_CU_Ex ORDER BY CreateDate DESC`);
-  const peakTodayRow = await log(`
-    SELECT MAX(Total_UserCnt) as peak
-    FROM CBT_Stat_CU_Ex
-    WHERE CAST(CreateDate AS DATE) = CAST(GETDATE() AS DATE)`);
-  const peak48Row = await log(`
-    SELECT MAX(Total_UserCnt) as peak
-    FROM CBT_Stat_CU_Ex
-    WHERE CreateDate >= DATEADD(hour, -48, GETDATE())`);
+  const sessions = await log(`
+    SELECT oidUser, LoginDate, LogoutDate
+    FROM CBT_UserLoginLog01
+    WHERE LoginDate >= DATEADD(hour, -50, GETDATE())
+       OR ISNULL(LogoutDate, GETDATE()) >= DATEADD(hour, -48, GETDATE())`);
 
   const hourMap = {};
-  for (const row of samples) {
-    const d = new Date(row.CreateDate);
-    if (Number.isNaN(d.getTime())) continue;
-    const key = `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, '0')}-${String(d.getUTCDate()).padStart(2, '0')} ${String(d.getUTCHours()).padStart(2, '0')}`;
-    const val = Number(row.Total_UserCnt || 0);
-    hourMap[key] = Math.max(hourMap[key] || 0, val);
-  }
-  const hourly = [];
-  const end = new Date();
+  for (const row of stored) bumpHour(hourMap, row.sampledAt, row.onlineCount);
+  for (const row of cuSamples) bumpHour(hourMap, row.CreateDate, row.Total_UserCnt);
+
+  const end = new Date(now);
   end.setUTCMinutes(0, 0, 0);
+  end.setUTCSeconds(0, 0);
+  const hours = [];
   for (let i = 47; i >= 0; i -= 1) {
-    const d = new Date(end.getTime() - i * 3600000);
-    const key = `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, '0')}-${String(d.getUTCDate()).padStart(2, '0')} ${String(d.getUTCHours()).padStart(2, '0')}`;
-    hourly.push({ t: `${key}:00`, peak: hourMap[key] || 0 });
+    const start = new Date(end.getTime() - i * 3600000);
+    const stop = new Date(start.getTime() + 3600000);
+    const key = hourKey(start);
+    const seen = new Set();
+    for (const s of sessions) {
+      const from = new Date(s.LoginDate).getTime();
+      const to = s.LogoutDate ? new Date(s.LogoutDate).getTime() : now.getTime();
+      if (Number.isNaN(from) || Number.isNaN(to)) continue;
+      if (from < stop.getTime() && to > start.getTime()) seen.add(s.oidUser);
+    }
+    if (i === 0) {
+      for (const p of list) seen.add(p.id);
+    }
+    hourMap[key] = Math.max(hourMap[key] || 0, seen.size);
+    hours.push({ t: start.toISOString(), peak: hourMap[key] || 0 });
   }
+
+  const todayKey = hourKey(now).slice(0, 10);
+  const todayPeaks = hours.filter((h) => hourKey(h.t)?.startsWith(todayKey)).map((h) => h.peak);
+  const allPeaks = hours.map((h) => h.peak);
 
   res.json({
     data: list.map((p) => ({ ...p, isGM: p.UserType === 1 })),
-    onlineNow: list.length,
-    sampledAt: new Date().toISOString(),
-    peakToday: Number(peakTodayRow[0]?.peak || 0),
-    peak48: Number(peak48Row[0]?.peak || 0),
-    hourly,
-    concurrent: latestCu[0] || null,
-    source: 'CBT_User.Status=1 + COMBATARMS_LOG.CBT_Stat_CU_Ex',
+    onlineNow,
+    sampledAt: now.toISOString(),
+    peakToday: Math.max(onlineNow, ...todayPeaks, 0),
+    peak48: Math.max(onlineNow, ...allPeaks, 0),
+    hourly: hours,
+    source: 'CBT_User.Status=1 + CBT_UserLoginLog01 + combatarms_web.ccu_samples',
   });
 });
 

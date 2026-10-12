@@ -114,12 +114,20 @@ function flagCode(code?: string, nation?: string) {
   return ISO3[raw.toUpperCase()] || '';
 }
 
+function hourLabel(t: string) {
+  const d = new Date(t);
+  if (Number.isNaN(d.getTime())) return t;
+  const p = (n: number) => String(n).padStart(2, '0');
+  return `${p(d.getMonth() + 1)}-${p(d.getDate())} ${p(d.getHours())}:00`;
+}
+
 function PeakChart({ points }: { points: { t: string; peak: number }[] }) {
   if (!points?.length) return <div className="ol-empty">No CCU samples in the last 48 hours.</div>;
   const w = 960;
   const h = 240;
   const pad = { l: 40, r: 18, t: 18, b: 38 };
-  const max = Math.max(2, ...points.map((p) => Number(p.peak || 0)));
+  const raw = Math.max(1, ...points.map((p) => Number(p.peak || 0)));
+  const max = raw <= 4 ? raw : Math.ceil(raw / 2) * 2;
   const innerW = w - pad.l - pad.r;
   const innerH = h - pad.t - pad.b;
   const coords = points.map((p, i) => {
@@ -129,9 +137,9 @@ function PeakChart({ points }: { points: { t: string; peak: number }[] }) {
   });
   const line = coords.map((c) => `${c.x},${c.y}`).join(' ');
   const last = coords[coords.length - 1];
-  const first = coords[0];
-  const mid = coords[Math.floor(coords.length / 2)];
-  const ticks = [0, Math.round(max / 2), max];
+  const tickCount = Math.min(5, max + 1);
+  const ticks = Array.from({ length: tickCount }, (_, i) => Math.round((max * i) / (tickCount - 1)));
+  const labels = coords.filter((_, i) => i === 0 || i === coords.length - 1 || i % 8 === 0);
   return (
     <svg className="ol-chart" viewBox={`0 0 ${w} ${h}`} preserveAspectRatio="none">
       {ticks.map((tick) => {
@@ -155,9 +163,9 @@ function PeakChart({ points }: { points: { t: string; peak: number }[] }) {
           <stop offset="100%" stopColor="#df8104" stopOpacity="0" />
         </linearGradient>
       </defs>
-      {[first, mid, last].filter(Boolean).map((c, i) => (
+      {labels.map((c, i) => (
         <text key={i} x={c.x} y={h - 10} textAnchor="middle" fill="#777" fontSize="11">
-          {String(c.p.t).slice(5, 13)}
+          {hourLabel(c.p.t)}
         </text>
       ))}
     </svg>
@@ -271,6 +279,23 @@ export default function AdminPage({ onNavigate }: { onNavigate?: (page: PageId) 
     if (section === 'logins') {
       loadLogins(loginPage);
       return;
+    }
+    if (section === 'online') {
+      let live = true;
+      let first = true;
+      const tick = () => {
+        if (first) setRoomLoading(true);
+        api.getAdminSection('online')
+          .then((d) => { if (live) setRoom(d || {}); })
+          .catch(() => { if (live && first) setRoom({}); })
+          .finally(() => {
+            if (live && first) setRoomLoading(false);
+            first = false;
+          });
+      };
+      tick();
+      const id = setInterval(tick, 15000);
+      return () => { live = false; clearInterval(id); };
     }
     if (section === 'clans') {
       if (clanId) return;
@@ -726,7 +751,7 @@ export default function AdminPage({ onNavigate }: { onNavigate?: (page: PageId) 
               <div>
                 <p className="eyebrow">CONTROL ROOM / COMBAT ARMS</p>
                 <h1>ONLINE</h1>
-                <p>Players on the game servers, recorded by the server mon for about once a minute.</p>
+                <p>Players on the game servers. The chart refreshes every 15 seconds.</p>
               </div>
             </div>
             {roomLoading ? <Empty text="Leyendo jugadores conectados..." /> : (
@@ -736,7 +761,7 @@ export default function AdminPage({ onNavigate }: { onNavigate?: (page: PageId) 
                     <p>ONLINE NOW</p>
                     <strong className="ol-green">{room.onlineNow ?? (room.data || []).length}</strong>
                     <Activity />
-                    <small>AT {stamp(room.sampledAt)}</small>
+                    <small>AT {stampSec(room.sampledAt)} · live</small>
                   </article>
                   <article>
                     <p>PEAK TODAY</p>
@@ -752,9 +777,9 @@ export default function AdminPage({ onNavigate }: { onNavigate?: (page: PageId) 
                 <section className="ol-panel">
                   <div className="pd-card-top">
                     <h2>PEAK PER HOUR</h2>
-                    <span className="pd-chip">Game server time</span>
+                    <span className="pd-chip">Live · last 48 hours</span>
                   </div>
-                  <p className="ol-peak-label">{Math.max(room.peak48 || 0, room.onlineNow || 0)} <small>players</small></p>
+                  <p className="ol-peak-label">{room.peak48 ?? 0} <small>players peak</small></p>
                   <PeakChart points={room.hourly || []} />
                 </section>
                 <section className="ol-panel">
