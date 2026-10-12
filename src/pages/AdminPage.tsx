@@ -4,6 +4,7 @@ import { api } from '@/lib/api';
 import type { PageId } from '@/components/Layout';
 import { rankIcon } from '@/lib/ranks';
 import AdminPlayerAccount from '@/components/AdminPlayerAccount';
+import AdminClanProfile from '@/components/AdminClanProfile';
 import {
   XCircle, Loader, RotateCcw, MessageSquare, Send,
   LayoutDashboard, Users, Radio, Shield, Store, Landmark, FileBarChart, Swords, LogIn,
@@ -218,6 +219,7 @@ export default function AdminPage({ onNavigate }: { onNavigate?: (page: PageId) 
   const [loginQ, setLoginQ] = useState('');
   const [loginDays, setLoginDays] = useState('7');
   const [loginPage, setLoginPage] = useState(1);
+  const [clanId, setClanId] = useState<number | null>(null);
 
   const READ_SECTIONS: Section[] = ['players', 'online', 'clans', 'shop', 'economy', 'reports', 'matches', 'logins', 'linked', 'announcements', 'maps', 'boosts'];
 
@@ -257,6 +259,7 @@ export default function AdminPage({ onNavigate }: { onNavigate?: (page: PageId) 
 
   useEffect(() => {
     if (section !== 'players') setPlayerId(null);
+    if (section !== 'clans') setClanId(null);
     if (section === 'players') {
       if (!playerId) loadPlayers(playerPage);
       return;
@@ -269,6 +272,16 @@ export default function AdminPage({ onNavigate }: { onNavigate?: (page: PageId) 
       loadLogins(loginPage);
       return;
     }
+    if (section === 'clans') {
+      if (clanId) return;
+      let live = true;
+      setRoomLoading(true);
+      api.getAdminSection('clans')
+        .then((d) => { if (live) setRoom(d || {}); })
+        .catch(() => { if (live) setRoom({}); })
+        .finally(() => { if (live) setRoomLoading(false); });
+      return () => { live = false; };
+    }
     if (!READ_SECTIONS.includes(section)) return;
     let live = true;
     setRoomLoading(true);
@@ -277,7 +290,7 @@ export default function AdminPage({ onNavigate }: { onNavigate?: (page: PageId) 
       .catch(() => { if (live) setRoom({}); })
       .finally(() => { if (live) setRoomLoading(false); });
     return () => { live = false; };
-  }, [section, playerPage, matchPage, loginPage]);
+  }, [section, playerPage, matchPage, loginPage, clanId]);
 
   const loadData = async () => {
     try {
@@ -511,7 +524,7 @@ export default function AdminPage({ onNavigate }: { onNavigate?: (page: PageId) 
                 const Icon = item.icon;
                 const on = section === item.id;
                 return (
-                  <button key={item.id} className={on ? 'admin-on' : ''} onClick={() => { setSection(item.id); if (item.id === 'players') setPlayerId(null); }}>
+                  <button key={item.id} className={on ? 'admin-on' : ''} onClick={() => { setSection(item.id); if (item.id === 'players') setPlayerId(null); if (item.id === 'clans') setClanId(null); }}>
                     <Icon />
                     <span>{item.label}</span>
                     {on && <ChevronRight />}
@@ -792,18 +805,56 @@ export default function AdminPage({ onNavigate }: { onNavigate?: (page: PageId) 
           </>
         )}
 
-        {section === 'clans' && (
-          <div className="admin-panel">
-            <div className="admin-toolbar"><h1>CLANS</h1><span className="admin-chip">{room.source}</span></div>
-            <Grid rows={room.data} cols={[
-              { key: 'strName', label: 'CLAN' },
-              { key: 'strID', label: 'TAG' },
-              { key: 'dn_strCharacterName_master', label: 'MASTER' },
-              { key: 'dn_n4TotalRegularMember', label: 'MEMBERS' },
-              { key: 'dateCreated', label: 'CREATED', fmt: dt },
-              { key: 'strNotice', label: 'NOTICE' },
-            ]} />
-          </div>
+        {section === 'clans' && clanId && (
+          <AdminClanProfile
+            id={clanId}
+            onBack={() => setClanId(null)}
+            onPlayer={(pid) => { setSection('players'); setPlayerId(pid); }}
+          />
+        )}
+
+        {section === 'clans' && !clanId && (
+          <>
+            <div className="pl-hero">
+              <div className="pl-hero-ico"><Shield /></div>
+              <div>
+                <p className="eyebrow">TRACKING / COMBAT ARMS</p>
+                <h1>CLANS</h1>
+                <p>Every clan made with the in-game clan manager</p>
+              </div>
+            </div>
+            <div className="pl-meta">
+              <h2>{room.total ?? (room.data || []).length} CLANS</h2>
+            </div>
+            {roomLoading ? <Empty text="Leyendo clanes..." /> : (
+              <table className="pl-table">
+                <thead>
+                  <tr>
+                    <th>CLAN</th>
+                    <th>LEADER</th>
+                    <th>MEMBERS</th>
+                    <th>APPLICATIONS</th>
+                    <th>WINS / LOSSES</th>
+                    <th>CREATED</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {(room.data || []).length === 0 ? (
+                    <tr><td colSpan={6} className="pd-empty">No clans found.</td></tr>
+                  ) : room.data.map((g: any) => (
+                    <tr key={g.oidGuild} className="pl-row" onClick={() => setClanId(g.oidGuild)}>
+                      <td className="login-nick">{g.strName}</td>
+                      <td className="login-nick">{g.dn_strCharacterName_master}</td>
+                      <td>{g.members}</td>
+                      <td>{g.applications ? g.applications : '—'}</td>
+                      <td>{g.wins || 0} / {g.losses || 0}</td>
+                      <td className="pd-time">{stampSec(g.dateCreated)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
+          </>
         )}
 
         {section === 'shop' && (

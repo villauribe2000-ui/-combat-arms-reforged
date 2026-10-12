@@ -361,12 +361,95 @@ router.get('/online', async (_req, res) => {
   });
 });
 
+function memberRole(type, masterId, userId) {
+  if (Number(userId) === Number(masterId) || Number(type) === 1) return 'LEADER';
+  if (Number(type) === 3) return 'OFFICER';
+  return 'MEMBER';
+}
+
 router.get('/clans', async (_req, res) => {
   const list = await guild(`
-    SELECT TOP 80 oidGuild, strName, strID, strNotice, dateCreated, oidUser_master,
+    SELECT g.oidGuild, g.strName, g.strID, g.strNotice, g.dateCreated, g.oidUser_master,
+      g.dn_strCharacterName_master, g.dn_n4TotalRegularMember, g.dn_n4TotalAssociateMember, g.codeGuildStatus,
+      (SELECT COUNT(*) FROM dbo.gdt_Member m WHERE m.oidGuild = g.oidGuild) as members,
+      (SELECT COUNT(*) FROM dbo.gdt_WaitingMember w WHERE w.oidGuild = g.oidGuild AND w.codeWaitingStatus = 1) as applications
+    FROM dbo.gdt_Guild g
+    ORDER BY (SELECT COUNT(*) FROM dbo.gdt_Member m WHERE m.oidGuild = g.oidGuild) DESC, g.oidGuild`);
+  const stats = await ca(`SELECT oiduser_group, Exp, WinCnt, LoseCnt, DrawCnt, KillCnt, DeadCnt FROM CBT_ClanInfo`);
+  const statMap = Object.fromEntries(stats.map((s) => [s.oiduser_group, s]));
+  const data = list.map((g) => {
+    const s = statMap[g.oidGuild] || {};
+    return {
+      ...g,
+      members: Number(g.members || 0),
+      applications: Number(g.applications || 0),
+      wins: Number(s.WinCnt || 0),
+      losses: Number(s.LoseCnt || 0),
+      draws: Number(s.DrawCnt || 0),
+      exp: Number(s.Exp || 0),
+      kills: Number(s.KillCnt || 0),
+      deaths: Number(s.DeadCnt || 0),
+    };
+  });
+  res.json({ data, total: data.length, source: 'NX_GuildMaster.gdt_Guild + CBT_ClanInfo' });
+});
+
+router.get('/clans/:id', async (req, res) => {
+  const id = parseInt(req.params.id, 10);
+  if (!Number.isFinite(id)) return res.status(400).json({ error: 'invalid id' });
+  const p = { id };
+  const clans = await guild(`
+    SELECT oidGuild, strName, strID, strNotice, dateCreated, oidUser_master, oidCharacter_master,
       dn_strCharacterName_master, dn_n4TotalRegularMember, dn_n4TotalAssociateMember, codeGuildStatus
-    FROM dbo.gdt_Guild ORDER BY oidGuild DESC`);
-  res.json({ data: list, source: 'NX_GuildMaster.gdt_Guild' });
+    FROM dbo.gdt_Guild WHERE oidGuild = @id`, p);
+  if (!clans.length) return res.status(404).json({ error: 'not found' });
+  const clan = clans[0];
+  const roster = await guild(`
+    SELECT oidUser, oidCharacter, dn_strCharacterName, codeMemberType, codeMemberGroup, dateCreated
+    FROM dbo.gdt_Member WHERE oidGuild = @id
+    ORDER BY CASE WHEN codeMemberType = 1 THEN 0 ELSE 1 END, dateCreated`, p);
+  const applications = await guild(`
+    SELECT oidUser, dn_strCharacterName, codeWaitingStatus, dateCreated
+    FROM dbo.gdt_WaitingMember WHERE oidGuild = @id AND codeWaitingStatus = 1
+    ORDER BY dateCreated DESC`, p);
+  const stats = (await ca(`
+    SELECT TOP 1 Exp, Point, KillCnt, DeadCnt, WinCnt, LoseCnt, DrawCnt, Notice
+    FROM CBT_ClanInfo WHERE oiduser_group = @id`, p))[0] || {};
+  const ids = roster.map((m) => Number(m.oidUser)).filter((n) => Number.isFinite(n));
+  let users = [];
+  if (ids.length) {
+    users = await ca(`
+      SELECT oidUser as id, strNexonID as username, NickName, Exp, UserType, lastLoginDate
+      FROM CBT_User WHERE oidUser IN (${ids.join(',')})`);
+  }
+  const userMap = Object.fromEntries(users.map((u) => [u.id, u]));
+  res.json({
+    clan: {
+      ...clan,
+      members: roster.length,
+      applications: applications.length,
+      exp: Number(stats.Exp || 0),
+      wins: Number(stats.WinCnt || 0),
+      losses: Number(stats.LoseCnt || 0),
+      draws: Number(stats.DrawCnt || 0),
+      kills: Number(stats.KillCnt || 0),
+      deaths: Number(stats.DeadCnt || 0),
+      notice: stats.Notice || clan.strNotice || '',
+    },
+    roster: roster.map((m) => {
+      const u = userMap[m.oidUser] || {};
+      return {
+        ...m,
+        id: m.oidUser,
+        username: u.username || null,
+        NickName: u.NickName || m.dn_strCharacterName,
+        isGM: u.UserType === 1,
+        lastLoginDate: u.lastLoginDate || null,
+        role: memberRole(m.codeMemberType, clan.oidUser_master, m.oidUser),
+      };
+    }),
+    applications,
+  });
 });
 
 router.get('/shop', async (_req, res) => {
