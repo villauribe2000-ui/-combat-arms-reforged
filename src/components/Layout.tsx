@@ -1,12 +1,11 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useAuth } from '@/context/AuthContext';
-import LoginModal from '@/components/LoginModal';
 import {
   Trophy, Store, Users, LifeBuoy, Shield, Wallet, History,
   Menu, LogOut, Crown, LogIn, Gift, Home, Download, BookOpen,
 } from 'lucide-react';
 
-export type PageId = 'home' | 'profile' | 'rankings' | 'store' | 'clans' | 'support' | 'admin' | 'wallet' | 'purchase-history' | 'level-rewards' | 'birthday' | 'guide' | 'download';
+export type PageId = 'home' | 'profile' | 'rankings' | 'store' | 'clans' | 'support' | 'admin' | 'wallet' | 'purchase-history' | 'level-rewards' | 'birthday' | 'guide' | 'download' | 'signin' | 'signup';
 
 type NavItem = {
   id: PageId;
@@ -40,13 +39,8 @@ type Props = {
 export default function Layout({ currentPage, onNavigate, children }: Props) {
   const { profile, loading, signOut } = useAuth();
   const [mobileOpen, setMobileOpen] = useState(false);
-  const [loginModalOpen, setLoginModalOpen] = useState(!profile && !loading);
-
-  useEffect(() => {
-    if (profile && loginModalOpen) {
-      setLoginModalOpen(false);
-    }
-  }, [profile, loginModalOpen]);
+  const publicPages: PageId[] = ['home', 'guide', 'download', 'signin', 'signup'];
+  const isPublic = publicPages.includes(currentPage);
 
   const navItems = PRIMARY_NAV.filter(item => !item.adminOnly || profile?.is_admin);
 
@@ -136,10 +130,10 @@ export default function Layout({ currentPage, onNavigate, children }: Props) {
               </>
             ) : (
               <>
-                <button onClick={() => setLoginModalOpen(true)} className="header-pill">
+                <button onClick={() => go('signin')} className="header-pill">
                   <LogIn className="h-3.5 w-3.5" /> Sign in
                 </button>
-                <button onClick={() => setLoginModalOpen(true)} className="header-pill">
+                <button onClick={() => go('signup')} className="header-pill">
                   Sign up
                 </button>
               </>
@@ -163,17 +157,17 @@ export default function Layout({ currentPage, onNavigate, children }: Props) {
         </>
       )}
 
-      <main className={currentPage === 'home' || currentPage === 'guide' || currentPage === 'download' ? 'relative' : 'relative mx-auto max-w-[1400px] px-4 py-8 lg:px-8'}>
+      <main className={isPublic ? 'relative' : 'relative mx-auto max-w-[1400px] px-4 py-8 lg:px-8'}>
         {loading ? (
           <div className="flex h-[70vh] items-center justify-center">
             <div className="h-8 w-8 animate-spin rounded-full border-2 border-[#f5a000]/30 border-t-[#f5a000]" />
           </div>
-        ) : !profile && currentPage !== 'home' && currentPage !== 'guide' && currentPage !== 'download' ? (
+        ) : !profile && !isPublic ? (
           <div className="flex min-h-[70vh] flex-col items-center justify-center text-center">
             <h2 className="mt-4 text-2xl font-bold">Inicia sesión para continuar</h2>
             <p className="mt-2 text-neutral-400">Crea tu cuenta o inicia sesión para acceder a esta sección</p>
             <button
-              onClick={() => setLoginModalOpen(true)}
+              onClick={() => go('signin')}
               className="mt-6 rounded-md bg-[#f5a000] px-8 py-3 font-semibold text-black hover:bg-[#ffb21a]"
             >
               Iniciar Sesión
@@ -183,8 +177,6 @@ export default function Layout({ currentPage, onNavigate, children }: Props) {
           children
         )}
       </main>
-
-      <LoginModal isOpen={loginModalOpen} onClose={() => setLoginModalOpen(false)} onSuccess={() => setLoginModalOpen(false)} />
     </div>
   );
 }

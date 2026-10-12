@@ -9,6 +9,7 @@ import ClansPage from '@/pages/ClansPage';
 import SupportPage from '@/pages/SupportPage';
 import GuidePage from '@/pages/GuidePage';
 import DownloadPage from '@/pages/DownloadPage';
+import AuthPage from '@/pages/AuthPage';
 import AdminPage from '@/pages/AdminPage';
 import WalletPage from '@/pages/WalletPage';
 import PurchaseHistoryPage from '@/pages/PurchaseHistoryPage';
@@ -27,6 +28,8 @@ function AppContent() {
       case 'clans': return <ClansPage />;
       case 'guide': return <GuidePage />;
       case 'download': return <DownloadPage />;
+      case 'signin': return <AuthPage mode="signin" onNavigate={setPage} />;
+      case 'signup': return <AuthPage mode="signup" onNavigate={setPage} />;
       case 'support': return <SupportPage />;
       case 'admin': return <AdminPage />;
       case 'wallet': return <WalletPage />;

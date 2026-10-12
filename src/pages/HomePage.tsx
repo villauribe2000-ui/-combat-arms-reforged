@@ -189,8 +189,8 @@ export default function HomePage({ onNavigate }: { onNavigate: (page: PageId) =>
               <img src="/caevo/discord-mark-white.svg" alt="" className="h-3.5 w-4" />
               Join Discord
             </a>
-            <span>Sign in</span>
-            <span>Sign up</span>
+            <button onClick={() => onNavigate('signin')} className="hover:text-white">Sign in</button>
+            <button onClick={() => onNavigate('signup')} className="hover:text-white">Sign up</button>
           </nav>
         </div>
         <div className="mt-6 flex flex-col gap-2 border-t border-[#333] pt-4 text-[12px] text-[#777] md:flex-row md:justify-between">
