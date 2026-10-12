@@ -287,8 +287,24 @@ router.get('/approved-not-recorded/:username', async (req, res) => {
       return res.status(400).json({ error: 'Username requerido' });
     }
 
-    console.log(`[PAYMENTS] Buscando pagos aprobados para: ${username} (deshabilitado)`);
-    res.json([]);
+    console.log(`[PAYMENTS] Buscando pagos aprobados para: ${username}`);
+    let result;
+    try {
+      result = await queryWeb(`
+        SELECT id, oidUser, username, NickName, paymentCode, nxAmount, dollarAmount, status,
+          createdAt, approvedAt, approvedBy, note
+        FROM PaymentCodes
+        WHERE username = @username AND status = 'approved'
+        ORDER BY ISNULL(approvedAt, createdAt) DESC`, { username });
+    } catch {
+      result = await queryWeb(`
+        SELECT id, oidUser, username, NickName, paymentCode, nxAmount, dollarAmount, status,
+          createdAt, approvedAt, approvedBy
+        FROM PaymentCodes
+        WHERE username = @username AND status = 'approved'
+        ORDER BY createdAt DESC`, { username });
+    }
+    res.json(result.recordset || []);
   } catch (error) {
     console.error('Get approved payments error:', error);
     res.status(500).json({ error: 'Error al obtener pagos aprobados' });

@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react';
 import { api } from '@/lib/api';
+import { useAuth } from '@/context/AuthContext';
 import { rankIcon, rankFromExp } from '@/lib/ranks';
 import {
-  ArrowLeft, Users, Package, Inbox, ShoppingBag, TrendingUp, UsersRound, Flag, Search, Shield, Swords,
+  ArrowLeft, Users, Package, Inbox, ShoppingBag, TrendingUp, UsersRound, Flag, Search, Shield, Swords, Gift,
 } from 'lucide-react';
 
 const ISO3: Record<string, string> = {
@@ -50,6 +51,7 @@ function stampShort(v: any) {
 const TABS = [
   { id: 'overview', label: 'Overview', icon: Search },
   { id: 'inventory', label: 'Inventory', icon: Package },
+  { id: 'gifts', label: 'Regalos', icon: Gift },
   { id: 'inbox', label: 'Inbox', icon: Inbox },
   { id: 'purchases', label: 'Purchases', icon: ShoppingBag },
   { id: 'progress', label: 'Progress', icon: TrendingUp },
@@ -60,9 +62,15 @@ const TABS = [
 type Tab = typeof TABS[number]['id'];
 
 export default function AdminPlayerAccount({ id, onBack }: { id: number; onBack: () => void }) {
+  const { profile } = useAuth();
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [tab, setTab] = useState<Tab>('overview');
+  const [giftAmount, setGiftAmount] = useState('50000');
+  const [giftMessage, setGiftMessage] = useState('');
+  const [giftBusy, setGiftBusy] = useState(false);
+  const [giftQuota, setGiftQuota] = useState<any>(null);
+  const [giftLog, setGiftLog] = useState<any[]>([]);
 
   useEffect(() => {
     let live = true;
@@ -72,6 +80,12 @@ export default function AdminPlayerAccount({ id, onBack }: { id: number; onBack:
       .then((d) => { if (live) setData(d); })
       .catch(() => { if (live) setData(null); })
       .finally(() => { if (live) setLoading(false); });
+    api.getAdminStaffMe()
+      .then((d) => { if (live) setGiftQuota(d?.quota || null); })
+      .catch(() => { if (live) setGiftQuota(null); });
+    api.getAdminStaffGifts()
+      .then((d) => { if (live) setGiftLog((d?.gifts || []).filter((g: any) => Number(g.toUserId) === Number(id))); })
+      .catch(() => { if (live) setGiftLog([]); });
     return () => { live = false; };
   }, [id]);
 
@@ -261,6 +275,61 @@ export default function AdminPlayerAccount({ id, onBack }: { id: number; onBack:
             </table>
           </section>
         </>
+      )}
+
+      {tab === 'gifts' && (
+        <section className="pd-card">
+          <div className="pd-card-top">
+            <h2><Gift /> REGALOS NX</h2>
+            <span className="pd-chip">CUPO {Number(giftQuota?.remaining || 0).toLocaleString()} NX</span>
+          </div>
+          <p className="sub">Se descuenta de tu cupo de GM, entra al juego y queda en Charge Coins con el mensaje.</p>
+          <form
+            className="staff-toolbar"
+            onSubmit={async (e) => {
+              e.preventDefault();
+              const amount = Math.floor(Number(String(giftAmount).replace(/[^\d]/g, '')) || 0);
+              if (amount <= 0) return;
+              setGiftBusy(true);
+              try {
+                const d = await api.giftAdminNx(id, amount, giftMessage.trim());
+                setGiftQuota(d.quota);
+                const log = await api.getAdminStaffGifts();
+                setGiftLog((log?.gifts || []).filter((g: any) => Number(g.toUserId) === Number(id)));
+                setGiftMessage('');
+                const fresh = await api.getAdminPlayer(id);
+                setData(fresh);
+              } catch (err: any) {
+                alert(err?.message || 'No se pudo regalar NX');
+              } finally {
+                setGiftBusy(false);
+              }
+            }}
+          >
+            <input value={giftAmount} onChange={(e) => setGiftAmount(e.target.value)} placeholder="Cantidad NX, ej. 50000" />
+            <input value={giftMessage} onChange={(e) => setGiftMessage(e.target.value)} placeholder="Mensaje para Charge Coins" maxLength={300} />
+            <button className="staff-btn staff-btn-gold" type="submit" disabled={giftBusy || (profile?.username !== 'villauribe12' && Number(giftQuota?.remaining || 0) <= 0)}>
+              Enviar NX
+            </button>
+          </form>
+          <p className="staff-note">
+            {profile?.username === 'villauribe12'
+              ? 'Tu cuenta no gasta cupo. El envío igual queda en Historial y Charge Coins.'
+              : `Usado ${Number(giftQuota?.used || 0).toLocaleString()} · asignado ${Number(giftQuota?.monthlyAllotment || 0).toLocaleString()} este mes.`}
+          </p>
+          <h3 style={{ fontSize: 11, letterSpacing: '1.2px', color: '#888', margin: '18px 0 8px' }}>ENVIOS A ESTA CUENTA</h3>
+          <div className="staff-gift-list">
+            {giftLog.length === 0 ? <p className="staff-note">Nadie le ha regalado NX todavía.</p> : giftLog.map((g: any) => (
+              <div key={g.id} className="staff-gift-row">
+                <div>
+                  <b>{Number(g.amount).toLocaleString()} NX</b>
+                  <small>{g.fromNick || g.fromUsername} · {stampShort(g.createdAt)}{g.message ? ` · ${g.message}` : ''}</small>
+                </div>
+                <strong>{String(g.fromRole || '').toUpperCase()}</strong>
+              </div>
+            ))}
+          </div>
+        </section>
       )}
 
       {tab === 'inventory' && (

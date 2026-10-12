@@ -200,8 +200,8 @@ class ApiClient {
     return await this.request<any>('GET', '/admin/staff/me');
   }
 
-  async giftAdminNx(toUserId: number, amount: number) {
-    return await this.request<any>('POST', '/admin/staff/gift', { toUserId, amount });
+  async giftAdminNx(toUserId: number, amount: number, message = '') {
+    return await this.request<any>('POST', '/admin/staff/gift', { toUserId, amount, message });
   }
 
   async getAdminStaffGifts(q?: string) {

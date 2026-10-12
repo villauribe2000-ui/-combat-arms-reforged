@@ -74,7 +74,7 @@ type Section =
   | 'matches' | 'logins' | 'linked' | 'announcements' | 'maps' | 'boosts'
   | 'codes' | 'payments' | 'refunds' | 'tickets' | 'staff' | 'gm' | 'history';
 
-const NAV: { id: Section; label: string; icon: typeof LayoutDashboard; group: string }[] = [
+const NAV: { id: Section; label: string; icon: typeof LayoutDashboard; group: string; ownerOnly?: boolean }[] = [
   { id: 'overview', label: 'Overview', icon: LayoutDashboard, group: 'CONTROL ROOM' },
   { id: 'players', label: 'Players', icon: Users, group: 'CONTROL ROOM' },
   { id: 'matches', label: 'Matches', icon: Swords, group: 'CONTROL ROOM' },
@@ -92,9 +92,9 @@ const NAV: { id: Section; label: string; icon: typeof LayoutDashboard; group: st
   { id: 'payments', label: 'Recargas', icon: CreditCard, group: 'OPERATIONS' },
   { id: 'refunds', label: 'Refunds', icon: RotateCcw, group: 'OPERATIONS' },
   { id: 'tickets', label: 'Tickets', icon: Ticket, group: 'OPERATIONS' },
-  { id: 'staff', label: 'Administración', icon: UserCog, group: 'OPERATIONS' },
+  { id: 'staff', label: 'Administración', icon: UserCog, group: 'OPERATIONS', ownerOnly: true },
   { id: 'gm', label: 'GM', icon: Crown, group: 'OPERATIONS' },
-  { id: 'history', label: 'Historial', icon: History, group: 'OPERATIONS' },
+  { id: 'history', label: 'Historial', icon: History, group: 'OPERATIONS', ownerOnly: true },
 ];
 
 const ISO3: Record<string, string> = {
@@ -319,6 +319,8 @@ export default function AdminPage({ onNavigate }: { onNavigate?: (page: PageId) 
   };
 
   const goSection = (id: Section) => {
+    const item = NAV.find((n) => n.id === id);
+    if (item?.ownerOnly && profile?.username !== 'villauribe12') return;
     flashLoader();
     setSection(id);
     if (id === 'players') setPlayerId(null);
@@ -335,6 +337,12 @@ export default function AdminPage({ onNavigate }: { onNavigate?: (page: PageId) 
     if (!profile) return;
     loadData();
   }, [profile]);
+
+  useEffect(() => {
+    if ((section === 'staff' || section === 'history') && profile?.username !== 'villauribe12') {
+      setSection('overview');
+    }
+  }, [section, profile?.username]);
 
   useEffect(() => {
     const t = setInterval(() => setClock(new Date()), 1000);
@@ -755,7 +763,7 @@ export default function AdminPage({ onNavigate }: { onNavigate?: (page: PageId) 
     if (amount <= 0) return;
     setStaffBusy(true);
     try {
-      const d = await api.giftAdminNx(toUserId, amount);
+      const d = await api.giftAdminNx(toUserId, amount, '');
       setGmDesk((prev: any) => ({ ...(prev || {}), quota: d.quota, gifts: d.gifts }));
       setGmAmount('');
     } catch (err: any) {
@@ -862,7 +870,7 @@ export default function AdminPage({ onNavigate }: { onNavigate?: (page: PageId) 
           {groups.map(group => (
             <div key={group}>
               <p>{group}</p>
-              {NAV.filter(n => n.group === group && n.label.toLowerCase().includes(q)).map(item => {
+              {NAV.filter(n => n.group === group && n.label.toLowerCase().includes(q) && (!n.ownerOnly || profile?.username === 'villauribe12')).map(item => {
                 const Icon = item.icon;
                 const on = section === item.id;
                 return (
@@ -2133,7 +2141,7 @@ export default function AdminPage({ onNavigate }: { onNavigate?: (page: PageId) 
                     <div key={g.id} className="staff-gift-row">
                       <div>
                         <b>{g.toNick || g.toUsername}</b>
-                        <small>{g.toUsername} · {stamp(g.createdAt)}</small>
+                        <small>{g.toUsername} · {stamp(g.createdAt)}{g.message ? ` · ${g.message}` : ''}</small>
                       </div>
                       <strong>{nxFmt(g.amount)} NX</strong>
                     </div>
@@ -2167,11 +2175,12 @@ export default function AdminPage({ onNavigate }: { onNavigate?: (page: PageId) 
                     <th>ETIQUETA</th>
                     <th>JUGADOR</th>
                     <th>NX</th>
+                    <th>MENSAJE</th>
                   </tr>
                 </thead>
                 <tbody>
                   {giftHistory.length === 0 ? (
-                    <tr><td colSpan={5} style={{ color: '#777', padding: 28 }}>Todavía no hay regalos registrados.</td></tr>
+                    <tr><td colSpan={6} style={{ color: '#777', padding: 28 }}>Todavía no hay regalos registrados.</td></tr>
                   ) : giftHistory.map((g: any) => (
                     <tr key={g.id}>
                       <td>{stamp(g.createdAt)}</td>
@@ -2185,6 +2194,7 @@ export default function AdminPage({ onNavigate }: { onNavigate?: (page: PageId) 
                         <div style={{ color: '#888', fontSize: 11 }}>{g.toUsername}</div>
                       </td>
                       <td><strong>{nxFmt(g.amount)}</strong></td>
+                      <td>{g.message || '—'}</td>
                     </tr>
                   ))}
                 </tbody>

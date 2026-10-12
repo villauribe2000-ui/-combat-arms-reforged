@@ -66,6 +66,8 @@ export async function ensureStaffTables() {
       CREATE INDEX idx_staff_nx_gifts_from ON staff_nx_gifts (fromUserId, createdAt DESC);
       CREATE INDEX idx_staff_nx_gifts_at ON staff_nx_gifts (createdAt DESC);
     END
+    IF COL_LENGTH('staff_nx_gifts', 'message') IS NULL ALTER TABLE staff_nx_gifts ADD message NVARCHAR(300) NULL;
+    IF OBJECT_ID('PaymentCodes', 'U') IS NOT NULL AND COL_LENGTH('PaymentCodes', 'note') IS NULL ALTER TABLE PaymentCodes ADD note NVARCHAR(300) NULL;
   `);
   const roles = await queryWeb(`SELECT COUNT(*) as n FROM staff_roles`);
   if (!Number(roles.recordset?.[0]?.n)) {

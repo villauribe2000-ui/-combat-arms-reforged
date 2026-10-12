@@ -1179,7 +1179,7 @@ async function getQuota(userId) {
 async function giftsFor(fromUserId, limit = 80) {
   return web(`
     SELECT TOP (${Number(limit) || 80}) id, fromUserId, fromUsername, fromNick, fromRole,
-      toUserId, toUsername, toNick, amount, period, createdAt
+      toUserId, toUsername, toNick, amount, period, createdAt, message
     FROM staff_nx_gifts
     WHERE fromUserId = @id
     ORDER BY createdAt DESC`, { id: Number(fromUserId) });
@@ -1331,7 +1331,7 @@ router.get('/staff/gifts', async (req, res) => {
     }
     const gifts = await web(`
       SELECT TOP 200 id, fromUserId, fromUsername, fromNick, fromRole,
-        toUserId, toUsername, toNick, amount, period, createdAt
+        toUserId, toUsername, toNick, amount, period, createdAt, message
       FROM staff_nx_gifts
       WHERE ${where}
       ORDER BY createdAt DESC`, params);
@@ -1409,6 +1409,7 @@ router.post('/staff/gift', async (req, res) => {
     const username = actor.username;
     const toUserId = parseInt(String(req.body?.toUserId), 10);
     const amount = Math.floor(Number(req.body?.amount) || 0);
+    const message = String(req.body?.message || '').trim().slice(0, 300);
     if (!Number.isFinite(toUserId) || amount <= 0) return res.status(400).json({ error: 'invalid amount' });
     if (amount > 50000000) return res.status(400).json({ error: 'amount too large' });
     const target = (await ca(`
@@ -1450,8 +1451,8 @@ router.post('/staff/gift', async (req, res) => {
       }
     }
     await queryWeb(`
-      INSERT INTO staff_nx_gifts (fromUserId, fromUsername, fromNick, fromRole, toUserId, toUsername, toNick, amount, period, createdAt)
-      VALUES (@fromUserId, @fromUsername, @fromNick, @fromRole, @toUserId, @toUsername, @toNick, @amount, @period, GETDATE())`, {
+      INSERT INTO staff_nx_gifts (fromUserId, fromUsername, fromNick, fromRole, toUserId, toUsername, toNick, amount, period, message, createdAt)
+      VALUES (@fromUserId, @fromUsername, @fromNick, @fromRole, @toUserId, @toUsername, @toNick, @amount, @period, @message, GETDATE())`, {
       fromUserId: me.userId,
       fromUsername: me.username || username,
       fromNick: me.NickName || me.username || username,
@@ -1461,7 +1462,38 @@ router.post('/staff/gift', async (req, res) => {
       toNick: target.NickName || target.username,
       amount,
       period,
+      message,
     });
+    const giftCode = `GIFT-${me.userId}-${Date.now()}`;
+    try {
+      await queryWeb(`
+        INSERT INTO PaymentCodes (oidUser, username, NickName, paymentCode, nxAmount, dollarAmount, status, createdAt, approvedAt, approvedBy, note)
+        VALUES (@oidUser, @username, @NickName, @paymentCode, @nxAmount, 0, 'approved', GETDATE(), GETDATE(), @approvedBy, @note)`, {
+        oidUser: toUserId,
+        username: target.username,
+        NickName: target.NickName || target.username,
+        paymentCode: giftCode,
+        nxAmount: amount,
+        approvedBy: me.username || username,
+        note: message || `Regalo GM ${me.webRole || ''}`.trim(),
+      });
+    } catch (payErr) {
+      console.warn('[STAFF GIFT] PaymentCodes', payErr.message);
+      try {
+        await queryWeb(`
+          INSERT INTO PaymentCodes (oidUser, username, NickName, paymentCode, nxAmount, dollarAmount, status, createdAt, approvedAt, approvedBy)
+          VALUES (@oidUser, @username, @NickName, @paymentCode, @nxAmount, 0, 'approved', GETDATE(), GETDATE(), @approvedBy)`, {
+          oidUser: toUserId,
+          username: target.username,
+          NickName: target.NickName || target.username,
+          paymentCode: giftCode,
+          nxAmount: amount,
+          approvedBy: me.username || username,
+        });
+      } catch (payErr2) {
+        console.warn('[STAFF GIFT] PaymentCodes fallback', payErr2.message);
+      }
+    }
     const next = unlimited ? quota : await getQuota(me.userId);
     res.json({ ok: true, quota: next, gifts: await giftsFor(me.userId, 80) });
   } catch (e) {

@@ -68,6 +68,7 @@ export default function WalletPage() {
               date: dateStr,
               amount: payment.dollarAmount,
               timestamp: paymentDate.getTime(),
+              message: payment.note || payment.paymentCode || '',
             };
           });
 
@@ -496,7 +497,7 @@ export default function WalletPage() {
           nxPurchases.map((purchase, idx) => (
             <div key={idx} className="charge-order">
               <strong>{purchase.coins.toLocaleString()} NX</strong>
-              <span>${purchase.amount} · {purchase.date}</span>
+              <span>{purchase.message ? `${purchase.message} · ` : ''}${Number(purchase.amount) ? `$${purchase.amount} · ` : ''}{purchase.date}</span>
             </div>
           ))
         )}
