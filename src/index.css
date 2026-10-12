@@ -2,33 +2,123 @@
 @tailwind components;
 @tailwind utilities;
 
+:root {
+  --bg: #101010;
+  --accent: #df8104;
+}
+
 @layer base {
   html {
     scroll-behavior: smooth;
   }
   body {
-    @apply bg-[#0a0a0a] text-white antialiased;
-    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    @apply text-white antialiased;
+    background: var(--bg);
+    font-family: 'Manrope', Arial, sans-serif;
   }
-  ::-webkit-scrollbar {
-    width: 8px;
-    height: 8px;
+  h1, h2, h3 {
+    font-family: 'Barlow Condensed', Impact, sans-serif;
   }
-  ::-webkit-scrollbar-track {
-    @apply bg-transparent;
-  }
-  ::-webkit-scrollbar-thumb {
-    @apply bg-white/10 rounded-full;
-  }
-  ::-webkit-scrollbar-thumb:hover {
-    @apply bg-white/20;
-  }
-  input, select, textarea {
-    @apply text-sm;
-  }
-  select option {
-    @apply bg-[#0a0e17] text-white;
-  }
+}
+
+.btn-evo {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  min-height: 56px;
+  padding: 16px 24px;
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: 0.6px;
+  text-transform: uppercase;
+  transition: background 0.2s, transform 0.2s, border-color 0.2s;
+}
+.btn-evo:hover {
+  transform: translateY(-2px);
+}
+.btn-evo-primary {
+  background: var(--accent);
+  color: #17120b;
+  clip-path: polygon(0 0, calc(100% - 10px) 0, 100% 10px, 100% 100%, 10px 100%, 0 calc(100% - 10px));
+}
+.btn-evo-primary:hover {
+  background: #f39a1f;
+}
+.btn-evo-outline {
+  border: 1px solid #555;
+  background: rgba(24, 24, 24, 0.31);
+  color: #f2f2f2;
+}
+.btn-evo-outline:hover {
+  border-color: var(--accent);
+  background: #252525;
+}
+.brand-evo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  line-height: 0.9;
+}
+.brand-evo > span {
+  position: relative;
+  font-family: 'Barlow Condensed', Impact, sans-serif;
+  font-size: 31px;
+  font-weight: 800;
+  letter-spacing: -0.7px;
+  padding-bottom: 12px;
+  color: #f2f2f2;
+}
+.brand-evo .brand-arms {
+  color: var(--accent);
+  margin-left: 4px;
+}
+.brand-evo small {
+  position: absolute;
+  bottom: 0;
+  left: 1px;
+  font-family: 'Manrope', Arial, sans-serif;
+  font-size: 12px;
+  letter-spacing: 4.7px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.header-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 40px;
+  padding: 8px 16px;
+  border: 1px solid #c9a36a;
+  background: transparent;
+  color: #f2f2f2;
+  font-size: 13px;
+  font-weight: 600;
+  border-radius: 999px;
+}
+.header-pill:hover {
+  background: rgba(223, 129, 4, 0.12);
+}
+
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+::-webkit-scrollbar-track {
+  background: #161616;
+}
+::-webkit-scrollbar-thumb {
+  background: #a56a26;
+  border: 2px solid #161616;
+  border-radius: 8px;
+}
+
+input, select, textarea {
+  @apply text-sm;
+}
+select option {
+  background: #101010;
+  color: #fff;
 }
 
 @layer utilities {

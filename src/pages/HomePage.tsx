@@ -14,7 +14,6 @@ import carousel3_3 from '@/assets/carousel3-3.png';
 import carousel3_4 from '@/assets/carousel3-4.png';
 import carousel3_5 from '@/assets/carousel3-5.png';
 import carousel3_6 from '@/assets/carousel3-6.png';
-import trailerVideo from '@/assets/combat-arms-trailer.mp4';
 
 const RANK_INFO: Record<string, { label: string; color: string }> = {
   unranked: { label: 'Unranked', color: 'text-slate-400' },
@@ -79,66 +78,118 @@ export default function HomePage({ onNavigate }: { onNavigate: (page: PageId) =>
 
   return (
     <div className="bg-[#0a0a0a] pb-12">
-      <section className="relative min-h-[86vh] overflow-hidden">
-        <video
-          autoPlay
-          muted
-          loop
-          playsInline
-          className="absolute inset-0 h-full w-full object-cover"
-        >
-          <source src={trailerVideo} type="video/mp4" />
-        </video>
-        <div className="absolute inset-0 bg-gradient-to-r from-black via-black/75 to-black/25" />
-        <div className="absolute inset-0 bg-gradient-to-t from-[#0a0a0a] via-transparent to-black/40" />
+      <section className="relative isolate flex min-h-[646px] items-center overflow-hidden bg-[#222]">
+        <img
+          src="/caevo/hero.jpg"
+          alt=""
+          className="absolute inset-0 z-[-1] h-full w-full object-cover opacity-95"
+          style={{ objectPosition: '65% center', filter: 'saturate(0.65)' }}
+        />
+        <div
+          className="absolute inset-0 z-[-1]"
+          style={{
+            background:
+              'linear-gradient(90deg, rgba(12,12,12,0.98), rgba(12,12,12,0.91) 22%, rgba(12,12,12,0.44) 48%, rgba(12,12,12,0.02) 78%), linear-gradient(0deg, rgba(16,16,16,0.93), transparent 24%, transparent 80%, rgba(21,21,21,0.13))',
+          }}
+        />
 
-        <div className="relative z-10 mx-auto flex min-h-[86vh] max-w-[1400px] flex-col justify-center px-6 py-20 lg:px-12">
-          <h1 className="max-w-4xl text-5xl font-black uppercase leading-[0.92] tracking-tight sm:text-7xl lg:text-[92px]">
-            <span className="block text-white">Combat Arms</span>
-            <span className="block text-[#f5a000]">Reforged.</span>
+        <div className="relative z-10 mx-auto w-full max-w-[1440px] px-6 py-16 lg:px-16 lg:pb-24">
+          <h1 className="max-w-4xl text-[clamp(56px,7.85vw,124px)] font-extrabold uppercase leading-[0.93] tracking-[-1.5px] text-white">
+            COMBAT ARMS
+            <br />
+            <span className="text-[#df8104]">EVOLUTION.</span>
           </h1>
-          <p className="mt-8 max-w-xl text-base leading-relaxed text-neutral-300 sm:text-lg">
-            Combat Arms Reforged is a free-to-play online first-person shooter for PC.
-            Play classic maps, explore PvP and co-op modes, and find your squad.
+          <p className="mt-7 max-w-[550px] text-[14px] leading-[1.9] text-[#c4c4c4]">
+            Combat Arms Evolution (CA Evo) is a free-to-play online first-person
+            shooter for PC. Play classic maps, explore PvP and co-op modes, and find
+            your squad in the Caevo community.
           </p>
-          <div className="mt-10 flex flex-wrap items-center gap-4">
+          <div className="mt-8 flex flex-wrap items-center gap-3.5">
             <a
               href="https://www.mediafire.com/file/70z692y8n25zi8r/CombatArmsReforged.rar/file"
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center gap-2 rounded-md bg-[#f5a000] px-7 py-3.5 text-sm font-bold uppercase tracking-wide text-black shadow-[0_0_24px_rgba(245,160,0,0.35)] transition hover:bg-[#ffb21a]"
+              className="btn-evo btn-evo-primary"
             >
-              <svg className="h-4 w-4" fill="currentColor" viewBox="0 0 24 24"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z" /></svg>
-              Descargar
+              <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M7 10l5 5 5-5M12 15V3" /></svg>
+              Play for free
+              <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 17L17 7M7 7h10v10" /></svg>
             </a>
-            <button
-              onClick={() => setShowRequirements(true)}
-              className="inline-flex items-center gap-2 rounded-md border border-white/25 bg-black/40 px-7 py-3.5 text-sm font-bold uppercase tracking-wide text-white backdrop-blur transition hover:border-white/50"
-            >
-              Requisitos
+            <button onClick={() => setShowRequirements(true)} className="btn-evo btn-evo-outline">
+              Explore the game
               <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
             </button>
           </div>
-          <p className="mt-6 text-xs uppercase tracking-[0.22em] text-neutral-500">
-            Available on PC · Free to play. Ready when you are.
+          <p className="mt-5 flex items-center gap-2 text-xs font-semibold tracking-wide text-[#a0a0a0]">
+            AVAILABLE ON PC
+            <span className="mx-1 inline-block h-3 w-px bg-[#606060]" />
+            FREE TO PLAY. READY WHEN YOU ARE.
           </p>
         </div>
 
-        <div className="relative z-10 border-t border-white/10 bg-black/50 backdrop-blur-sm">
-          <div className="mx-auto grid max-w-[1400px] grid-cols-1 gap-6 px-6 py-6 sm:grid-cols-3 lg:px-12">
-            <div>
-              <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-neutral-500">Classic combat</p>
-              <p className="mt-1 text-sm font-semibold text-white">Uncompromising action.</p>
-            </div>
-            <div>
-              <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-neutral-500">Find your squad</p>
-              <p className="mt-1 text-sm font-semibold text-white">Own the battlefield.</p>
-            </div>
-            <div>
-              <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-neutral-500">Your loadout</p>
-              <p className="mt-1 text-sm font-semibold text-white">Your way to play.</p>
-            </div>
+        <div className="absolute bottom-6 left-16 hidden items-center gap-4 text-xs tracking-[1.7px] text-[#a5a5a5] md:flex">
+          <span className="text-sm text-[#df8104]">01</span>
+          <span className="inline-block h-px w-[60px] bg-[#93612b]" />
+          RETURN TO COMBAT
+        </div>
+        <a href="#modos" className="absolute bottom-6 right-16 hidden items-center gap-3 text-xs tracking-[1.7px] md:flex">
+          EXPLORE
+          <svg className="h-4 w-4 text-[#df8104]" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
+        </a>
+      </section>
+
+      <div className="border-y border-[#3c3c3c] bg-[#1b1b1b]">
+        <div className="mx-auto flex min-h-[100px] max-w-[1440px] flex-wrap items-center justify-between gap-6 px-6 py-5 lg:px-16">
+          <div className="flex items-center gap-4">
+            <svg className="h-6 w-6 text-[#df8104]" fill="none" viewBox="0 0 24 24" stroke="currentColor"><circle cx="12" cy="12" r="10" /><path d="M12 6v6l4 2" /></svg>
+            <span className="flex flex-col text-[12px] tracking-wide text-[#a9a9a9]">
+              CLASSIC COMBAT.
+              <b className="font-bold text-[#e8e8e8]">UNCOMPROMISING ACTION.</b>
+            </span>
           </div>
+          <div className="flex items-center gap-4">
+            <svg className="h-6 w-6 text-[#df8104]" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.4} d="M16 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2" /><circle cx="10" cy="7" r="4" /></svg>
+            <span className="flex flex-col text-[12px] tracking-wide text-[#a9a9a9]">
+              FIND YOUR SQUAD.
+              <b className="font-bold text-[#e8e8e8]">OWN THE BATTLEFIELD.</b>
+            </span>
+          </div>
+          <div className="flex items-center gap-4">
+            <svg className="h-6 w-6 text-[#df8104]" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.4} d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
+            <span className="flex flex-col text-[12px] tracking-wide text-[#a9a9a9]">
+              YOUR LOADOUT.
+              <b className="font-bold text-[#e8e8e8]">YOUR WAY TO PLAY.</b>
+            </span>
+          </div>
+          <span className="hidden text-[34px] italic tracking-[-5px] text-[#93612b] md:block" style={{ transform: 'skew(-12deg)' }}>//</span>
+        </div>
+      </div>
+
+      <section id="modos" className="mx-auto max-w-[1440px] px-6 py-16 lg:px-16">
+        <p className="mb-3 text-xs font-extrabold tracking-[1.7px] text-[#df8104]">CHOOSE YOUR BATTLE</p>
+        <div className="mb-8 flex flex-wrap items-end justify-between gap-4">
+          <h2 className="text-4xl font-extrabold uppercase tracking-tight lg:text-5xl">
+            Same instinct. Different battleground.
+          </h2>
+          <p className="max-w-sm text-sm text-[#c4c4c4]">
+            Go head-to-head. Survive the outbreak. Or bring the whole squad.
+          </p>
+        </div>
+        <div className="grid gap-5 md:grid-cols-3">
+          {[
+            { img: '/caevo/elimination.jpg', tag: 'TEAM DEATHMATCH 01', title: 'ELIMINATION', desc: 'Two teams. One objective. Make every shot count.' },
+            { img: '/caevo/modes/quarantine-infected-combat.jpg', tag: 'SURVIVAL 02', title: 'QUARANTINE REGEN', desc: 'Hold your ground. The infected are closing in.' },
+            { img: '/caevo/modes/fireteam-desert-thunder-1.webp', tag: 'CO-OP 03', title: 'FIRETEAM', desc: 'Squad up. Take on the mission. Come back together.' },
+          ].map(mode => (
+            <article key={mode.title} className="overflow-hidden border border-[#333] bg-[#191919]">
+              <img src={mode.img} alt={mode.title} className="h-52 w-full object-cover" />
+              <div className="p-5">
+                <p className="text-[11px] font-bold tracking-widest text-[#df8104]">{mode.tag}</p>
+                <h3 className="mt-2 text-2xl font-extrabold uppercase">{mode.title}</h3>
+                <p className="mt-2 text-sm text-[#a0a0a0]">{mode.desc}</p>
+              </div>
+            </article>
+          ))}
         </div>
       </section>
 
