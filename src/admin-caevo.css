@@ -158,6 +158,7 @@
 .staff-metrics p{font-size:9px;letter-spacing:.8px;color:#888;font-weight:800;margin:0}
 .staff-metrics strong{display:block;margin-top:6px;font-size:20px;color:#e6c36a}
 .staff-note{color:#888;font-size:12px;margin:8px 0 12px}
+.staff-alert{background:#2a1515;border:1px solid #6a2a2a;color:#f0b4b4;padding:12px 14px;border-radius:6px;font-size:13px;font-weight:800;margin:0 0 14px}
 .staff-gift-list{display:grid;gap:6px}
 .staff-gift-row{display:flex;justify-content:space-between;gap:10px;align-items:center;padding:10px 12px;background:#171717;border:1px solid #2a2a2a;border-radius:6px}
 .staff-gift-row b{display:block;font-size:13px}

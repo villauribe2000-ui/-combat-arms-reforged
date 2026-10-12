@@ -281,15 +281,23 @@ export default function AdminPlayerAccount({ id, onBack }: { id: number; onBack:
         <section className="pd-card">
           <div className="pd-card-top">
             <h2><Gift /> REGALOS NX</h2>
-            <span className="pd-chip">CUPO {Number(giftQuota?.remaining || 0).toLocaleString()} NX</span>
+            <span className="pd-chip">{profile?.username === 'villauribe12' ? 'ILIMITADO' : `CUPO ${Number(giftQuota?.remaining || 0).toLocaleString()} NX`}</span>
           </div>
           <p className="sub">Se descuenta de tu cupo de GM, entra al juego y queda en Charge Coins con el mensaje.</p>
+          {profile?.username !== 'villauribe12' && Number(giftQuota?.remaining || 0) <= 0 && (
+            <p className="staff-alert">No tienes saldo para regalar</p>
+          )}
           <form
             className="staff-toolbar"
             onSubmit={async (e) => {
               e.preventDefault();
               const amount = Math.floor(Number(String(giftAmount).replace(/[^\d]/g, '')) || 0);
               if (amount <= 0) return;
+              const owner = profile?.username === 'villauribe12';
+              if (!owner && amount > Number(giftQuota?.remaining || 0)) {
+                alert('No tienes saldo para regalar');
+                return;
+              }
               setGiftBusy(true);
               try {
                 const d = await api.giftAdminNx(id, amount, giftMessage.trim());
@@ -300,7 +308,7 @@ export default function AdminPlayerAccount({ id, onBack }: { id: number; onBack:
                 const fresh = await api.getAdminPlayer(id);
                 setData(fresh);
               } catch (err: any) {
-                alert(err?.message || 'No se pudo regalar NX');
+                alert(err?.message || 'No tienes saldo para regalar');
               } finally {
                 setGiftBusy(false);
               }
@@ -314,7 +322,7 @@ export default function AdminPlayerAccount({ id, onBack }: { id: number; onBack:
           </form>
           <p className="staff-note">
             {profile?.username === 'villauribe12'
-              ? 'Tu cuenta no gasta cupo. El envío igual queda en Historial y Charge Coins.'
+              ? 'Como dueño puedes poner NX sin límite. El envío queda en Historial y Charge Coins.'
               : `Usado ${Number(giftQuota?.used || 0).toLocaleString()} · asignado ${Number(giftQuota?.monthlyAllotment || 0).toLocaleString()} este mes.`}
           </p>
           <h3 style={{ fontSize: 11, letterSpacing: '1.2px', color: '#888', margin: '18px 0 8px' }}>ENVIOS A ESTA CUENTA</h3>

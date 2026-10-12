@@ -761,13 +761,18 @@ export default function AdminPage({ onNavigate }: { onNavigate?: (page: PageId) 
   const sendGmGift = async (toUserId: number) => {
     const amount = Math.floor(Number(String(gmAmount).replace(/[^\d]/g, '')) || 0);
     if (amount <= 0) return;
+    const owner = profile?.username === 'villauribe12' || gmDesk?.unlimited || gmDesk?.me?.username === 'villauribe12';
+    if (!owner && amount > Number(gmDesk?.quota?.remaining || 0)) {
+      alert('No tienes saldo para regalar');
+      return;
+    }
     setStaffBusy(true);
     try {
       const d = await api.giftAdminNx(toUserId, amount, '');
-      setGmDesk((prev: any) => ({ ...(prev || {}), quota: d.quota, gifts: d.gifts }));
+      setGmDesk((prev: any) => ({ ...(prev || {}), quota: d.quota, gifts: d.gifts, unlimited: d.quota?.unlimited }));
       setGmAmount('');
     } catch (err: any) {
-      alert(err?.message || 'No se pudo enviar NX');
+      alert(err?.message || 'No tienes saldo para regalar');
     } finally {
       setStaffBusy(false);
     }
@@ -2108,10 +2113,13 @@ export default function AdminPage({ onNavigate }: { onNavigate?: (page: PageId) 
                     <p>TU ETIQUETA</p>
                     <strong style={{ fontSize: 22 }}>{String(gmDesk.me.webRole || 'STAFF').toUpperCase()}</strong>
                   </article>
-                  <article><p>CUPO DEL MES</p><strong>{nxFmt(gmDesk.quota?.monthlyAllotment)}</strong></article>
+                  <article><p>CUPO DEL MES</p><strong>{gmDesk.unlimited || gmDesk.me.username === 'villauribe12' ? 'ILIMITADO' : nxFmt(gmDesk.quota?.monthlyAllotment)}</strong></article>
                   <article><p>YA REGALADO</p><strong>{nxFmt(gmDesk.quota?.used)}</strong></article>
-                  <article><p>TE QUEDA</p><strong>{nxFmt(gmDesk.quota?.remaining)}</strong></article>
+                  <article><p>TE QUEDA</p><strong>{gmDesk.unlimited || gmDesk.me.username === 'villauribe12' ? 'ILIMITADO' : nxFmt(gmDesk.quota?.remaining)}</strong></article>
                 </div>
+                {!(gmDesk.unlimited || gmDesk.me.username === 'villauribe12') && Number(gmDesk.quota?.remaining || 0) <= 0 && (
+                  <p className="staff-alert">No tienes saldo para regalar</p>
+                )}
                 <form className="staff-toolbar" onSubmit={searchGmPlayers}>
                   <input value={gmQ} onChange={(e) => setGmQ(e.target.value)} placeholder="Jugador que recibe NX" />
                   <input value={gmAmount} onChange={(e) => setGmAmount(e.target.value)} placeholder="Cantidad NX" style={{ minWidth: 140, flex: '0 0 160px' }} />

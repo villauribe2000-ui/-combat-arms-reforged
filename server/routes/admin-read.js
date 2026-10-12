@@ -1309,7 +1309,14 @@ router.get('/staff/me', async (req, res) => {
     if (!me) return res.status(403).json({ error: 'no staff role' });
     const quota = await getQuota(me.userId);
     const gifts = await giftsFor(me.userId, 80);
-    res.json({ me, quota, gifts, period: quota.period });
+    const unlimited = actor.username === STAFF_OWNER;
+    res.json({
+      me,
+      quota: unlimited ? { ...quota, remaining: Number.MAX_SAFE_INTEGER, unlimited: true } : quota,
+      gifts,
+      period: quota.period,
+      unlimited,
+    });
   } catch (e) {
     res.status(500).json({ error: e.message });
   }
@@ -1418,11 +1425,8 @@ router.post('/staff/gift', async (req, res) => {
     if (!target) return res.status(404).json({ error: 'player not found' });
     const quota = await getQuota(me.userId);
     const unlimited = username === STAFF_OWNER;
-    if (!unlimited && quota.monthlyAllotment <= 0) {
-      return res.status(400).json({ error: 'sin cupo mensual' });
-    }
-    if (!unlimited && amount > quota.remaining) {
-      return res.status(400).json({ error: `cupo insuficiente. Quedan ${quota.remaining} NX` });
+    if (!unlimited && (quota.monthlyAllotment <= 0 || amount > quota.remaining)) {
+      return res.status(400).json({ error: 'No tienes saldo para regalar' });
     }
     let updated = await queryVisms(
       `UPDATE VISMS_UserList SET RealBalance = ISNULL(RealBalance, 0) + @nx WHERE oid = @oid`,
@@ -1494,8 +1498,10 @@ router.post('/staff/gift', async (req, res) => {
         console.warn('[STAFF GIFT] PaymentCodes fallback', payErr2.message);
       }
     }
-    const next = unlimited ? quota : await getQuota(me.userId);
-    res.json({ ok: true, quota: next, gifts: await giftsFor(me.userId, 80) });
+    const next = unlimited
+      ? { ...quota, monthlyAllotment: quota.monthlyAllotment, remaining: Number.MAX_SAFE_INTEGER, unlimited: true }
+      : await getQuota(me.userId);
+    res.json({ ok: true, quota: { ...next, unlimited }, gifts: await giftsFor(me.userId, 80) });
   } catch (e) {
     res.status(500).json({ error: e.message });
   }
