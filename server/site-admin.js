@@ -37,6 +37,7 @@ export async function ensureStaffTables() {
     IF COL_LENGTH('admin_users', 'isGm') IS NULL ALTER TABLE admin_users ADD isGm BIT NOT NULL CONSTRAINT DF_admin_users_isGm2 DEFAULT (0);
     IF COL_LENGTH('admin_users', 'username') IS NULL ALTER TABLE admin_users ADD username NVARCHAR(64) NULL;
     IF COL_LENGTH('admin_users', 'nickName') IS NULL ALTER TABLE admin_users ADD nickName NVARCHAR(64) NULL;
+    IF COL_LENGTH('admin_users', 'label') IS NULL ALTER TABLE admin_users ADD label NVARCHAR(40) NULL;
     IF OBJECT_ID('staff_nx_quota', 'U') IS NULL
     BEGIN
       CREATE TABLE staff_nx_quota (
@@ -83,10 +84,47 @@ export async function ensureStaffTables() {
 
 export function roleFlags(row) {
   if (!row) return { role: null, siteAdmin: false, webGm: false };
-  const role = String(row.role || row.name || '').trim();
-  const low = role.toLowerCase();
+  const raw = String(row.label || row.role || row.name || '').trim();
+  const low = raw.toLowerCase();
+  const pretty = low === 'superadmin' ? 'SUPERADMIN' : low === 'admin' ? 'ADMINISTRATOR' : (raw || null);
   const webGm = on(row.isGm) || low === 'gm';
-  return { role: role || null, siteAdmin: Boolean(role), webGm };
+  return { role: pretty, siteAdmin: Boolean(raw), webGm };
+}
+
+let allowedRoles = null;
+
+export async function allowedAdminRoles() {
+  if (allowedRoles) return allowedRoles;
+  try {
+    const result = await queryWeb(`
+      SELECT TOP 1 definition
+      FROM sys.check_constraints
+      WHERE name = 'CK_admin_users_role' OR parent_object_id = OBJECT_ID('admin_users') AND definition LIKE '%role%'
+    `);
+    const def = String(result.recordset?.[0]?.definition || '');
+    const found = [...def.matchAll(/'([^']+)'/g)].map((m) => m[1]);
+    allowedRoles = found.length ? found : ['superadmin', 'admin'];
+  } catch {
+    allowedRoles = ['superadmin', 'admin'];
+  }
+  return allowedRoles;
+}
+
+export async function mapDbRole(name, isGm) {
+  const allowed = await allowedAdminRoles();
+  const low = String(name || '').toLowerCase();
+  const exact = allowed.find((r) => r.toLowerCase() === low);
+  if (exact) return exact;
+  if (isGm || low === 'gm') {
+    const gm = allowed.find((r) => r.toLowerCase() === 'gm');
+    if (gm) return gm;
+  }
+  if (low === 'superadmin' || low === 'super') {
+    const s = allowed.find((r) => r.toLowerCase() === 'superadmin');
+    if (s) return s;
+  }
+  const admin = allowed.find((r) => r.toLowerCase() === 'admin');
+  return admin || allowed[0] || 'admin';
 }
 
 export async function userIsSiteAdmin(userId, username) {

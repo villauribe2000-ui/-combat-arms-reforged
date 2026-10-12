@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import jwt from 'jsonwebtoken';
 import { query, queryGuildDB, queryLog, queryVisms, queryWeb } from '../db.js';
-import { ensureStaffTables, roleFlags } from '../site-admin.js';
+import { ensureStaffTables, roleFlags, mapDbRole } from '../site-admin.js';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-change-this';
 const STAFF_OWNER = 'villauribe12';
@@ -1204,9 +1204,14 @@ async function lookupStaff(actor) {
 async function loadStaffBundle() {
   await ensureStaffTables();
   const roles = await web(`SELECT id, name, siteAdmin, isGm, createdBy, createdAt FROM staff_roles ORDER BY name`);
-  const staffRows = await web(`
-    SELECT userId, username, nickName, role, siteAdmin, isGm, grantedBy, grantedAt
+  let staffRows = await web(`
+    SELECT userId, username, nickName, role, label, siteAdmin, isGm, grantedBy, grantedAt
     FROM admin_users ORDER BY grantedAt DESC`);
+  if (!staffRows.length) {
+    staffRows = await web(`
+      SELECT userId, username, nickName, role, siteAdmin, isGm, grantedBy, grantedAt
+      FROM admin_users ORDER BY grantedAt DESC`);
+  }
   const ids = staffRows.map((r) => Number(r.userId)).filter(Number.isFinite);
   let users = [];
   if (ids.length) {
@@ -1578,12 +1583,15 @@ router.post('/staff', async (req, res) => {
     }
     const flags = roleFlags({ role: roleRow.name, siteAdmin: 1, isGm: roleRow.isGm });
     const isGm = flags.webGm ? 1 : 0;
+    const dbRole = await mapDbRole(flags.role, isGm);
+    const label = flags.role || dbRole;
     const existing = await web(`SELECT TOP 1 userId FROM admin_users WHERE userId = @id`, { id: userId });
     const full = {
       id: userId,
       username: user.username,
       nickName: user.NickName || '',
-      role: flags.role,
+      role: dbRole,
+      label,
       siteAdmin: 1,
       isGm,
       grantedBy: grantedById,
@@ -1592,23 +1600,23 @@ router.post('/staff', async (req, res) => {
       try {
         await queryWeb(`
           UPDATE admin_users
-          SET username = @username, nickName = @nickName, role = @role, siteAdmin = @siteAdmin, isGm = @isGm,
+          SET username = @username, nickName = @nickName, role = @role, label = @label, siteAdmin = @siteAdmin, isGm = @isGm,
               grantedBy = @grantedBy, grantedAt = GETDATE()
           WHERE userId = @id`, full);
       } catch {
         await queryWeb(`
           UPDATE admin_users SET role = @role, grantedBy = @grantedBy, grantedAt = GETDATE()
-          WHERE userId = @id`, { id: userId, role: flags.role, grantedBy: grantedById });
+          WHERE userId = @id`, { id: userId, role: dbRole, grantedBy: grantedById });
       }
     } else {
       try {
         await queryWeb(`
-          INSERT INTO admin_users (userId, username, nickName, role, siteAdmin, isGm, grantedBy, grantedAt)
-          VALUES (@id, @username, @nickName, @role, @siteAdmin, @isGm, @grantedBy, GETDATE())`, full);
+          INSERT INTO admin_users (userId, username, nickName, role, label, siteAdmin, isGm, grantedBy, grantedAt)
+          VALUES (@id, @username, @nickName, @role, @label, @siteAdmin, @isGm, @grantedBy, GETDATE())`, full);
       } catch {
         await queryWeb(`
           INSERT INTO admin_users (userId, role, grantedBy, grantedAt)
-          VALUES (@id, @role, @grantedBy, GETDATE())`, { id: userId, role: flags.role, grantedBy: grantedById });
+          VALUES (@id, @role, @grantedBy, GETDATE())`, { id: userId, role: dbRole, grantedBy: grantedById });
       }
     }
     res.json(await loadStaffBundle());
