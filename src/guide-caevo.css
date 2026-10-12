@@ -114,14 +114,17 @@
 .guide-image-dialog-content>header button{display:grid;flex:0 0 42px;width:42px;height:42px;place-items:center;border:1px solid #69502d;border-radius:3px;background:#2e2519;color:#e1ad65}
 .guide-image-dialog-content>header button:hover{border-color:var(--accent);background:#45301a;color:#ffce8c}
 .guide-image-dialog-content>img{display:block;width:auto;max-width:100%;height:auto;max-height:calc(88dvh - 64px);min-height:0;margin-inline:auto;object-fit:contain}
-@media (max-width:1100px){.guide-hud{grid-template-columns:minmax(0,1fr)}
+@media (max-width:1100px){
+.guide-hud{grid-template-columns:minmax(0,1fr)}
 .guide-hud-legend{grid-template-columns:repeat(2,minmax(0,1fr));gap:19px 24px}
 .guide-mouse-card{gap:12px;padding:17px}
 .guide-achievement-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
 .guide-rank-group li{align-items:flex-start;flex-direction:column;justify-content:center;gap:12px}
 .guide-rank-group>header{min-height:100px}
 .guide-insignia{justify-content:flex-start;max-width:none}
-@media (max-width:800px){.guide-tabs>button{flex-direction:column;gap:7px;min-height:80px;padding-inline:8px;font-size:.75rem}
+}
+@media (max-width:800px){
+.guide-tabs>button{flex-direction:column;gap:7px;min-height:80px;padding-inline:8px;font-size:.75rem}
 .guide-mouse-card{flex-direction:column;text-align:center}
 .guide-mouse-card>img{width:100%;max-width:110px}
 .guide-mouse-card svg{display:none}
@@ -132,7 +135,9 @@
 .guide-chapter-copy{align-self:start}
 .guide-chapter>.guide-gallery{align-self:end}
 .guide-chapter-copy>h3{margin-top:15px}
-@media (max-width:680px){.guide-tabs{grid-template-columns:repeat(5,minmax(172px,1fr));gap:7px;overflow-x:auto;padding-bottom:8px;border:0;background:transparent;box-shadow:none}
+}
+@media (max-width:680px){
+.guide-tabs{grid-template-columns:repeat(5,minmax(172px,1fr));gap:7px;overflow-x:auto;padding-bottom:8px;border:0;background:transparent;box-shadow:none}
 .guide-tabs>button{flex-direction:row;gap:8px;min-height:50px;padding:12px 8px;border:1px solid #644921;font-size:.8125rem}
 .guide-tabs>button[aria-selected=true]:after{bottom:-6px;border-top-width:6px;border-inline-width:6px;left:calc(50% - 6px)}
 .guide-panel{padding-top:30px}
@@ -161,6 +166,7 @@
 .guide-rank-group li{min-height:92px}
 .guide-image-dialog{max-width:94vw}
 .guide-image-dialog-content>header{gap:10px;padding-left:12px}
+}
 @media (prefers-reduced-motion:reduce){
   .guide-achievement,.guide-achievement summary svg,.guide-mission>summary,.guide-mission>summary>svg,.guide-picture,.guide-tabs>button{transition:none}
 }
