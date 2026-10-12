@@ -152,6 +152,10 @@ class ApiClient {
     return await this.request<any>('GET', `/admin/players/${id}`);
   }
 
+  async getAdminMatchRoom(key: number) {
+    return await this.request<any>('GET', `/admin/matches/room/${key}`);
+  }
+
   async getAdminSection(section: string, params?: Record<string, string | number | undefined> | string) {
     const query = new URLSearchParams();
     if (typeof params === 'string') {

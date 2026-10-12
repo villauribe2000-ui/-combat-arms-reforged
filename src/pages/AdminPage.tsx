@@ -151,6 +151,12 @@ export default function AdminPage({ onNavigate }: { onNavigate?: (page: PageId) 
   const [playerStatus, setPlayerStatus] = useState('all');
   const [playerPage, setPlayerPage] = useState(1);
   const [playerId, setPlayerId] = useState<number | null>(null);
+  const [matchQ, setMatchQ] = useState('');
+  const [matchMode, setMatchMode] = useState('all');
+  const [matchDays, setMatchDays] = useState('7');
+  const [matchPage, setMatchPage] = useState(1);
+  const [openMatch, setOpenMatch] = useState<any>(null);
+  const [openPlayers, setOpenPlayers] = useState<any[]>([]);
 
   const READ_SECTIONS: Section[] = ['players', 'online', 'clans', 'shop', 'economy', 'reports', 'matches', 'logins', 'linked', 'announcements', 'maps', 'boosts'];
 
@@ -172,10 +178,22 @@ export default function AdminPage({ onNavigate }: { onNavigate?: (page: PageId) 
       .finally(() => setRoomLoading(false));
   };
 
+  const loadMatches = (page = matchPage) => {
+    setRoomLoading(true);
+    api.getAdminSection('matches', { q: matchQ, mode: matchMode, days: matchDays, page })
+      .then(setRoom)
+      .catch(() => setRoom({}))
+      .finally(() => setRoomLoading(false));
+  };
+
   useEffect(() => {
     if (section !== 'players') setPlayerId(null);
     if (section === 'players') {
       if (!playerId) loadPlayers(playerPage);
+      return;
+    }
+    if (section === 'matches') {
+      loadMatches(matchPage);
       return;
     }
     if (!READ_SECTIONS.includes(section)) return;
@@ -186,7 +204,7 @@ export default function AdminPage({ onNavigate }: { onNavigate?: (page: PageId) 
       .catch(() => { if (live) setRoom({}); })
       .finally(() => { if (live) setRoomLoading(false); });
     return () => { live = false; };
-  }, [section, playerPage]);
+  }, [section, playerPage, matchPage]);
 
   const loadData = async () => {
     try {
@@ -717,28 +735,107 @@ export default function AdminPage({ onNavigate }: { onNavigate?: (page: PageId) 
         )}
 
         {section === 'matches' && (
-          <div className="admin-panel">
-            <div className="admin-toolbar"><h1>MATCHES</h1><span className="admin-chip">{room.source}</span></div>
-            <p className="sub">Last rooms and player results from COMBATARMS_LOG.</p>
-            <h2>ROOMS</h2>
-            <Grid rows={room.rooms} cols={[
-              { key: 'RoomName', label: 'ROOM' },
-              { key: 'MapNo', label: 'MAP' },
-              { key: 'GameType', label: 'TYPE' },
-              { key: 'PlayerCnt', label: 'PLAYERS' },
-              { key: 'StartDate', label: 'START', fmt: dt },
-              { key: 'PlayTime', label: 'SEC' },
-            ]} />
-            <h2>PLAYER RESULTS</h2>
-            <Grid rows={room.games} cols={[
-              { key: 'NickName', label: 'NICK' },
-              { key: 'KillCnt', label: 'K' },
-              { key: 'DeadCnt', label: 'D' },
-              { key: 'MapNo', label: 'MAP' },
-              { key: 'WinType', label: 'WIN' },
-              { key: 'EndDate', label: 'END', fmt: dt },
-            ]} />
-          </div>
+          <>
+            <div className="pl-hero">
+              <div className="pl-hero-ico"><Swords /></div>
+              <div>
+                <p className="eyebrow">CONTROL ROOM / COMBAT ARMS</p>
+                <h1>MATCHES</h1>
+                <p>Every match the game servers finished, with its players. Game server time.</p>
+              </div>
+            </div>
+            <form className="pl-filters" onSubmit={(e) => { e.preventDefault(); setMatchPage(1); loadMatches(1); }}>
+              <input
+                value={matchQ}
+                onChange={(e) => setMatchQ(e.target.value)}
+                placeholder="Player: #id, login or nickname"
+              />
+              <select value={matchMode} onChange={(e) => setMatchMode(e.target.value)}>
+                <option value="all">All modes</option>
+                {(room.modes || []).map((m: any) => (
+                  <option key={m.Mode} value={m.Mode}>{m.Name}</option>
+                ))}
+              </select>
+              <select value={matchDays} onChange={(e) => setMatchDays(e.target.value)}>
+                <option value="1">Last 24 hours</option>
+                <option value="7">Last 7 days</option>
+                <option value="30">Last 30 days</option>
+                <option value="90">Last 90 days</option>
+                <option value="0">All time</option>
+              </select>
+              <button className="pl-apply" type="submit">Apply</button>
+            </form>
+            <div className="pl-meta">
+              <h2>{room.total ?? 0} MATCHES</h2>
+              <span>Newest first &nbsp;&nbsp; Showing {room.showingFrom || 0}–{room.showingTo || 0}</span>
+            </div>
+            {roomLoading ? <Empty text="Leyendo partidas..." /> : (
+              <table className="pl-table">
+                <thead>
+                  <tr>
+                    <th>ENDED</th>
+                    <th>MODE</th>
+                    <th>MAP</th>
+                    <th>TYPE</th>
+                    <th>PLAYERS</th>
+                    <th>WINNER</th>
+                    <th>LENGTH</th>
+                    <th></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {(room.data || []).length === 0 ? (
+                    <tr><td colSpan={8} style={{ color: '#777', padding: 28 }}>No matches in this range.</td></tr>
+                  ) : room.data.map((m: any) => (
+                    <tr key={m.id}>
+                      <td className="pd-time">{stamp(m.EndDate)}</td>
+                      <td>{m.ModeName}</td>
+                      <td>{m.MapName}</td>
+                      <td>{m.TypeName}</td>
+                      <td>{m.PlayerCnt}</td>
+                      <td><span className={m.Winner === '—' ? 'pd-left' : 'pd-win'}>{m.Winner}</span></td>
+                      <td>{m.Length}</td>
+                      <td>
+                        <button className="match-open" onClick={() => {
+                          setOpenMatch(m);
+                          api.getAdminMatchRoom(m.RoomKeyNo).then((d) => setOpenPlayers(d.players || [])).catch(() => setOpenPlayers([]));
+                        }}>Open</button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
+            {(room.total || 0) > (room.limit || 25) && (
+              <div className="pl-pager">
+                <button disabled={matchPage <= 1} onClick={() => setMatchPage((n) => Math.max(1, n - 1))}>Prev</button>
+                <button disabled={(room.showingTo || 0) >= (room.total || 0)} onClick={() => setMatchPage((n) => n + 1)}>Next</button>
+              </div>
+            )}
+            {openMatch && (
+              <div className="pd-card" style={{ marginTop: 16 }}>
+                <div className="pd-card-top">
+                  <h2><Swords /> {openMatch.ModeName} · {openMatch.MapName}</h2>
+                  <button className="match-open" onClick={() => { setOpenMatch(null); setOpenPlayers([]); }}>Close</button>
+                </div>
+                <p className="sub">{stamp(openMatch.EndDate)} · {openMatch.Winner} · {openMatch.Length}</p>
+                <table className="pd-table">
+                  <thead><tr><th>PLAYER</th><th>TEAM</th><th>K / D / A</th></tr></thead>
+                  <tbody>
+                    {openPlayers.length === 0 ? (
+                      <tr><td colSpan={3} className="pd-empty">No player rows for this room.</td></tr>
+                    ) : openPlayers.map((p: any) => (
+                      <tr key={p.oidUser}>
+                        <td>{p.NickName}</td>
+                        <td>{p.TeamType === 1 ? 'ALPHA' : p.TeamType === 2 ? 'BRAVO' : p.TeamType}</td>
+                        <td>{p.KillCnt || 0} / {p.DeadCnt || 0} / {p.Assist || 0}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </>
         )}
 
         {section === 'logins' && (

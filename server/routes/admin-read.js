@@ -305,28 +305,112 @@ router.get('/reports', async (_req, res) => {
   res.json({ reviews, punishments, ingame, source: 'combatarms_web + COMBATARMS_LOG.CBT_UserReportCommon' });
 });
 
-router.get('/matches', async (_req, res) => {
-  let games = await log(`
-    SELECT TOP 40 GameUserLogSeqNo as id, oidUser, NickName, RoomNo, GameType, GameMode, MapNo,
-      KillCnt, DeadCnt, WinType, StartDate, EndDate, PlayTime, Exp, Money
-    FROM CBT_UserGameLog01 ORDER BY EndDate DESC`);
-  if (!games.length) {
-    games = await log(`
-      SELECT TOP 40 GameUserLogSeqNo as id, oidUser, NickName, RoomNo, GameType, GameMode, MapNo,
-        KillCnt, DeadCnt, WinType, StartDate, EndDate, PlayTime, Exp, Money
-      FROM CBT_UserGameLog02 ORDER BY EndDate DESC`);
+function winnerLabel(type) {
+  const n = Number(type);
+  if (n === 1) return 'ALPHA';
+  if (n === 2) return 'BRAVO';
+  if (n > 2) return `SLOT ${n - 1}`;
+  return '—';
+}
+
+router.get('/matches', async (req, res) => {
+  const q = String(req.query.q || '').trim();
+  const mode = req.query.mode !== undefined && req.query.mode !== '' ? parseInt(String(req.query.mode), 10) : null;
+  const days = req.query.days === undefined || req.query.days === '' ? 7 : parseInt(String(req.query.days), 10);
+  const page = Math.max(1, parseInt(String(req.query.page || '1'), 10) || 1);
+  const limit = 25;
+  const offset = (page - 1) * limit;
+  const params = { offset, limit };
+  let where = `r.PlayerCnt > 0`;
+  if (Number.isFinite(days) && days > 0) {
+    where += ` AND r.EndDate >= DATEADD(day, -@days, GETDATE())`;
+    params.days = days;
   }
-  let rooms = await log(`
-    SELECT TOP 20 GameRoomLogSeqNo as id, RoomName, RoomNo, MapNo, GameType, PlayerCnt, MaxPlayerCnt,
-      StartDate, EndDate, PlayTime, WinTeamType
-    FROM CBT_GameRoomLog01 ORDER BY EndDate DESC`);
-  if (!rooms.length) {
-    rooms = await log(`
-      SELECT TOP 20 GameRoomLogSeqNo as id, RoomName, RoomNo, MapNo, GameType, PlayerCnt, MaxPlayerCnt,
-        StartDate, EndDate, PlayTime, WinTeamType
-      FROM CBT_GameRoomLog02 ORDER BY EndDate DESC`);
+
+  if (q) {
+    let oid = null;
+    if (q.startsWith('#') && /^\d+$/.test(q.slice(1))) oid = parseInt(q.slice(1), 10);
+    else if (/^\d+$/.test(q) && q.length <= 8) oid = parseInt(q, 10);
+    else {
+      const found = await ca(`
+        SELECT TOP 20 oidUser FROM CBT_User
+        WHERE strNexonID LIKE @q OR NickName LIKE @q`, { q: `%${q}%` });
+      const ids = found.map((r) => r.oidUser).filter((n) => Number.isFinite(n));
+      if (!ids.length) {
+        const modes = await ca(`SELECT Mode, Name FROM CBT_GameMode ORDER BY Mode`);
+        return res.json({ data: [], total: 0, page, limit, showingFrom: 0, showingTo: 0, modes });
+      }
+      where += ` AND r.RoomKeyNo IN (
+        SELECT RoomKeyNo FROM CBT_UserGameLog01 WHERE oidUser IN (${ids.join(',')})
+        UNION
+        SELECT RoomKeyNo FROM CBT_UserGameLog02 WHERE oidUser IN (${ids.join(',')})
+      )`;
+    }
+    if (oid) {
+      params.oid = oid;
+      where += ` AND r.RoomKeyNo IN (
+        SELECT RoomKeyNo FROM CBT_UserGameLog01 WHERE oidUser = @oid
+        UNION
+        SELECT RoomKeyNo FROM CBT_UserGameLog02 WHERE oidUser = @oid
+      )`;
+    }
   }
-  res.json({ games, rooms, source: 'COMBATARMS_LOG CBT_UserGameLog / CBT_GameRoomLog' });
+
+  if (Number.isFinite(mode)) {
+    params.mode = mode;
+    where += ` AND (
+      SELECT TOP 1 GameMode FROM CBT_UserGameLog01 u WHERE u.RoomKeyNo = r.RoomKeyNo
+    ) = @mode`;
+  }
+
+  const total = n(await log(`SELECT COUNT(*) as n FROM CBT_GameRoomLog01 r WHERE ${where}`, params));
+  const list = await log(`
+    SELECT r.GameRoomLogSeqNo as id, r.EndDate, r.MapNo, r.GameType, r.GameModeType, r.PlayerCnt,
+      r.MaxPlayerCnt, r.WinTeamType, r.PlayTime, r.RestrictWeapon, r.RoomKeyNo,
+      (SELECT TOP 1 GameMode FROM CBT_UserGameLog01 u WHERE u.RoomKeyNo = r.RoomKeyNo) as GameMode
+    FROM CBT_GameRoomLog01 r
+    WHERE ${where}
+    ORDER BY r.EndDate DESC
+    OFFSET @offset ROWS FETCH NEXT @limit ROWS ONLY`, params);
+
+  const modes = await ca(`SELECT Mode, Name FROM CBT_GameMode ORDER BY Mode`);
+  const maps = await ca(`SELECT MapID, Name FROM CBT_GameMap`);
+  const modeMap = Object.fromEntries(modes.map((x) => [x.Mode, x.Name]));
+  const mapMap = Object.fromEntries(maps.map((x) => [x.MapID, x.Name]));
+
+  const data = list.map((row) => ({
+    ...row,
+    ModeName: modeMap[row.GameMode] || modeMap[row.GameType] || '—',
+    MapName: mapMap[row.MapNo] || `Map ${row.MapNo}`,
+    TypeName: row.RestrictWeapon ? 'Restricted' : 'Normal',
+    Winner: winnerLabel(row.WinTeamType),
+    Length: `${Number(row.PlayTime || 0)}m`,
+  }));
+
+  res.json({
+    data,
+    total,
+    page,
+    limit,
+    showingFrom: data.length ? offset + 1 : 0,
+    showingTo: offset + data.length,
+    modes,
+    source: 'COMBATARMS_LOG.CBT_GameRoomLog01 + CBT_UserGameLog01',
+  });
+});
+
+router.get('/matches/room/:key', async (req, res) => {
+  const key = parseInt(req.params.key, 10);
+  if (!Number.isFinite(key)) return res.status(400).json({ error: 'invalid' });
+  let players = await log(`
+    SELECT TOP 16 oidUser, NickName, TeamType, KillCnt, DeadCnt, Assist, WinType, GameMode, MapNo, PlayTime
+    FROM CBT_UserGameLog01 WHERE RoomKeyNo = @key ORDER BY KillCnt DESC`, { key });
+  if (!players.length) {
+    players = await log(`
+      SELECT TOP 16 oidUser, NickName, TeamType, KillCnt, DeadCnt, Assist, WinType, GameMode, MapNo, PlayTime
+      FROM CBT_UserGameLog02 WHERE RoomKeyNo = @key ORDER BY KillCnt DESC`, { key });
+  }
+  res.json({ players });
 });
 
 router.get('/logins', async (_req, res) => {

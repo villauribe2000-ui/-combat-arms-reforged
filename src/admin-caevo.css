@@ -147,6 +147,7 @@
 .pl-pager button:disabled{opacity:.35}
 .pl-row{cursor:pointer}
 .pl-row:hover{background:#ffffff08}
+.match-open{border:0;background:transparent;color:#df8104;font-weight:800;font-size:13px;padding:0}
 .pd-back{display:inline-flex;align-items:center;gap:8px;border:0;background:transparent;color:#bbb;font-size:13px;margin-bottom:12px}
 .pd-back svg{width:16px;height:16px}
 .pd-hero{display:flex;gap:16px;align-items:center;padding:20px 22px;border:1px solid #3a2c18;border-radius:8px;margin-bottom:14px;background:linear-gradient(90deg,#24180c,#121212 55%)}
