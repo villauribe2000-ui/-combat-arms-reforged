@@ -53,10 +53,11 @@ class ApiClient {
     const headers: Record<string, string> = {
       'Content-Type': 'application/json',
     };
-    const token = this.token || (typeof window !== 'undefined' ? localStorage.getItem('token') : null);
+    const token = (typeof window !== 'undefined' ? localStorage.getItem('token') : null) || this.token;
     if (token) {
       this.token = token;
       headers.Authorization = `Bearer ${token}`;
+      headers['x-access-token'] = token;
     }
     return headers;
   }
@@ -201,7 +202,8 @@ class ApiClient {
   }
 
   async giftAdminNx(toUserId: number, amount: number, message = '') {
-    return await this.request<any>('POST', '/admin/staff/gift', { toUserId, amount, message });
+    const authToken = (typeof window !== 'undefined' ? localStorage.getItem('token') : null) || this.token || '';
+    return await this.request<any>('POST', '/admin/staff/gift', { toUserId, amount, message, authToken });
   }
 
   async getAdminStaffGifts(q?: string) {

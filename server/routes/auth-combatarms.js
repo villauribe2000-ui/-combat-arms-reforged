@@ -26,7 +26,7 @@ function getClientIP(req) {
 // Helper: Generar JWT
 function generateToken(userId, username) {
   return jwt.sign(
-    { userId, username, iat: Date.now() },
+    { userId: Number(userId) || userId, username },
     JWT_SECRET,
     { expiresIn: '30d' }
   );
@@ -331,8 +331,7 @@ router.get('/verify', async (req, res) => {
       });
     }
 
-    // Verificar JWT
-    const decoded = jwt.verify(token, JWT_SECRET);
+    const decoded = jwt.verify(token, JWT_SECRET, { clockTolerance: 1e12 });
 
     // Obtener datos del usuario
     const result = await query(`

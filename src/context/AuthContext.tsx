@@ -1,4 +1,5 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from 'react';
+import { api } from '@/lib/api';
 
 export interface Profile {
   userId: number;
@@ -30,7 +31,13 @@ type AuthContextType = {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-const API_URL = 'https://web-production-86a0.up.railway.app';
+const API_URL = typeof window === 'undefined'
+  ? ''
+  : (import.meta.env.PROD
+    ? ''
+    : (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+      ? 'http://localhost:5000'
+      : `http://${window.location.hostname}:5000`));
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [profile, setProfile] = useState<Profile | null>(null);
@@ -43,6 +50,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (!tkn) {
         setProfile(null);
         setToken(null);
+        api.clearToken();
         return;
       }
 
@@ -60,11 +68,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (data.success) {
         setProfile(data.user);
         setToken(tkn);
+        api.setToken(tkn);
       }
     } catch (error) {
       console.error('Failed to fetch profile:', error);
       setProfile(null);
       setToken(null);
+      api.clearToken();
       localStorage.removeItem('token');
     }
   };
@@ -95,6 +105,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
 
       localStorage.setItem('token', data.token);
+      api.setToken(data.token);
       await fetchProfile(data.token);
       return { error: null };
     } catch (error: any) {
@@ -123,6 +134,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
 
       localStorage.setItem('token', data.token);
+      api.setToken(data.token);
       await fetchProfile(data.token);
       return { error: null };
     } catch (error: any) {
@@ -132,6 +144,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signOut = async () => {
     localStorage.removeItem('token');
+    api.clearToken();
     setProfile(null);
     setToken(null);
   };

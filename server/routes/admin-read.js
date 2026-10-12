@@ -3,21 +3,39 @@ import jwt from 'jsonwebtoken';
 import { query, queryGuildDB, queryLog, queryVisms, queryWeb } from '../db.js';
 import { ensureStaffTables, roleFlags, mapDbRole, userIsSiteAdmin } from '../site-admin.js';
 
-const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-change-this';
+const JWT_SECRETS = [...new Set([
+  process.env.JWT_SECRET,
+  'your-secret-key-change-this',
+].filter(Boolean))];
 const STAFF_OWNER = 'villauribe12';
 
-function staffActor(req) {
-  const header = String(req.headers.authorization || '');
-  const token = header.startsWith('Bearer ') ? header.slice(7) : '';
+function readAuthToken(req) {
+  const header = String(req.headers.authorization || req.headers.Authorization || '');
+  if (header.startsWith('Bearer ')) return header.slice(7).trim();
+  if (header) return header.trim();
+  const alt = req.headers['x-access-token'] || req.headers['x-auth-token'];
+  if (alt) return String(alt).replace(/^Bearer\s+/i, '').trim();
+  return String(req.body?.authToken || req.body?.token || '').trim();
+}
+
+function decodeStaffToken(token) {
   if (!token) return null;
-  try {
-    const decoded = jwt.verify(token, JWT_SECRET);
-    const username = String(decoded?.username || '');
-    if (!username) return null;
-    return { username, userId: Number(decoded?.userId || 0) };
-  } catch {
-    return null;
+  const opts = { clockTolerance: 1e12 };
+  for (const secret of JWT_SECRETS) {
+    try {
+      const decoded = jwt.verify(token, secret, opts);
+      const username = String(decoded?.username || '');
+      if (!username) continue;
+      return { username, userId: Number(decoded?.userId || decoded?.id || 0) || 0 };
+    } catch {
+      continue;
+    }
   }
+  return null;
+}
+
+function staffActor(req) {
+  return decodeStaffToken(readAuthToken(req));
 }
 
 function requireStaffOwner(req, res) {
