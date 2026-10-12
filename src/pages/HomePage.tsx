@@ -78,43 +78,73 @@ export default function HomePage({ onNavigate }: { onNavigate: (page: PageId) =>
   }, []);
 
   return (
-    <div className="space-y-12 pb-12">
-      {/* Hero */}
-      <section className="relative overflow-hidden rounded-3xl border border-white/5 bg-gradient-to-br from-[#0d1525] via-[#0a0e17] to-[#120d1a] px-6 py-48 lg:px-16 lg:py-64">
-        {/* Video background */}
-        <div className="absolute inset-0 overflow-hidden rounded-3xl">
-          <video
-            autoPlay
-            muted
-            loop
-            playsInline
-            className="absolute inset-0 h-full w-full object-cover"
-          >
-            <source src={trailerVideo} type="video/mp4" />
-          </video>
-          {/* Overlay oscuro sobre el video */}
-          <div className="absolute inset-0 bg-black/55" />
-        </div>
-        
-        {/* Gradientes decorativos (opcional, encima del video) */}
-        <div className="absolute inset-0 overflow-hidden">
-          <div className="absolute -top-20 left-1/4 h-96 w-96 rounded-full bg-cyan-500/15 blur-3xl" />
-          <div className="absolute bottom-0 right-1/4 h-96 w-96 rounded-full bg-fuchsia-500/15 blur-3xl" />
-        </div>
-        
-        <div className="relative z-10 max-w-5xl">
-          <h1 className="text-6xl font-black leading-tight tracking-tight lg:text-8xl">
-            <span className="bg-gradient-to-r from-white via-cyan-200 to-blue-300 bg-clip-text text-transparent">Combat Arms Reforged</span>
+    <div className="bg-[#0a0a0a] pb-12">
+      <section className="relative min-h-[86vh] overflow-hidden">
+        <video
+          autoPlay
+          muted
+          loop
+          playsInline
+          className="absolute inset-0 h-full w-full object-cover"
+        >
+          <source src={trailerVideo} type="video/mp4" />
+        </video>
+        <div className="absolute inset-0 bg-gradient-to-r from-black via-black/75 to-black/25" />
+        <div className="absolute inset-0 bg-gradient-to-t from-[#0a0a0a] via-transparent to-black/40" />
+
+        <div className="relative z-10 mx-auto flex min-h-[86vh] max-w-[1400px] flex-col justify-center px-6 py-20 lg:px-12">
+          <h1 className="max-w-4xl text-5xl font-black uppercase leading-[0.92] tracking-tight sm:text-7xl lg:text-[92px]">
+            <span className="block text-white">Combat Arms</span>
+            <span className="block text-[#f5a000]">Reforged.</span>
           </h1>
-          <p className="mt-10 max-w-3xl text-2xl text-slate-200">
-            La plataforma competitiva definitiva. Compite, sube en el ranking, forma clanes,
-            gana premios y demuestra que eres el mejor.
+          <p className="mt-8 max-w-xl text-base leading-relaxed text-neutral-300 sm:text-lg">
+            Combat Arms Reforged is a free-to-play online first-person shooter for PC.
+            Play classic maps, explore PvP and co-op modes, and find your squad.
           </p>
+          <div className="mt-10 flex flex-wrap items-center gap-4">
+            <a
+              href="https://www.mediafire.com/file/70z692y8n25zi8r/CombatArmsReforged.rar/file"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-2 rounded-md bg-[#f5a000] px-7 py-3.5 text-sm font-bold uppercase tracking-wide text-black shadow-[0_0_24px_rgba(245,160,0,0.35)] transition hover:bg-[#ffb21a]"
+            >
+              <svg className="h-4 w-4" fill="currentColor" viewBox="0 0 24 24"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z" /></svg>
+              Descargar
+            </a>
+            <button
+              onClick={() => setShowRequirements(true)}
+              className="inline-flex items-center gap-2 rounded-md border border-white/25 bg-black/40 px-7 py-3.5 text-sm font-bold uppercase tracking-wide text-white backdrop-blur transition hover:border-white/50"
+            >
+              Requisitos
+              <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
+            </button>
+          </div>
+          <p className="mt-6 text-xs uppercase tracking-[0.22em] text-neutral-500">
+            Available on PC · Free to play. Ready when you are.
+          </p>
+        </div>
+
+        <div className="relative z-10 border-t border-white/10 bg-black/50 backdrop-blur-sm">
+          <div className="mx-auto grid max-w-[1400px] grid-cols-1 gap-6 px-6 py-6 sm:grid-cols-3 lg:px-12">
+            <div>
+              <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-neutral-500">Classic combat</p>
+              <p className="mt-1 text-sm font-semibold text-white">Uncompromising action.</p>
+            </div>
+            <div>
+              <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-neutral-500">Find your squad</p>
+              <p className="mt-1 text-sm font-semibold text-white">Own the battlefield.</p>
+            </div>
+            <div>
+              <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-neutral-500">Your loadout</p>
+              <p className="mt-1 text-sm font-semibold text-white">Your way to play.</p>
+            </div>
+          </div>
         </div>
       </section>
 
+      <div className="mx-auto max-w-[1400px] space-y-12 px-6 pt-12 lg:px-12">
       {/* Download Section */}
-      <section className="relative overflow-hidden rounded-3xl border border-white/5 bg-gradient-to-br from-amber-900/30 via-[#0d1320] to-orange-900/20 px-6 py-16 lg:px-16 lg:py-24">
+      <section className="relative overflow-hidden rounded-3xl border border-white/5 bg-gradient-to-br from-amber-900/30 via-[#111] to-orange-900/20 px-6 py-16 lg:px-16 lg:py-24">
         <div className="absolute inset-0 overflow-hidden">
           <div className="absolute -top-20 right-1/4 h-72 w-72 rounded-full bg-amber-500/10 blur-3xl" />
           <div className="absolute bottom-0 left-1/4 h-72 w-72 rounded-full bg-orange-500/10 blur-3xl" />
@@ -285,11 +315,11 @@ export default function HomePage({ onNavigate }: { onNavigate: (page: PageId) =>
       <section>
         <div className="mb-6 flex items-center justify-between">
           <h2 className="text-2xl font-bold">Torneos Destacados</h2>
-          <button onClick={() => onNavigate('rankings')} className="text-sm text-cyan-400 hover:text-cyan-300">Ver todos</button>
+          <button onClick={() => onNavigate('rankings')} className="text-sm text-[#f5a000] hover:text-[#ffb21a]">Ver todos</button>
         </div>
         <div className="grid gap-4 md:grid-cols-3">
           {(tournaments || []).map(t => (
-            <div key={t.id} className="group relative overflow-hidden rounded-2xl border border-white/5 bg-gradient-to-br from-[#0f1623] to-[#0a0e17] p-6 transition-all hover:border-cyan-500/30 hover:shadow-lg hover:shadow-cyan-500/10">
+            <div key={t.id} className="group relative overflow-hidden rounded-2xl border border-white/5 bg-[#111] p-6 transition-all hover:border-[#f5a000]/40 hover:shadow-lg hover:shadow-[#f5a000]/10">
               <div className="mb-3 flex items-center justify-between">
                 <span className={`rounded-full px-3 py-1 text-xs font-semibold ${
                   t.status === 'registration' ? 'bg-emerald-500/15 text-emerald-400' : 'bg-slate-500/15 text-slate-400'
@@ -307,7 +337,7 @@ export default function HomePage({ onNavigate }: { onNavigate: (page: PageId) =>
                 </div>
                 <div className="text-right">
                   <p className="text-xs text-slate-500">Cupos</p>
-                  <p className="text-lg font-bold text-cyan-400">{t.max_participants || 0}</p>
+                  <p className="text-lg font-bold text-[#f5a000]">{t.max_participants || 0}</p>
                 </div>
               </div>
             </div>
@@ -417,6 +447,7 @@ export default function HomePage({ onNavigate }: { onNavigate: (page: PageId) =>
           </p>
         </div>
       </footer>
+      </div>
     </div>
   );
 }

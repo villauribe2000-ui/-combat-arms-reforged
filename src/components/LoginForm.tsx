@@ -44,8 +44,8 @@ export default function LoginForm({ onSuccess }: LoginFormProps) {
 
   return (
     <div className="w-full max-w-md mx-auto">
-      <div className="bg-gradient-to-b from-slate-900 to-slate-950 border border-purple-500/20 rounded-xl p-8 shadow-2xl">
-        <h2 className="text-2xl font-bold text-center mb-2 bg-gradient-to-r from-purple-400 to-cyan-400 bg-clip-text text-transparent">
+      <div className="bg-[#111] border border-white/10 rounded-xl p-8 shadow-2xl">
+        <h2 className="text-2xl font-bold text-center mb-2 text-[#f5a000]">
           {isLogin ? 'Iniciar Sesión' : 'Crear Cuenta'}
         </h2>
         <p className="text-center text-gray-400 text-sm mb-6">
@@ -76,7 +76,7 @@ export default function LoginForm({ onSuccess }: LoginFormProps) {
               value={isLogin ? username : usernameSignUp}
               onChange={(e) => isLogin ? setUsername(e.target.value) : setUsernameSignUp(e.target.value)}
               placeholder="tu_usuario"
-              className="w-full bg-slate-800/50 border border-purple-500/30 rounded-lg px-4 py-2 text-gray-100 placeholder-gray-500 focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500"
+              className="w-full bg-black/40 border border-white/15 rounded-lg px-4 py-2 text-gray-100 placeholder-gray-500 focus:outline-none focus:border-[#f5a000] focus:ring-1 focus:ring-[#f5a000]"
               required
             />
           </div>
@@ -90,7 +90,7 @@ export default function LoginForm({ onSuccess }: LoginFormProps) {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               placeholder="••••••••"
-              className="w-full bg-slate-800/50 border border-purple-500/30 rounded-lg px-4 py-2 text-gray-100 placeholder-gray-500 focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500"
+              className="w-full bg-black/40 border border-white/15 rounded-lg px-4 py-2 text-gray-100 placeholder-gray-500 focus:outline-none focus:border-[#f5a000] focus:ring-1 focus:ring-[#f5a000]"
               required
             />
           </div>
@@ -106,7 +106,7 @@ export default function LoginForm({ onSuccess }: LoginFormProps) {
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
                   placeholder="••••••••"
-                  className="w-full bg-slate-800/50 border border-purple-500/30 rounded-lg px-4 py-2 text-gray-100 placeholder-gray-500 focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500"
+                  className="w-full bg-black/40 border border-white/15 rounded-lg px-4 py-2 text-gray-100 placeholder-gray-500 focus:outline-none focus:border-[#f5a000] focus:ring-1 focus:ring-[#f5a000]"
                   required
                 />
               </div>
@@ -120,7 +120,7 @@ export default function LoginForm({ onSuccess }: LoginFormProps) {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="tu@email.com"
-                  className="w-full bg-slate-800/50 border border-purple-500/30 rounded-lg px-4 py-2 text-gray-100 placeholder-gray-500 focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500"
+                  className="w-full bg-black/40 border border-white/15 rounded-lg px-4 py-2 text-gray-100 placeholder-gray-500 focus:outline-none focus:border-[#f5a000] focus:ring-1 focus:ring-[#f5a000]"
                   required
                 />
               </div>
@@ -130,7 +130,7 @@ export default function LoginForm({ onSuccess }: LoginFormProps) {
           <button
             type="submit"
             disabled={loading}
-            className="w-full bg-gradient-to-r from-purple-600 to-cyan-600 hover:from-purple-700 hover:to-cyan-700 disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold py-2 px-4 rounded-lg transition-all duration-300 flex items-center justify-center gap-2"
+            className="w-full bg-[#f5a000] hover:bg-[#ffb21a] disabled:opacity-50 disabled:cursor-not-allowed text-black font-bold py-2 px-4 rounded-md transition-all duration-300 flex items-center justify-center gap-2"
           >
             {loading && <Loader className="w-4 h-4 animate-spin" />}
             {isLogin ? 'Iniciar Sesión' : 'Crear Cuenta'}
@@ -144,7 +144,7 @@ export default function LoginForm({ onSuccess }: LoginFormProps) {
               <button
                 type="button"
                 onClick={() => setIsLogin(false)}
-                className="text-cyan-400 hover:text-cyan-300 font-medium transition-colors cursor-pointer"
+                className="text-[#f5a000] hover:text-[#ffb21a] font-medium transition-colors cursor-pointer"
               >
                 Crea una aquí
               </button>
@@ -155,7 +155,7 @@ export default function LoginForm({ onSuccess }: LoginFormProps) {
               <button
                 type="button"
                 onClick={() => setIsLogin(true)}
-                className="text-cyan-400 hover:text-cyan-300 font-medium transition-colors cursor-pointer"
+                className="text-[#f5a000] hover:text-[#ffb21a] font-medium transition-colors cursor-pointer"
               >
                 Inicia sesión
               </button>

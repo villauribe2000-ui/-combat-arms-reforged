@@ -7,7 +7,7 @@
     scroll-behavior: smooth;
   }
   body {
-    @apply bg-[#0a0e17] text-white antialiased;
+    @apply bg-[#0a0a0a] text-white antialiased;
     font-family: 'Inter', system-ui, -apple-system, sans-serif;
   }
   ::-webkit-scrollbar {
