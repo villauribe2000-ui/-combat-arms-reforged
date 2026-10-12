@@ -83,8 +83,21 @@ export function rankProgress(exp: number) {
   return { current, percent, complete: false, nextLevel: next.nivel, nextExp: next.exp };
 }
 
+const CIC_TITLES: Record<number, string> = {
+  56: 'Commander In Chief 1',
+  57: 'Commander In Chief 2',
+  58: 'Commander In Chief 3',
+  59: 'Commander In Chief 4',
+  60: 'Commander In Chief 5',
+};
+
+export function rankTitle(level: number, apiName?: string | null) {
+  const clean = String(apiName || '').trim();
+  if (clean && !/^(trainee|soldier|game master)$/i.test(clean)) return clean;
+  return CIC_TITLES[level] || `Rank ${level}`;
+}
+
 export function rankIcon(opts: { rank?: number | string | null; exp?: number; isGM?: boolean; UserType?: number }) {
-  if (opts.isGM || opts.UserType === 1) return '/ranks/RANK_GM.png';
   const fromApi = Number(opts.rank);
   const n = Number.isFinite(fromApi) && fromApi > 0 ? fromApi : rankFromExp(opts.exp ?? 0);
   const clamped = Math.max(0, Math.min(65, Math.floor(n)));

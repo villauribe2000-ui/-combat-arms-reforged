@@ -4,6 +4,7 @@ import Layout, { type PageId } from '@/components/Layout';
 import PageLoader from '@/components/PageLoader';
 import HomePage from '@/pages/HomePage';
 import ProfilePage from '@/pages/ProfilePage';
+import AccountPage from '@/pages/AccountPage';
 import RankingsPage from '@/pages/RankingsPage';
 import MarketplacePage from '@/pages/MarketplacePage';
 import SupportPage from '@/pages/SupportPage';
@@ -44,6 +45,7 @@ function AppContent() {
     switch (page) {
       case 'home': return <HomePage onNavigate={navigate} />;
       case 'profile': return <ProfilePage onNavigate={navigate} />;
+      case 'account': return <AccountPage onNavigate={navigate} />;
       case 'rankings': return <RankingsPage />;
       case 'store': return <MarketplacePage />;
       case 'guide': return <GuidePage />;

@@ -5,7 +5,7 @@ import {
   Menu, LogOut, Crown, Gift, Home, Download, BookOpen, UserRound, UserRoundPlus, ChevronDown, Coins, LayoutGrid,
 } from 'lucide-react';
 
-export type PageId = 'home' | 'profile' | 'rankings' | 'store' | 'support' | 'admin' | 'wallet' | 'purchase-history' | 'level-rewards' | 'birthday' | 'guide' | 'download' | 'signin' | 'signup';
+export type PageId = 'home' | 'profile' | 'account' | 'rankings' | 'store' | 'support' | 'admin' | 'wallet' | 'purchase-history' | 'level-rewards' | 'birthday' | 'guide' | 'download' | 'signin' | 'signup';
 
 type NavItem = {
   id: PageId;
@@ -42,7 +42,7 @@ export default function Layout({ currentPage, onNavigate, children }: Props) {
   const menuRef = useRef<HTMLDivElement>(null);
   const publicPages: PageId[] = ['home', 'guide', 'download', 'signin', 'signup', 'rankings'];
   const isPublic = publicPages.includes(currentPage);
-  const isFullBleed = isPublic || currentPage === 'profile' || currentPage === 'wallet';
+  const isFullBleed = isPublic || currentPage === 'profile' || currentPage === 'account' || currentPage === 'wallet' || currentPage === 'store' || currentPage === 'purchase-history' || currentPage === 'level-rewards';
 
   useEffect(() => {
     const onDoc = (e: MouseEvent) => {
@@ -144,7 +144,7 @@ export default function Layout({ currentPage, onNavigate, children }: Props) {
                         </span>
                       </button>
                     )}
-                    <button type="button" onClick={() => { sessionStorage.setItem('profile_tab', 'overview'); setMenuOpen(false); go('profile'); }}>
+                    <button type="button" onClick={() => { setMenuOpen(false); go('profile'); }}>
                       <UserRound size={16} />
                       <span>
                         <strong>Profile</strong>
@@ -158,7 +158,7 @@ export default function Layout({ currentPage, onNavigate, children }: Props) {
                         <small>Buy NX</small>
                       </span>
                     </button>
-                    <button type="button" onClick={() => { sessionStorage.setItem('profile_tab', 'password'); setMenuOpen(false); go('profile'); }}>
+                    <button type="button" onClick={() => { setMenuOpen(false); go('account'); }}>
                       <LayoutGrid size={16} />
                       <span>
                         <strong>Account</strong>

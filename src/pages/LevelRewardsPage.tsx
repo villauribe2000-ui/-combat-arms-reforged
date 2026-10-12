@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { api } from '@/lib/api';
-import { Gift, TrendingUp, CheckCircle, AlertCircle } from 'lucide-react';
+import { Gift, TrendingUp, CheckCircle, AlertCircle, Crown } from 'lucide-react';
+import { rankIcon } from '@/lib/ranks';
 
 interface LevelReward {
   level: number;
@@ -167,7 +168,7 @@ export default function LevelRewardsPage() {
         // DEBUG
         console.log('[DEBUG Rewards] userLevel:', userLevel, 'userExp:', userExp);
         console.log('[DEBUG Rewards] Total Claimable:', claimableTotal);
-        console.log('[DEBUG Rewards] Claimed levels:', claimed);
+        console.log('[DEBUG Rewards] Claimed levels:', claimedLevels);
         console.log('[DEBUG Rewards] Total rewards array length:', rewardsList.length);
       } catch (error) {
         console.error('Error loading rewards:', error);
@@ -228,109 +229,98 @@ export default function LevelRewardsPage() {
   if (!profile) return null;
 
   return (
-    <div className="space-y-6 pb-12">
-      <div>
-        <h1 className="text-3xl font-black">Recompensas de Nivel</h1>
-        <p className="mt-1 text-slate-400">Reclama NX por cada nivel que alcances. Niveles superiores tienen mayores recompensas.</p>
+    <main className="inner-page page-width rewards-page">
+      <header className="page-heading">
+        <div>
+          <p className="eyebrow"><span className="tiny-square" /> RANK BOUNTY</p>
+          <h1>LEVEL REWARDS.</h1>
+          <p className="page-heading-description">
+            Reclama NX por cada nivel que alcances. Los rangos más altos pagan más.
+          </p>
+        </div>
+        <div className="page-heading-aside">
+          <span className="charge-badge">
+            <Crown size={14} /> LEVEL {currentLevel} / 60
+          </span>
+        </div>
+      </header>
+
+      <div className="rewards-metrics">
+        <article>
+          <div>
+            <p>NIVEL ACTUAL</p>
+            <strong>{currentLevel}</strong>
+            <small>de 60 niveles máximo</small>
+          </div>
+          <TrendingUp size={28} />
+        </article>
+        <article>
+          <div>
+            <p>RECOMPENSAS RECLAMADAS</p>
+            <strong>{claimedCount}</strong>
+            <small>{totalRewarded.toLocaleString()} NX totales</small>
+          </div>
+          <Gift size={28} />
+        </article>
+        <article>
+          <div>
+            <p>DISPONIBLES PARA RECLAMAR</p>
+            <strong>{totalClaimable.toLocaleString()}</strong>
+            <small>NX en {rewards.filter(r => r.unlocked && !r.claimed).length} niveles</small>
+          </div>
+          <CheckCircle size={28} />
+        </article>
       </div>
 
-      {/* Stats */}
-      <div className="grid gap-4 lg:grid-cols-3">
-        <div className="rounded-2xl border border-white/5 bg-gradient-to-br from-purple-900/30 via-[#0d1320] to-purple-900/20 p-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-slate-400 mb-1">NIVEL ACTUAL</p>
-              <p className="text-4xl lg:text-5xl font-black text-purple-400">{currentLevel}</p>
-              <p className="text-xs text-slate-500 mt-2">de 60 niveles máximo</p>
-            </div>
-            <TrendingUp className="h-16 w-16 text-purple-400 opacity-20" />
+      <section className="rewards-board">
+        <div className="rewards-toolbar">
+          <div className="rewards-board-title">
+            <Gift size={20} />
+            <h2>ALL RANKS</h2>
+            <span>0–60</span>
           </div>
         </div>
-
-        <div className="rounded-2xl border border-white/5 bg-gradient-to-br from-emerald-900/30 via-[#0d1320] to-emerald-900/20 p-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-slate-400 mb-1">RECOMPENSAS RECLAMADAS</p>
-              <p className="text-4xl lg:text-5xl font-black text-emerald-400">{claimedCount}</p>
-              <p className="text-xs text-slate-500 mt-2">{totalRewarded.toLocaleString()} NX totales</p>
-            </div>
-            <Gift className="h-16 w-16 text-emerald-400 opacity-20" />
-          </div>
-        </div>
-
-        <div className="rounded-2xl border border-white/5 bg-gradient-to-br from-cyan-900/30 via-[#0d1320] to-cyan-900/20 p-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-slate-400 mb-1">DISPONIBLES PARA RECLAMAR</p>
-              <p className="text-4xl lg:text-5xl font-black text-cyan-400">{totalClaimable.toLocaleString()}</p>
-              <p className="text-xs text-slate-500 mt-2">NX en {rewards.filter(r => r.unlocked && !r.claimed).length} niveles</p>
-            </div>
-            <CheckCircle className="h-16 w-16 text-cyan-400 opacity-20" />
-          </div>
-        </div>
-      </div>
-
-      {/* Rewards Grid */}
-      <div className="rounded-2xl border border-white/5 bg-[#0d1320] p-6">
-        <h2 className="mb-4 text-lg font-bold">Todos los Niveles</h2>
-        
-        <div className="grid gap-3 grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
-          {rewards.map((reward) => (
-            <div
+        <div className="rewards-grid">
+          {rewards.map(reward => (
+            <article
               key={reward.level}
-              className={`rounded-xl border p-4 transition ${
-                reward.claimed
-                  ? 'border-slate-700 bg-slate-900/20 opacity-60'
-                  : reward.unlocked
-                  ? 'border-emerald-500/50 bg-gradient-to-br from-emerald-500/20 to-emerald-600/10 hover:from-emerald-500/30 hover:to-emerald-600/20'
-                  : 'border-slate-700/50 bg-slate-900/20 opacity-50'
-              }`}
+              className={`rewards-card${reward.claimed ? ' rewards-card-claimed' : !reward.unlocked ? ' rewards-card-locked' : ' rewards-card-ready'}`}
             >
-              <div className="mb-3">
-                <p className="text-sm text-slate-400">Nivel</p>
-                <p className="text-3xl font-black text-cyan-400">{reward.level}</p>
+              <div className="rewards-card-top">
+                <div>
+                  <p>NIVEL</p>
+                  <strong>{reward.level}</strong>
+                </div>
+                <img src={rankIcon({ rank: reward.level })} alt="" onError={e => { e.currentTarget.src = '/ranks/RANK_0.png'; }} />
               </div>
-              <div className="mb-4 p-2 rounded-lg bg-white/5 border border-white/10">
-                <p className="text-sm text-slate-300">
-                  <span className="font-bold text-emerald-400">+{reward.reward}</span> NX
-                </p>
+              <div className="rewards-nx">
+                <b>+{reward.reward.toLocaleString()}</b> NX
               </div>
               <button
+                type="button"
+                className={`rewards-claim${reward.unlocked && !reward.claimed ? ' rewards-claim-ready' : ''}`}
                 onClick={() => handleClaimReward(reward.level)}
                 disabled={reward.claimed || !reward.unlocked}
                 title={!reward.unlocked ? 'Alcanza este nivel primero' : ''}
-                className={`w-full py-2 rounded-lg font-semibold transition text-xs ${
-                  reward.claimed
-                    ? 'bg-slate-700/20 text-slate-400 cursor-default'
-                    : !reward.unlocked
-                    ? 'bg-slate-700/20 text-slate-500 cursor-not-allowed'
-                    : 'bg-emerald-500/20 text-emerald-400 hover:bg-emerald-500/30'
-                }`}
               >
-                {reward.claimed ? '✓ Reclamado' : !reward.unlocked ? 'Bloqueado' : 'Reclamar'}
+                {reward.claimed ? 'Reclamado' : !reward.unlocked ? 'Bloqueado' : 'Reclamar'}
               </button>
-            </div>
+            </article>
           ))}
         </div>
+      </section>
+
+      <div className="rewards-notes">
+        <p>Solo puedes reclamar niveles que ya alcanzaste. El NX se suma a tu cuenta al confirmar.</p>
+        <p>LEVEL REWARDS / NX BOUNTY</p>
       </div>
 
-      {/* Notifications */}
       {notification && (
-        <div className="fixed bottom-6 right-6 z-50 animate-in fade-in slide-in-from-bottom-4 duration-300">
-          <div className={`flex items-center gap-3 rounded-lg px-6 py-4 border ${
-            notification.type === 'success'
-              ? 'bg-emerald-500/20 border-emerald-500/30 text-emerald-300'
-              : 'bg-red-500/20 border-red-500/30 text-red-300'
-          }`}>
-            {notification.type === 'success' ? (
-              <CheckCircle className="h-5 w-5 flex-shrink-0" />
-            ) : (
-              <AlertCircle className="h-5 w-5 flex-shrink-0" />
-            )}
-            <p className="font-medium">{notification.message}</p>
-          </div>
+        <div className={`rewards-toast rewards-toast-${notification.type}`}>
+          {notification.type === 'success' ? <CheckCircle size={18} /> : <AlertCircle size={18} />}
+          <p>{notification.message}</p>
         </div>
       )}
-    </div>
+    </main>
   );
 }

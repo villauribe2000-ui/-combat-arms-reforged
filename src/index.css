@@ -6,6 +6,9 @@
 @import './page-loader-caevo.css';
 @import './charge-caevo.css';
 @import './player-profile-caevo.css';
+@import './shop-caevo.css';
+@import './history-caevo.css';
+@import './rewards-caevo.css';
 @tailwind base;
 @tailwind components;
 @tailwind utilities;

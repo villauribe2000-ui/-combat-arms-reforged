@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { query, queryVisms } from '../db.js';
+import { query, queryGuildDB, queryVisms } from '../db.js';
 import { generateToken, hashPassword, verifyPassword } from '../auth.js';
 import jwt from 'jsonwebtoken';
 
@@ -457,6 +457,20 @@ router.get('/profile/:username', async (req, res) => {
       assists = 0;
     }
 
+    let clan = null;
+    try {
+      const clanResult = await queryGuildDB(
+        `SELECT TOP 1 g.strName
+         FROM dbo.gdt_Member m
+         INNER JOIN dbo.gdt_Guild g ON g.oidGuild = m.oidGuild
+         WHERE m.oidUser = @oidUser`,
+        { oidUser: user.id }
+      );
+      clan = clanResult.recordset?.[0]?.strName || null;
+    } catch (e) {
+      clan = null;
+    }
+
     res.json({
       id: user.id,
       username: user.username,
@@ -472,7 +486,7 @@ router.get('/profile/:username', async (req, res) => {
       rank,
       rankName,
       isGM: user.UserType === 1,
-      clan: null
+      clan
     });
   } catch (error) {
     console.error('Get profile error:', error);
