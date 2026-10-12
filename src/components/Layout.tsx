@@ -42,7 +42,7 @@ export default function Layout({ currentPage, onNavigate, children }: Props) {
   const menuRef = useRef<HTMLDivElement>(null);
   const publicPages: PageId[] = ['home', 'guide', 'download', 'signin', 'signup', 'rankings'];
   const isPublic = publicPages.includes(currentPage);
-  const isFullBleed = isPublic || currentPage === 'profile' || currentPage === 'account' || currentPage === 'wallet' || currentPage === 'store' || currentPage === 'purchase-history' || currentPage === 'level-rewards';
+  const isFullBleed = isPublic || currentPage === 'profile' || currentPage === 'account' || currentPage === 'wallet' || currentPage === 'store' || currentPage === 'purchase-history' || currentPage === 'level-rewards' || currentPage === 'support' || currentPage === 'birthday';
 
   useEffect(() => {
     const onDoc = (e: MouseEvent) => {

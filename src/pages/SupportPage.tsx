@@ -148,244 +148,149 @@ export default function SupportPage() {
   };
 
   const getStatusBadge = (status: string) => {
-    const badges: Record<string, { bg: string; text: string; label: string }> = {
-      open: { bg: 'bg-blue-500/20', text: 'text-blue-400', label: 'Abierto' },
-      'in-progress': { bg: 'bg-amber-500/20', text: 'text-amber-400', label: 'En progreso' },
-      resolved: { bg: 'bg-emerald-500/20', text: 'text-emerald-400', label: 'Resuelto' },
-      closed: { bg: 'bg-slate-500/20', text: 'text-slate-400', label: 'Cerrado' },
+    const badges: Record<string, { cls: string; label: string }> = {
+      open: { cls: 'support-badge support-badge-open', label: 'Abierto' },
+      'in-progress': { cls: 'support-badge support-badge-progress', label: 'En progreso' },
+      resolved: { cls: 'support-badge support-badge-resolved', label: 'Resuelto' },
+      closed: { cls: 'support-badge support-badge-closed', label: 'Cerrado' },
     };
     const badge = badges[status] || badges.open;
-    return (
-      <span className={`${badge.bg} ${badge.text} px-2 py-1 rounded text-xs font-semibold`}>
-        {badge.label}
-      </span>
-    );
+    return <span className={badge.cls}>{badge.label}</span>;
   };
 
-  if (!profile?.username) {
-    return (
-      <div className="flex h-96 items-center justify-center">
-        <div className="text-center">
-          <MessageSquare className="mx-auto h-12 w-12 text-slate-400" />
-          <h2 className="mt-4 text-xl font-bold text-slate-400">Inicia sesión</h2>
-          <p className="mt-2 text-slate-500">Necesitas iniciar sesión para acceder al soporte</p>
-        </div>
-      </div>
-    );
-  }
+  if (!profile?.username) return null;
 
   return (
-    <div className="space-y-6 pb-12">
-      {/* Toasts */}
-      <div className="fixed bottom-6 right-6 z-50 space-y-3 max-w-md">
+    <main className="inner-page page-width support-page">
+      <div className="support-toasts">
         {toasts.map(toast => (
-          <div
-            key={toast.id}
-            className={`rounded-2xl border backdrop-blur-sm p-4 shadow-lg animate-in fade-in slide-in-from-right-4 duration-300 ${
-              toast.type === 'success'
-                ? 'border-emerald-500/30 bg-emerald-500/10'
-                : toast.type === 'error'
-                ? 'border-red-500/30 bg-red-500/10'
-                : 'border-cyan-500/30 bg-cyan-500/10'
-            }`}
-          >
-            <div className="flex items-start gap-3">
-              {toast.type === 'success' && <CheckCircle className="h-5 w-5 text-emerald-400 flex-shrink-0 mt-0.5" />}
-              {toast.type === 'error' && <XCircle className="h-5 w-5 text-red-400 flex-shrink-0 mt-0.5" />}
-              {toast.type === 'info' && <AlertCircle className="h-5 w-5 text-cyan-400 flex-shrink-0 mt-0.5" />}
-              
-              <div className="flex-1">
-                <h3 className={`font-semibold ${
-                  toast.type === 'success' ? 'text-emerald-300' :
-                  toast.type === 'error' ? 'text-red-300' :
-                  'text-cyan-300'
-                }`}>
-                  {toast.title}
-                </h3>
-                <p className="text-sm text-slate-300 mt-1">{toast.message}</p>
-              </div>
-
-              <button
-                onClick={() => removeToast(toast.id)}
-                className="flex-shrink-0 text-slate-400 hover:text-slate-300 transition"
-              >
-                <XCircle className="h-4 w-4" />
-              </button>
-            </div>
+          <div key={toast.id} className={`support-toast support-toast-${toast.type}`}>
+            <h3>{toast.title}</h3>
+            <p>{toast.message}</p>
           </div>
         ))}
       </div>
 
-      {/* Header */}
-      <div className="flex items-center justify-between">
+      <header className="page-heading">
         <div>
-          <h1 className="text-3xl font-black">Centro de Soporte</h1>
-          <p className="mt-1 text-slate-400">Aquí puedes contactar con soporte</p>
+          <p className="eyebrow"><span className="tiny-square" /> PLAYER SUPPORT</p>
+          <h1>SUPPORT CENTER.</h1>
+          <p className="page-heading-description">
+            Abre un ticket y el equipo te responde aquí. Los reembolsos y problemas de cuenta se atienden por este canal.
+          </p>
         </div>
-        <button
-          onClick={() => setShowNewTicketModal(true)}
-          className="flex items-center gap-2 px-4 py-3 rounded-lg bg-cyan-500/20 text-cyan-400 hover:bg-cyan-500/30 transition font-semibold"
-        >
-          <Plus className="h-5 w-5" />
-          Nuevo Ticket
-        </button>
-      </div>
+        <div className="page-heading-aside">
+          <button type="button" className="support-new" onClick={() => setShowNewTicketModal(true)}>
+            <Plus size={16} /> Nuevo ticket
+          </button>
+        </div>
+      </header>
 
-      {/* Content */}
       {!selectedTicket ? (
-        <div className="rounded-2xl border border-white/5 bg-[#0d1320] p-6">
-          <h2 className="mb-6 text-lg font-bold">Mis Tickets</h2>
-
+        <section className="support-board">
+          <div className="support-toolbar">
+            <div className="support-board-title">
+              <MessageSquare size={20} />
+              <h2>MY TICKETS</h2>
+            </div>
+          </div>
           {loading ? (
-            <div className="flex justify-center py-12">
-              <Loader className="h-8 w-8 animate-spin text-cyan-400" />
+            <div className="support-empty">
+              <Loader className="mx-auto h-8 w-8 animate-spin" />
+              <h3>LOADING</h3>
+              <p>Cargando tus tickets.</p>
             </div>
           ) : tickets.length === 0 ? (
-            <div className="flex h-32 flex-col items-center justify-center text-slate-500">
-              <MessageSquare className="h-12 w-12 opacity-50 mb-2" />
-              <p>No tienes tickets abiertos</p>
+            <div className="support-empty">
+              <MessageSquare className="mx-auto h-8 w-8" />
+              <h3>NO TICKETS YET</h3>
+              <p>No tienes tickets abiertos. Crea uno para hablar con soporte.</p>
             </div>
           ) : (
-            <div className="space-y-2">
-              {tickets.map((ticket) => (
-                <button
-                  key={ticket.id}
-                  onClick={() => loadTicketDetail(ticket.id)}
-                  className="w-full text-left rounded-xl border border-white/10 bg-white/5 p-4 hover:bg-white/10 transition"
-                >
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-3 mb-2">
-                        <p className="font-semibold text-white">{ticket.subject}</p>
-                        {getStatusBadge(ticket.status)}
-                      </div>
-                      <p className="text-xs text-slate-400">#{ticket.ticketNumber}</p>
-                    </div>
-                    <p className="text-xs text-slate-500">
-                      {new Date(ticket.createdAt).toLocaleDateString('es')}
-                    </p>
+            <div className="support-list">
+              {tickets.map(ticket => (
+                <button key={ticket.id} type="button" className="support-ticket" onClick={() => loadTicketDetail(ticket.id)}>
+                  <strong>{ticket.subject}</strong>
+                  <small>#{ticket.ticketNumber}</small>
+                  <div className="support-ticket-meta">
+                    {getStatusBadge(ticket.status)}
+                    <span>{new Date(ticket.createdAt).toLocaleDateString('es')}</span>
                   </div>
                 </button>
               ))}
             </div>
           )}
-        </div>
+        </section>
       ) : (
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Lista de tickets */}
-          <div className="rounded-2xl border border-white/5 bg-[#0d1320] p-6">
-            <h3 className="mb-4 text-lg font-bold">Mis Tickets</h3>
-            <div className="space-y-2 max-h-96 overflow-y-auto">
-              {tickets.map((ticket) => (
+        <div className="support-layout">
+          <aside className="support-board">
+            <div className="support-toolbar">
+              <div className="support-board-title"><h2>TICKETS</h2></div>
+            </div>
+            <div className="support-list">
+              {tickets.map(ticket => (
                 <button
                   key={ticket.id}
+                  type="button"
+                  className={`support-ticket${selectedTicket.id === ticket.id ? ' support-ticket-active' : ''}`}
                   onClick={() => loadTicketDetail(ticket.id)}
-                  className={`w-full text-left rounded-xl border p-3 transition ${
-                    selectedTicket.id === ticket.id
-                      ? 'border-cyan-500 bg-cyan-500/20'
-                      : 'border-white/10 bg-white/5 hover:bg-white/10'
-                  }`}
                 >
-                  <p className="text-sm font-semibold text-white truncate">{ticket.subject}</p>
-                  <p className="text-xs text-slate-400 mt-1">#{ticket.ticketNumber}</p>
+                  <strong>{ticket.subject}</strong>
+                  <small>#{ticket.ticketNumber}</small>
                 </button>
               ))}
             </div>
-          </div>
-
-          {/* Detalle del ticket y mensajes */}
-          <div className="lg:col-span-2 space-y-6">
-            {/* Información del ticket */}
-            <div className="rounded-2xl border border-white/5 bg-[#0d1320] p-6">
-              <div className="flex items-start justify-between mb-4">
+          </aside>
+          <div>
+            <section className="support-panel">
+              <div className="flex items-start justify-between gap-4">
                 <div>
-                  <h2 className="text-2xl font-black text-white">{selectedTicket.subject}</h2>
-                  <p className="text-xs text-slate-400 mt-1">#{selectedTicket.ticketNumber}</p>
+                  <h2>{selectedTicket.subject}</h2>
+                  <p>#{selectedTicket.ticketNumber}</p>
                 </div>
                 {getStatusBadge(selectedTicket.status)}
               </div>
-
-              <div className="text-sm text-slate-400 mb-4 pb-4 border-b border-white/10">
-                <p>{selectedTicket.description}</p>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4 text-sm">
-                <div>
-                  <p className="text-slate-500 mb-1">Creado</p>
-                  <p className="text-slate-300">{new Date(selectedTicket.createdAt).toLocaleDateString('es')}</p>
-                </div>
-                <div>
-                  <p className="text-slate-500 mb-1">Actualizado</p>
-                  <p className="text-slate-300">{new Date(selectedTicket.updatedAt).toLocaleDateString('es')}</p>
-                </div>
-              </div>
-            </div>
-
-            {/* Mensajes */}
-            <div className="rounded-2xl border border-white/5 bg-[#0d1320] p-6">
-              <h3 className="mb-4 text-lg font-bold">Conversación</h3>
-
-              <div className="space-y-3 max-h-96 overflow-y-auto mb-4 p-4 rounded-lg bg-white/5">
+              <p style={{ marginTop: 14 }}>{selectedTicket.description}</p>
+              <div className="support-kv"><span>Creado</span><strong>{new Date(selectedTicket.createdAt).toLocaleDateString('es')}</strong></div>
+              <div className="support-kv"><span>Actualizado</span><strong>{new Date(selectedTicket.updatedAt).toLocaleDateString('es')}</strong></div>
+            </section>
+            <section className="support-panel" style={{ marginTop: 12 }}>
+              <h2 style={{ fontSize: 22 }}>Conversación</h2>
+              <div className="support-thread">
                 {messages.length === 0 ? (
-                  <p className="text-center text-slate-500 py-8">No hay mensajes aún</p>
+                  <p>No hay mensajes aún.</p>
                 ) : (
-                  messages.map((msg) => (
-                    <div
-                      key={msg.id}
-                      className={`flex ${msg.senderType === 'user' ? 'justify-end' : 'justify-start'}`}
-                    >
-                      <div
-                        className={`max-w-xs rounded-lg p-3 ${
-                          msg.senderType === 'user'
-                            ? 'bg-cyan-500/20 text-cyan-300'
-                            : 'bg-emerald-500/20 text-emerald-300'
-                        }`}
-                      >
-                        <p className="text-xs font-semibold mb-1">{msg.senderUsername}</p>
-                        <p className="text-sm">{msg.message}</p>
-                        <p className="text-xs opacity-70 mt-1">
-                          {new Date(msg.createdAt).toLocaleTimeString('es')}
-                        </p>
-                      </div>
+                  messages.map(msg => (
+                    <div key={msg.id} className={`support-msg${msg.senderType === 'user' ? ' support-msg-user' : ''}`}>
+                      <b>{msg.senderUsername}</b>
+                      <p>{msg.message}</p>
+                      <span>{new Date(msg.createdAt).toLocaleTimeString('es')}</span>
                     </div>
                   ))
                 )}
               </div>
-
-              {/* Nuevo mensaje */}
-              {selectedTicket.status !== 'closed' && (
-                <div className="flex gap-2">
+              {selectedTicket.status !== 'closed' ? (
+                <div className="support-compose">
                   <input
                     type="text"
                     value={newMessage}
-                    onChange={(e) => setNewMessage(e.target.value)}
-                    onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
+                    onChange={e => setNewMessage(e.target.value)}
+                    onKeyPress={e => e.key === 'Enter' && handleSendMessage()}
                     placeholder="Escribe tu respuesta..."
-                    className="flex-1 rounded-lg bg-white/10 border border-white/20 px-4 py-2 text-white placeholder-slate-500 focus:outline-none focus:border-cyan-500"
                     disabled={sending}
                   />
-                  <button
-                    onClick={handleSendMessage}
-                    disabled={!newMessage.trim() || sending}
-                    className="rounded-lg bg-cyan-500/20 text-cyan-400 hover:bg-cyan-500/30 transition disabled:opacity-50 px-4 py-2 font-semibold flex items-center gap-2"
-                  >
+                  <button type="button" className="support-send" onClick={handleSendMessage} disabled={!newMessage.trim() || sending}>
                     {sending ? <Loader className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
                   </button>
                 </div>
+              ) : (
+                <p>Este ticket está cerrado.</p>
               )}
-
-              {selectedTicket.status === 'closed' && (
-                <p className="text-center text-slate-500 text-sm">Este ticket está cerrado</p>
-              )}
-            </div>
-
-            {/* Botón volver */}
+            </section>
             <button
-              onClick={() => {
-                setSelectedTicket(null);
-                setMessages([]);
-              }}
-              className="w-full rounded-lg bg-slate-500/20 text-slate-400 hover:bg-slate-500/30 transition py-2 font-semibold"
+              type="button"
+              className="support-back"
+              onClick={() => { setSelectedTicket(null); setMessages([]); }}
             >
               Volver a tickets
             </button>
@@ -393,55 +298,41 @@ export default function SupportPage() {
         </div>
       )}
 
-      {/* Modal Nuevo Ticket */}
+      <div className="support-notes">
+        <p>Los tickets quedan en tu cuenta. Un administrador responde desde el panel.</p>
+        <p>PLAYER SUPPORT / COMBAT ARMS EVOLUTION</p>
+      </div>
+
       {showNewTicketModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
-          <div className="rounded-2xl border border-white/10 bg-[#0d1320] max-w-md w-full p-6">
-            <h2 className="text-2xl font-black text-cyan-400 mb-6">Nuevo Ticket</h2>
-
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-semibold text-slate-400 mb-2">Asunto</label>
-                <input
-                  type="text"
-                  value={newTicket.subject}
-                  onChange={(e) => setNewTicket({ ...newTicket, subject: e.target.value })}
-                  placeholder="Ej: Problema con reembolso"
-                  className="w-full rounded-lg bg-white/10 border border-white/20 px-4 py-2 text-white placeholder-slate-500 focus:outline-none focus:border-cyan-500"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-semibold text-slate-400 mb-2">Descripción</label>
-                <textarea
-                  value={newTicket.description}
-                  onChange={(e) => setNewTicket({ ...newTicket, description: e.target.value })}
-                  placeholder="Describe tu problema con detalle..."
-                  rows={4}
-                  className="w-full rounded-lg bg-white/10 border border-white/20 px-4 py-2 text-white placeholder-slate-500 focus:outline-none focus:border-cyan-500"
-                />
-              </div>
-
-              <div className="flex gap-2 pt-4">
-                <button
-                  onClick={() => setShowNewTicketModal(false)}
-                  className="flex-1 rounded-lg bg-slate-500/20 text-slate-400 hover:bg-slate-500/30 transition py-2 font-semibold"
-                >
-                  Cancelar
-                </button>
-                <button
-                  onClick={handleCreateTicket}
-                  disabled={sending}
-                  className="flex-1 rounded-lg bg-cyan-500/20 text-cyan-400 hover:bg-cyan-500/30 transition py-2 font-semibold disabled:opacity-50 flex items-center justify-center gap-2"
-                >
-                  {sending ? <Loader className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
-                  Crear Ticket
-                </button>
-              </div>
+        <div className="support-modal-back">
+          <div className="support-modal">
+            <h2>NUEVO TICKET.</h2>
+            <div className="support-field">
+              <label>Asunto</label>
+              <input
+                type="text"
+                value={newTicket.subject}
+                onChange={e => setNewTicket({ ...newTicket, subject: e.target.value })}
+                placeholder="Ej: Problema con reembolso"
+              />
+            </div>
+            <div className="support-field">
+              <label>Descripción</label>
+              <textarea
+                value={newTicket.description}
+                onChange={e => setNewTicket({ ...newTicket, description: e.target.value })}
+                placeholder="Describe tu problema con detalle..."
+              />
+            </div>
+            <div className="support-actions">
+              <button type="button" className="support-btn" onClick={() => setShowNewTicketModal(false)}>Cancelar</button>
+              <button type="button" className="support-btn support-btn-primary" onClick={handleCreateTicket} disabled={sending}>
+                {sending ? 'Creando...' : 'Crear ticket'}
+              </button>
             </div>
           </div>
         </div>
       )}
-    </div>
+    </main>
   );
 }
