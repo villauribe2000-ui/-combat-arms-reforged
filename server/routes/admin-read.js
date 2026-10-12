@@ -116,6 +116,139 @@ router.get('/players', async (req, res) => {
   });
 });
 
+router.get('/players/:id', async (req, res) => {
+  const id = parseInt(req.params.id, 10);
+  if (!Number.isFinite(id)) return res.status(400).json({ error: 'invalid id' });
+  const p = { id };
+
+  const users = await ca(`
+    SELECT u.oidUser as id, u.strNexonID as username, u.NickName, u.Exp, u.Money, u.UserType, u.Status,
+      u.CreateDate, u.lastLoginDate, u.NationCode, u.nationindex, u.StatusEndDate, u.SilenceEndDate,
+      u.KillCnt, u.DeadCnt, u.WinCnt, u.LoseCnt, u.HeadShotCnt, u.PlayRoundCnt, u.usedNX,
+      a.strEmail as email, a.bIsMailActive, a.BlockStartDate, a.BlockEndDate, a.RegDate as authRegDate,
+      g.CountryCode, g.CountryName
+    FROM CBT_User u
+    LEFT JOIN CBT_UserAuth a ON a.oidUser = u.oidUser
+    LEFT JOIN CBT_GeoIPDetailInfo g ON g.CountryIndex = u.nationindex
+    WHERE u.oidUser = @id`, p);
+  if (!users.length) return res.status(404).json({ error: 'not found' });
+  const user = users[0];
+
+  const grade = (await ca(`
+    SELECT TOP 1 GradeLevel as rank, GradeName as rankName
+    FROM CBT_GradeInfo WHERE @exp >= MinExp AND @exp <= MaxExp`, { exp: user.Exp || 0 }))[0] || null;
+  const grades = await ca(`SELECT GradeLevel, GradeName, MinExp, MaxExp FROM CBT_GradeInfo ORDER BY GradeLevel`);
+  const admins = await web(`SELECT userId, role FROM admin_users WHERE userId = @id`, p);
+  const twofa = await web(`SELECT userId, enabledAt FROM two_factor WHERE userId = @id`, p);
+  const nx = await vis(`SELECT TOP 1 TotalBalance, RealBalance, BonusBalance FROM VISMS_UserList WHERE oid = @id`, p);
+  const discord = await ca(`SELECT TOP 1 discord_id, data_vinculo FROM DiscordAccounts WHERE oidUser = @id`, p);
+
+  let matches = await log(`
+    SELECT TOP 40 g.EndDate, g.GameMode, g.GameType, g.MapNo, g.KillCnt, g.DeadCnt, g.Assist, g.WinType, g.PlayEndType,
+      m.Name as ModeName, mp.Name as MapName
+    FROM CBT_UserGameLog01 g
+    LEFT JOIN COMBATARMS.dbo.CBT_GameMode m ON m.Mode = g.GameMode
+    LEFT JOIN COMBATARMS.dbo.CBT_GameMap mp ON mp.MapID = g.MapNo
+    WHERE g.oidUser = @id AND g.EndDate >= DATEADD(day, -90, GETDATE())
+    ORDER BY g.EndDate DESC`, p);
+  if (!matches.length) {
+    matches = await log(`
+      SELECT TOP 40 g.EndDate, g.GameMode, g.GameType, g.MapNo, g.KillCnt, g.DeadCnt, g.Assist, g.WinType, g.PlayEndType,
+        m.Name as ModeName, mp.Name as MapName
+      FROM CBT_UserGameLog02 g
+      LEFT JOIN COMBATARMS.dbo.CBT_GameMode m ON m.Mode = g.GameMode
+      LEFT JOIN COMBATARMS.dbo.CBT_GameMap mp ON mp.MapID = g.MapNo
+      WHERE g.oidUser = @id AND g.EndDate >= DATEADD(day, -90, GETDATE())
+      ORDER BY g.EndDate DESC`, p);
+  }
+  if (matches.length && !matches[0].ModeName) {
+    const modes = await ca(`SELECT Mode, Name FROM CBT_GameMode`);
+    const maps = await ca(`SELECT MapID, Name FROM CBT_GameMap`);
+    const modeMap = Object.fromEntries(modes.map((x) => [x.Mode, x.Name]));
+    const mapMap = Object.fromEntries(maps.map((x) => [x.MapID, x.Name]));
+    matches = matches.map((row) => ({ ...row, ModeName: modeMap[row.GameMode], MapName: mapMap[row.MapNo] }));
+  }
+
+  const nicks = await log(`
+    SELECT PreviousNickName, CurrentNickName, RegDate
+    FROM CBT_UserNickNameChangeHistory WHERE oiduser = @id ORDER BY RegDate DESC`, p);
+  const punishments = await web(`
+    SELECT id, type, reason, issuedByName, startsAt, endsAt, liftedAt, liftedByName, createdAt
+    FROM punishments WHERE userId = @id ORDER BY createdAt DESC`, p);
+  const bans = await log(`
+    SELECT TOP 20 BanDate, BanType, BanPeriod, Reason, BanNickName, GMOidUser
+    FROM CBT_BanUserList WHERE BanOidUser = @id ORDER BY BanDate DESC`, p);
+  const inventory = await ca(`
+    SELECT TOP 80 i.InventorySeqNo, i.ItemNo, i.ProductID, i.StartDate, i.EndDate, i.remaincount, inf.Name, inf.ItemGrade
+    FROM CBT_UserInventory i
+    LEFT JOIN CBT_ItemInfo inf ON inf.ItemNo = i.ItemNo
+    WHERE i.oidUser = @id
+    ORDER BY i.InventorySeqNo DESC`, p);
+  const inbox = await ca(`
+    SELECT TOP 40 UserStoreSeqNo, ProductID, GiftType, SendNickname, Message, RecvDate, enddate, ConfirmType
+    FROM CBT_UserStore WHERE OidUser = @id ORDER BY RecvDate DESC`, p);
+  const purchases = await vis(`
+    SELECT TOP 40 OrderID, ProductNo, TotalPrice, PaymentType, IsGift, RegDate, strNexonID
+    FROM VISMS_PurchaseLog WHERE oid = @id ORDER BY RegDate DESC`, p);
+  const friends = await ca(`
+    SELECT TOP 40 f.oidFriend, f.RegDate, u.NickName, u.strNexonID as username
+    FROM CBT_MessengerFriend f
+    LEFT JOIN CBT_User u ON u.oidUser = f.oidFriend
+    WHERE f.oidUser = @id
+    ORDER BY f.RegDate DESC`, p);
+  const member = await guild(`SELECT TOP 1 oidGuild FROM dbo.gdt_Member WHERE oidUser = @id OR oidCharacter = @id`, p);
+  let clan = null;
+  if (member[0]?.oidGuild) {
+    const clans = await guild(`
+      SELECT oidGuild, strName, strID, dn_strCharacterName_master, dn_n4TotalRegularMember
+      FROM dbo.gdt_Guild WHERE oidGuild = @gid`, { gid: member[0].oidGuild });
+    clan = clans[0] || null;
+  }
+  const reports = await log(`
+    SELECT TOP 30 SeqNo, ReporterOiduser, MainCategory, SubCategory, TargetOiduser, TargetNickName, Message, RegDate
+    FROM CBT_UserReportCommon WHERE TargetOiduser = @id OR ReporterOiduser = @id ORDER BY RegDate DESC`, p);
+
+  const now = new Date();
+  const banned = user.Status === 2 || (user.StatusEndDate && new Date(user.StatusEndDate) > now) || (user.BlockEndDate && new Date(user.BlockEndDate) > now);
+  const muted = user.SilenceEndDate && new Date(user.SilenceEndDate) > now;
+  const webRole = admins[0]?.role || null;
+  const superAdmin = user.username === 'villauribe12' || String(webRole || '').toLowerCase() === 'superadmin';
+
+  res.json({
+    user: {
+      ...user,
+      rank: grade?.rank ?? 0,
+      rankName: grade?.rankName || 'TRAINEE',
+      webRole,
+      isGM: user.UserType === 1,
+      superAdmin,
+      accountStatus: banned ? 'banned' : 'active',
+      muted: Boolean(muted),
+      emailVerified: Boolean(user.bIsMailActive),
+      twofa: Boolean(twofa[0]),
+      twofaSince: twofa[0]?.enabledAt || null,
+      nx: nx[0]?.TotalBalance ?? 0,
+      discord: discord[0] || null,
+      countryCode: user.CountryCode,
+      countryName: user.CountryName,
+    },
+    grades,
+    matches: matches.map((row) => ({
+      ...row,
+      result: row.WinType === 1 ? 'WIN' : (row.PlayEndType && row.PlayEndType !== 0 ? 'LEFT' : (row.WinType === 0 ? 'LOSS' : 'LEFT')),
+    })),
+    nicks,
+    punishments,
+    bans,
+    inventory,
+    inbox,
+    purchases,
+    friends,
+    clan,
+    reports,
+  });
+});
+
 router.get('/online', async (_req, res) => {
   const list = await ca(`
     SELECT TOP 80 oidUser as id, strNexonID as username, NickName, Exp, KillCnt as kills, lastLoginDate, Status

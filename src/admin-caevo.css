@@ -139,6 +139,46 @@
 .pl-pager{display:flex;justify-content:flex-end;gap:8px;margin-top:14px}
 .pl-pager button{height:34px;padding:0 12px;border:1px solid #333;background:#171717;color:#ccc;font-size:12px}
 .pl-pager button:disabled{opacity:.35}
+.pl-row{cursor:pointer}
+.pl-row:hover{background:#ffffff08}
+.pd-back{display:inline-flex;align-items:center;gap:8px;border:0;background:transparent;color:#bbb;font-size:13px;margin-bottom:12px}
+.pd-back svg{width:16px;height:16px}
+.pd-hero{display:flex;gap:16px;align-items:center;padding:18px 20px;border:1px solid #3d3324;border-radius:4px;margin-bottom:14px;background:linear-gradient(90deg,#24180c,#141414 55%)}
+.pd-hero>img{width:72px;height:72px;object-fit:contain}
+.pd-hero-copy{flex:1;min-width:0}
+.pd-hero-copy h1{font-size:clamp(28px,4vw,44px);margin:0;letter-spacing:.4px}
+.pd-mail{color:#9a9a9a;margin:4px 0 0;font-size:13px}
+.pd-stats{display:flex;gap:8px}
+.pd-stats article{min-width:110px;background:#111;border:1px solid #333;padding:10px 14px;text-align:right}
+.pd-stats p{margin:0;font-size:10px;letter-spacing:1.2px;color:#888;font-weight:800}
+.pd-stats strong{display:block;margin-top:4px;font-size:20px;font-family:var(--font-heading),Impact,sans-serif}
+.pd-tabs{display:flex;gap:4px;flex-wrap:wrap;border-bottom:1px solid #2a2a2a;margin:16px 0 14px}
+.pd-tabs button{display:inline-flex;align-items:center;gap:8px;border:0;background:transparent;color:#8a8a8a;padding:12px 14px;font-size:13px}
+.pd-tabs button.on{color:#e8e8e8;box-shadow:inset 0 -2px #df8104}
+.pd-tabs svg{width:14px;height:14px}
+.pd-split{display:grid;grid-template-columns:minmax(0,1.35fr) minmax(280px,0.9fr);gap:12px;margin-bottom:12px}
+.pd-card{background:#161616;border:1px solid #2a2a2a;border-radius:4px;padding:18px;margin-bottom:12px}
+.pd-card h2{display:flex;align-items:center;gap:8px;font-size:16px;margin:0 0 4px}
+.pd-card .sub{color:#777;font-size:12px;margin:0 0 14px}
+.pd-card-top{display:flex;justify-content:space-between;align-items:center;gap:10px}
+.pd-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px 24px}
+.pd-grid p{margin:0;font-size:10px;letter-spacing:1px;color:#777;font-weight:800}
+.pd-grid b{display:block;margin-top:6px;font-size:14px}
+.pd-grid select{width:100%;margin-top:6px;height:36px;background:#111;border:1px solid #df8104;color:#e6c36a;padding:0 8px}
+.pd-grid small{display:block;margin-top:6px;color:#777;font-size:11px}
+.pd-note{color:#9a9a9a;font-size:13px;line-height:1.55}
+.pd-table{width:100%;border-collapse:collapse;font-size:12px}
+.pd-table th{text-align:left;font-size:10px;letter-spacing:1px;color:#777;padding:8px 6px;border-bottom:1px solid #2a2a2a}
+.pd-table td{padding:10px 6px;border-bottom:1px solid #222;color:#cfcfcf}
+.pd-time{color:#c49a5c}
+.pd-win{color:#7dcea0;font-weight:800;font-size:11px;letter-spacing:.6px}
+.pd-left{color:#8a8a8a;font-weight:800;font-size:11px;letter-spacing:.6px}
+.pd-empty{color:#777;text-align:center;padding:24px !important}
+@media (max-width:1100px){
+  .pd-split,.pd-hero{grid-template-columns:1fr}
+  .pd-hero{flex-wrap:wrap}
+  .pd-grid{grid-template-columns:1fr}
+}
 @media (max-width:800px){
   .admin-shell{grid-template-columns:1fr}
   .admin-side{min-height:auto}

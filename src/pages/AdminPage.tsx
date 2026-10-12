@@ -3,6 +3,7 @@ import { useAuth } from '@/context/AuthContext';
 import { api } from '@/lib/api';
 import type { PageId } from '@/components/Layout';
 import { rankIcon } from '@/lib/ranks';
+import AdminPlayerAccount from '@/components/AdminPlayerAccount';
 import {
   XCircle, Loader, RotateCcw, MessageSquare, Send,
   LayoutDashboard, Users, Radio, Shield, Store, Landmark, FileBarChart, Swords, LogIn,
@@ -149,6 +150,7 @@ export default function AdminPage({ onNavigate }: { onNavigate?: (page: PageId) 
   const [playerRole, setPlayerRole] = useState('all');
   const [playerStatus, setPlayerStatus] = useState('all');
   const [playerPage, setPlayerPage] = useState(1);
+  const [playerId, setPlayerId] = useState<number | null>(null);
 
   const READ_SECTIONS: Section[] = ['players', 'online', 'clans', 'shop', 'economy', 'reports', 'matches', 'logins', 'linked', 'announcements', 'maps', 'boosts'];
 
@@ -171,8 +173,9 @@ export default function AdminPage({ onNavigate }: { onNavigate?: (page: PageId) 
   };
 
   useEffect(() => {
+    if (section !== 'players') setPlayerId(null);
     if (section === 'players') {
-      loadPlayers(playerPage);
+      if (!playerId) loadPlayers(playerPage);
       return;
     }
     if (!READ_SECTIONS.includes(section)) return;
@@ -413,7 +416,7 @@ export default function AdminPage({ onNavigate }: { onNavigate?: (page: PageId) 
               {NAV.filter(n => n.group === group && n.label.toLowerCase().includes(q)).map(item => {
                 const Icon = item.icon;
                 return (
-                  <button key={item.id} className={section === item.id ? 'admin-on' : ''} onClick={() => setSection(item.id)}>
+                  <button key={item.id} className={section === item.id ? 'admin-on' : ''} onClick={() => { setSection(item.id); if (item.id === 'players') setPlayerId(null); }}>
                     <Icon /> {item.label}
                   </button>
                 );
@@ -499,7 +502,11 @@ export default function AdminPage({ onNavigate }: { onNavigate?: (page: PageId) 
           </>
         )}
 
-        {section === 'players' && (
+        {section === 'players' && playerId && (
+          <AdminPlayerAccount id={playerId} onBack={() => setPlayerId(null)} />
+        )}
+
+        {section === 'players' && !playerId && (
           <>
             <div className="pl-hero">
               <div className="pl-hero-ico"><Users /></div>
@@ -554,7 +561,7 @@ export default function AdminPage({ onNavigate }: { onNavigate?: (page: PageId) 
                     const superAdmin = p.username === 'villauribe12' || String(p.webRole || '').toLowerCase() === 'superadmin';
                     const isAdmin = superAdmin || Boolean(p.webRole);
                     return (
-                      <tr key={p.id}>
+                      <tr key={p.id} className="pl-row" onClick={() => setPlayerId(p.id)}>
                         <td>
                           <div className="pl-player">
                             <img src={rankIcon({ exp: p.Exp, UserType: p.UserType })} alt="" onError={(e) => { e.currentTarget.src = '/ranks/RANK_0.png'; }} />
