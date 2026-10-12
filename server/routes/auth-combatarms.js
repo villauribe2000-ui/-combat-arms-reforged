@@ -8,6 +8,7 @@ import { query } from '../db.js';
 import crypto from 'crypto';
 import jwt from 'jsonwebtoken';
 import { userIsSiteAdmin } from '../site-admin.js';
+import { actorFromReq, pinFromBody, pinRow, savePin, checkPin, ensurePinTable } from '../login-pin.js';
 
 const router = express.Router();
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-change-this';
@@ -583,6 +584,74 @@ router.post('/change-password', async (req, res) => {
       success: false,
       error: 'Error al cambiar la contraseña'
     });
+  }
+});
+
+router.get('/pin-status', async (req, res) => {
+  try {
+    const actor = actorFromReq(req);
+    if (!actor) return res.status(401).json({ error: 'login required' });
+    await ensurePinTable();
+    const row = await pinRow(actor.userId);
+    res.json({ hasPin: Boolean(row) });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+router.post('/pin-setup', async (req, res) => {
+  try {
+    const actor = actorFromReq(req);
+    if (!actor) return res.status(401).json({ error: 'login required' });
+    const pin = pinFromBody(req.body?.pin);
+    const confirm = pinFromBody(req.body?.confirm);
+    if (!pin) return res.status(400).json({ error: 'El código debe tener 6 dígitos' });
+    if (confirm && confirm !== pin) return res.status(400).json({ error: 'Los códigos no coinciden' });
+    const row = await pinRow(actor.userId);
+    if (row) return res.status(400).json({ error: 'Ya tienes un código. Cámbialo en Account.' });
+    await savePin(actor.userId, actor.username, pin);
+    res.json({ success: true });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+router.post('/pin-verify', async (req, res) => {
+  try {
+    const actor = actorFromReq(req);
+    if (!actor) return res.status(401).json({ error: 'login required' });
+    const pin = pinFromBody(req.body?.pin);
+    if (!pin) return res.status(400).json({ error: 'El código debe tener 6 dígitos' });
+    const row = await pinRow(actor.userId);
+    if (!row) return res.status(400).json({ error: 'Debes crear un código de 6 dígitos' });
+    const ok = await checkPin(actor.userId, pin);
+    if (!ok) return res.status(401).json({ error: 'Código incorrecto' });
+    res.json({ success: true });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+router.post('/pin-change', async (req, res) => {
+  try {
+    const actor = actorFromReq(req);
+    if (!actor) return res.status(401).json({ error: 'login required' });
+    const currentPin = pinFromBody(req.body?.currentPin);
+    const newPin = pinFromBody(req.body?.newPin);
+    const confirm = pinFromBody(req.body?.confirm);
+    if (!currentPin || !newPin) return res.status(400).json({ error: 'El código debe tener 6 dígitos' });
+    if (confirm && confirm !== newPin) return res.status(400).json({ error: 'Los códigos no coinciden' });
+    const row = await pinRow(actor.userId);
+    if (!row) {
+      await savePin(actor.userId, actor.username, newPin);
+      return res.json({ success: true });
+    }
+    const ok = await checkPin(actor.userId, currentPin);
+    if (!ok) return res.status(401).json({ error: 'El código actual es incorrecto' });
+    await savePin(actor.userId, actor.username, newPin);
+    res.json({ success: true });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
   }
 });
 

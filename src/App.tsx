@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
-import { AuthProvider } from '@/context/AuthContext';
+import { AuthProvider, useAuth } from '@/context/AuthContext';
+import PinGate from '@/components/PinGate';
 import Layout, { type PageId } from '@/components/Layout';
 import PageLoader from '@/components/PageLoader';
 import HomePage from '@/pages/HomePage';
@@ -18,6 +19,7 @@ import LevelRewardsPage from '@/pages/LevelRewardsPage';
 import BirthdayPage from '@/pages/BirthdayPage';
 
 function AppContent() {
+  const { profile, pinReady } = useAuth();
   const [page, setPage] = useState<PageId>('home');
   const [pageLoading, setPageLoading] = useState(false);
   const [leaving, setLeaving] = useState(false);
@@ -65,6 +67,15 @@ function AppContent() {
       default: return <HomePage onNavigate={navigate} />;
     }
   };
+
+  if (profile && !pinReady) {
+    return (
+      <>
+        {pageLoading && <PageLoader leaving={leaving} />}
+        <PinGate />
+      </>
+    );
+  }
 
   return (
     <>

@@ -116,6 +116,22 @@ class ApiClient {
     return await this.request<any>('GET', '/auth/me');
   }
 
+  async getLoginPinStatus() {
+    return await this.request<{ hasPin: boolean }>('GET', '/auth-combatarms/pin-status');
+  }
+
+  async setupLoginPin(pin: string, confirm: string) {
+    return await this.request<{ success: boolean }>('POST', '/auth-combatarms/pin-setup', { pin, confirm });
+  }
+
+  async verifyLoginPin(pin: string) {
+    return await this.request<{ success: boolean }>('POST', '/auth-combatarms/pin-verify', { pin });
+  }
+
+  async changeLoginPin(currentPin: string, newPin: string, confirm: string) {
+    return await this.request<{ success: boolean }>('POST', '/auth-combatarms/pin-change', { currentPin, newPin, confirm });
+  }
+
   async getProfile(username: string) {
     return await this.request<any>('GET', `/auth/profile/${username}`);
   }

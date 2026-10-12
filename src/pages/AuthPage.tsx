@@ -9,11 +9,11 @@ type Props = {
 };
 
 export default function AuthPage({ mode, onNavigate }: Props) {
-  const { signIn, signUp, profile } = useAuth();
+  const { signIn, signUp, profile, pinReady } = useAuth();
 
   useEffect(() => {
-    if (profile) onNavigate('profile');
-  }, [profile, onNavigate]);
+    if (profile && pinReady) onNavigate('profile');
+  }, [profile, pinReady, onNavigate]);
   const isSignIn = mode === 'signin';
   const [username, setUsername] = useState('');
   const [email, setEmail] = useState('');

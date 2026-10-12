@@ -54,6 +54,12 @@ export default function AccountPage({ onNavigate }: { onNavigate: (page: PageId)
   const [passwordError, setPasswordError] = useState('');
   const [passwordSuccess, setPasswordSuccess] = useState('');
   const [loadingPassword, setLoadingPassword] = useState(false);
+  const [currentPin, setCurrentPin] = useState('');
+  const [newPin, setNewPin] = useState('');
+  const [confirmPin, setConfirmPin] = useState('');
+  const [pinError, setPinError] = useState('');
+  const [pinSuccess, setPinSuccess] = useState('');
+  const [loadingPin, setLoadingPin] = useState(false);
 
   const username = profile?.username || 'Player';
   const email = profile?.email || 'Email changes are not available yet.';
@@ -377,10 +383,62 @@ export default function AccountPage({ onNavigate }: { onNavigate: (page: PageId)
               <div className="account-security-summary">
                 <div className="account-security-icon"><Shield size={22} /></div>
                 <div>
-                  <h3>Password protection is active</h3>
-                  <p className="account-2fa-scope">Website sign-in protection is enabled for this account. Your password is required every time you log in.</p>
+                  <h3>6-digit sign-in code</h3>
+                  <p className="account-2fa-scope">After your password, you must enter this code every time you log in. You can change it here.</p>
                 </div>
               </div>
+              <form
+                className="account-form"
+                onSubmit={async (e) => {
+                  e.preventDefault();
+                  setPinError('');
+                  setPinSuccess('');
+                  const cur = currentPin.replace(/\D/g, '');
+                  const next = newPin.replace(/\D/g, '');
+                  const conf = confirmPin.replace(/\D/g, '');
+                  if (cur.length !== 6 || next.length !== 6) {
+                    setPinError('Both codes must be 6 digits.');
+                    return;
+                  }
+                  if (next !== conf) {
+                    setPinError('The new codes do not match.');
+                    return;
+                  }
+                  setLoadingPin(true);
+                  try {
+                    await api.changeLoginPin(cur, next, conf);
+                    setPinSuccess('Your 6-digit code was updated.');
+                    setCurrentPin('');
+                    setNewPin('');
+                    setConfirmPin('');
+                    pushLog('Security code changed', 'Website 6-digit code');
+                  } catch (err: any) {
+                    setPinError(err?.message || 'Could not change the code.');
+                  } finally {
+                    setLoadingPin(false);
+                  }
+                }}
+              >
+                <div className="account-field">
+                  <label className="account-field-label">Current 6-digit code</label>
+                  <input inputMode="numeric" maxLength={6} value={currentPin} onChange={(e) => setCurrentPin(e.target.value.replace(/\D/g, '').slice(0, 6))} placeholder="000000" />
+                </div>
+                <div className="account-field">
+                  <label className="account-field-label">New 6-digit code</label>
+                  <input inputMode="numeric" maxLength={6} value={newPin} onChange={(e) => setNewPin(e.target.value.replace(/\D/g, '').slice(0, 6))} placeholder="000000" />
+                </div>
+                <div className="account-field">
+                  <label className="account-field-label">Confirm new code</label>
+                  <input inputMode="numeric" maxLength={6} value={confirmPin} onChange={(e) => setConfirmPin(e.target.value.replace(/\D/g, '').slice(0, 6))} placeholder="000000" />
+                </div>
+                {pinError && <p className="account-field-error">{pinError}</p>}
+                {pinSuccess && <p className="account-feedback is-success">{pinSuccess}</p>}
+                <div className="account-actions">
+                  <button type="submit" className="account-action" disabled={loadingPin}>
+                    {loadingPin ? 'Saving…' : 'Change code'}
+                  </button>
+                </div>
+              </form>
             </section>
           )}
 

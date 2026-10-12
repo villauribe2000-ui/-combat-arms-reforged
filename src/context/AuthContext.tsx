@@ -19,10 +19,15 @@ export interface Profile {
   webRole?: string | null;
 }
 
+type PinMode = 'create' | 'enter' | null;
+
 type AuthContextType = {
   profile: Profile | null;
   loading: boolean;
   token: string | null;
+  pinReady: boolean;
+  pinMode: PinMode;
+  markPinReady: () => void;
   signIn: (username: string, password: string) => Promise<{ error: any }>;
   signUp: (username: string, password: string, confirmPassword: string, email: string) => Promise<{ error: any }>;
   signOut: () => Promise<void>;
@@ -39,10 +44,16 @@ const API_URL = typeof window === 'undefined'
       ? 'http://localhost:5000'
       : `http://${window.location.hostname}:5000`));
 
+function pinStorageKey(userId: number) {
+  return `ca_pin_ok_${userId}`;
+}
+
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
   const [token, setToken] = useState<string | null>(null);
+  const [pinReady, setPinReady] = useState(false);
+  const [pinMode, setPinMode] = useState<PinMode>(null);
 
   const fetchProfile = async (authToken?: string) => {
     try {
@@ -50,6 +61,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (!tkn) {
         setProfile(null);
         setToken(null);
+        setPinReady(false);
+        setPinMode(null);
         api.clearToken();
         return;
       }
@@ -69,11 +82,26 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setProfile(data.user);
         setToken(tkn);
         api.setToken(tkn);
+        const uid = Number(data.user?.userId || data.user?.id || 0);
+        if (uid && sessionStorage.getItem(pinStorageKey(uid)) === '1') {
+          setPinReady(true);
+          setPinMode(null);
+        } else {
+          setPinReady(false);
+          try {
+            const status = await api.getLoginPinStatus();
+            setPinMode(status.hasPin ? 'enter' : 'create');
+          } catch {
+            setPinMode('create');
+          }
+        }
       }
     } catch (error) {
       console.error('Failed to fetch profile:', error);
       setProfile(null);
       setToken(null);
+      setPinReady(false);
+      setPinMode(null);
       api.clearToken();
       localStorage.removeItem('token');
     }
@@ -106,11 +134,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       localStorage.setItem('token', data.token);
       api.setToken(data.token);
+      const uid = Number(data.user?.userId || data.user?.id || 0);
+      if (uid) sessionStorage.removeItem(pinStorageKey(uid));
+      setPinReady(false);
       await fetchProfile(data.token);
       return { error: null };
     } catch (error: any) {
       return { error };
     }
+  };
+
+  const markPinReady = () => {
+    const uid = Number(profile?.userId || profile?.id || 0);
+    if (uid) sessionStorage.setItem(pinStorageKey(uid), '1');
+    setPinReady(true);
+    setPinMode(null);
   };
 
   const signUp = async (username: string, password: string, confirmPassword: string, email: string) => {
@@ -135,6 +173,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       localStorage.setItem('token', data.token);
       api.setToken(data.token);
+      setPinReady(false);
       await fetchProfile(data.token);
       return { error: null };
     } catch (error: any) {
@@ -143,10 +182,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const signOut = async () => {
+    const uid = Number(profile?.userId || profile?.id || 0);
+    if (uid) sessionStorage.removeItem(pinStorageKey(uid));
     localStorage.removeItem('token');
     api.clearToken();
     setProfile(null);
     setToken(null);
+    setPinReady(false);
+    setPinMode(null);
   };
 
   const refreshProfile = async () => {
@@ -157,7 +200,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   return (
-    <AuthContext.Provider value={{ profile, loading, token, signIn, signUp, signOut, refreshProfile }}>
+    <AuthContext.Provider value={{ profile, loading, token, pinReady, pinMode, markPinReady, signIn, signUp, signOut, refreshProfile }}>
       {children}
     </AuthContext.Provider>
   );
