@@ -5,7 +5,6 @@ import HomePage from '@/pages/HomePage';
 import ProfilePage from '@/pages/ProfilePage';
 import RankingsPage from '@/pages/RankingsPage';
 import MarketplacePage from '@/pages/MarketplacePage';
-import ClansPage from '@/pages/ClansPage';
 import SupportPage from '@/pages/SupportPage';
 import GuidePage from '@/pages/GuidePage';
 import DownloadPage from '@/pages/DownloadPage';
@@ -25,7 +24,6 @@ function AppContent() {
       case 'profile': return <ProfilePage onNavigate={setPage} />;
       case 'rankings': return <RankingsPage />;
       case 'store': return <MarketplacePage />;
-      case 'clans': return <ClansPage />;
       case 'guide': return <GuidePage />;
       case 'download': return <DownloadPage />;
       case 'signin': return <AuthPage mode="signin" onNavigate={setPage} />;

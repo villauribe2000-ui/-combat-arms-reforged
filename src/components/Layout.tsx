@@ -1,11 +1,11 @@
 import { useState } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import {
-  Trophy, Store, Users, LifeBuoy, Shield, Wallet, History,
+  Trophy, Store, LifeBuoy, Shield, Wallet, History,
   Menu, LogOut, Crown, Gift, Home, Download, BookOpen, UserRound, UserRoundPlus, ChevronDown,
 } from 'lucide-react';
 
-export type PageId = 'home' | 'profile' | 'rankings' | 'store' | 'clans' | 'support' | 'admin' | 'wallet' | 'purchase-history' | 'level-rewards' | 'birthday' | 'guide' | 'download' | 'signin' | 'signup';
+export type PageId = 'home' | 'profile' | 'rankings' | 'store' | 'support' | 'admin' | 'wallet' | 'purchase-history' | 'level-rewards' | 'birthday' | 'guide' | 'download' | 'signin' | 'signup';
 
 type NavItem = {
   id: PageId;
@@ -18,7 +18,6 @@ const PRIMARY_NAV: NavItem[] = [
   { id: 'home', label: 'Inicio', icon: Home },
   { id: 'rankings', label: 'Rankings', icon: Trophy },
   { id: 'store', label: 'Tienda', icon: Store },
-  { id: 'clans', label: 'Clanes', icon: Users },
   { id: 'wallet', label: 'Billetera', icon: Wallet },
   { id: 'purchase-history', label: 'Historial', icon: History },
   { id: 'level-rewards', label: 'Recompensas', icon: Crown },
