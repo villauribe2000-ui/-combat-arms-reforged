@@ -1,6 +1,7 @@
 @import './guide-caevo.css';
 @import './download-caevo.css';
 @import './auth-caevo.css';
+@import './account-caevo.css';
 @tailwind base;
 @tailwind components;
 @tailwind utilities;

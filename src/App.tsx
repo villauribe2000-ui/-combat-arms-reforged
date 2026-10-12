@@ -22,7 +22,7 @@ function AppContent() {
   const renderPage = () => {
     switch (page) {
       case 'home': return <HomePage onNavigate={setPage} />;
-      case 'profile': return <ProfilePage />;
+      case 'profile': return <ProfilePage onNavigate={setPage} />;
       case 'rankings': return <RankingsPage />;
       case 'store': return <MarketplacePage />;
       case 'clans': return <ClansPage />;

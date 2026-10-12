@@ -1,87 +1,44 @@
 import { useEffect, useState } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { api } from '@/lib/api';
-import { Trophy, Target, TrendingUp, Wallet, Upload, Globe, ChevronDown } from 'lucide-react';
+import type { PageId } from '@/components/Layout';
+import {
+  ChevronRight, Eye, KeyRound, LayoutDashboard, LogOut, Mail, Shield, ShieldCheck, UserRound, Calendar, Activity, Lock,
+} from 'lucide-react';
 
-interface ProfileData {
-  id: number;
-  username: string;
-  NickName: string;
-  kills: number;
-  deaths: number;
-  wins: number;
-  losses: number;
-  Money: number;
-  nx?: number;
-  gp?: number;
-  avatar_url?: string;
-  bio?: string;
-  country?: string;
-  rank?: number;
-  rankName?: string;
-  isGM?: boolean;
-  UserType?: number;
-  progressPercent?: number;
-  levelMessage?: string;
-  level?: number;
-  levelRewards?: Record<number, number>;
-  maxLevel?: number;
-  clan?: string;
-  clanID?: number;
+type Tab = 'overview' | 'stats' | 'logs' | '2fa' | 'password';
+type LogItem = { id: string; title: string; detail: string; at: string };
+
+function monthLabel(date?: string) {
+  const d = date ? new Date(date) : new Date();
+  if (Number.isNaN(d.getTime())) return new Date().toLocaleString('en-US', { month: 'short', year: 'numeric' });
+  return d.toLocaleString('en-US', { month: 'short', year: 'numeric' });
 }
 
-import COFlag from '@/assets/flags/CO.png';
-import MXFlag from '@/assets/flags/MX.png';
-import ARFlag from '@/assets/flags/AR.png';
-import BRFlag from '@/assets/flags/BR.png';
-import CLFlag from '@/assets/flags/CL.png';
-import PEFlag from '@/assets/flags/PE.png';
-import VEFlag from '@/assets/flags/VE.png';
-import BOFlag from '@/assets/flags/BO.png';
-import DOFlag from '@/assets/flags/DO.png';
-import ECFlag from '@/assets/flags/EC.png';
-import SVFlag from '@/assets/flags/SV.png';
-import GTFlag from '@/assets/flags/GT.png';
-import HNFlag from '@/assets/flags/HN.png';
-import NIFlag from '@/assets/flags/NI.png';
-import PAFlag from '@/assets/flags/PA.png';
-import PYFlag from '@/assets/flags/PY.png';
-import UYFlag from '@/assets/flags/UY.png';
-import CUFlag from '@/assets/flags/CU.png';
-import HTFlag from '@/assets/flags/HT.png';
+function dateLabel(date?: string) {
+  const d = date ? new Date(date) : new Date();
+  if (Number.isNaN(d.getTime())) return new Date().toLocaleDateString('en-US');
+  return d.toLocaleDateString('en-US');
+}
 
-const COUNTRIES = [
-  { code: 'CO', name: 'Colombia', flag: COFlag },
-  { code: 'MX', name: 'México', flag: MXFlag },
-  { code: 'AR', name: 'Argentina', flag: ARFlag },
-  { code: 'BR', name: 'Brasil', flag: BRFlag },
-  { code: 'CL', name: 'Chile', flag: CLFlag },
-  { code: 'PE', name: 'Perú', flag: PEFlag },
-  { code: 'VE', name: 'Venezuela', flag: VEFlag },
-  { code: 'BO', name: 'Bolivia', flag: BOFlag },
-  { code: 'DO', name: 'República Dominicana', flag: DOFlag },
-  { code: 'EC', name: 'Ecuador', flag: ECFlag },
-  { code: 'SV', name: 'El Salvador', flag: SVFlag },
-  { code: 'GT', name: 'Guatemala', flag: GTFlag },
-  { code: 'HN', name: 'Honduras', flag: HNFlag },
-  { code: 'NI', name: 'Nicaragua', flag: NIFlag },
-  { code: 'PA', name: 'Panamá', flag: PAFlag },
-  { code: 'PY', name: 'Paraguay', flag: PYFlag },
-  { code: 'UY', name: 'Uruguay', flag: UYFlag },
-  { code: 'CU', name: 'Cuba', flag: CUFlag },
-  { code: 'HT', name: 'Haití', flag: HTFlag },
-];
+function readLogs(username: string): LogItem[] {
+  try {
+    return JSON.parse(localStorage.getItem(`account_logs_${username}`) || '[]');
+  } catch {
+    return [];
+  }
+}
 
-export default function ProfilePage() {
-  const { profile } = useAuth();
-  const [profileData, setProfileData] = useState<ProfileData | null>(null);
+function writeLogs(username: string, logs: LogItem[]) {
+  localStorage.setItem(`account_logs_${username}`, JSON.stringify(logs.slice(0, 40)));
+}
+
+export default function ProfilePage({ onNavigate }: { onNavigate: (page: PageId) => void }) {
+  const { profile, signOut } = useAuth();
+  const [tab, setTab] = useState<Tab>('overview');
+  const [game, setGame] = useState<any>(null);
   const [avatarUrl, setAvatarUrl] = useState('');
-  const [selectedCountry, setSelectedCountry] = useState('');
-  const [showCountrySelector, setShowCountrySelector] = useState(false);
-  const [claimedLevelRewards, setClaimedLevelRewards] = useState<number[]>([]);
-  
-  // Change password states
-  const [showChangePassword, setShowChangePassword] = useState(false);
+  const [logs, setLogs] = useState<LogItem[]>([]);
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -89,584 +46,375 @@ export default function ProfilePage() {
   const [passwordSuccess, setPasswordSuccess] = useState('');
   const [loadingPassword, setLoadingPassword] = useState(false);
 
+  const name = game?.NickName || profile?.nickname || profile?.username || 'Player';
+  const email = profile?.email || 'Email changes are not available yet.';
+  const joined = profile?.joinDate;
+
   useEffect(() => {
     if (!profile?.username) return;
-    
-    // Force reload profile data
+    const stored = localStorage.getItem(`profile_${profile.username}`);
+    const storedData = stored ? JSON.parse(stored) : {};
+    setAvatarUrl(storedData.avatar_url || '');
+
+    const existing = readLogs(profile.username);
+    const loginEntry: LogItem = {
+      id: `login-${Date.now()}`,
+      title: 'Signed in',
+      detail: 'Website account',
+      at: new Date().toISOString(),
+    };
+    const next = [loginEntry, ...existing.filter(l => l.title !== 'Signed in' || Date.now() - Date.parse(l.at) > 60_000)];
+    writeLogs(profile.username, next);
+    setLogs(next);
+
     (async () => {
       try {
         const dbProfile = await api.getProfile(profile.username);
-        const stored = localStorage.getItem(`profile_${profile.username}`);
-        const storedData = stored ? JSON.parse(stored) : {};
-        
-        // Asegurar que el countryFlag esté presente
-        let countryFlag = storedData.countryFlag || '';
-        if (!countryFlag && storedData.country) {
-          const countryObj = COUNTRIES.find(c => c.code === storedData.country);
-          countryFlag = countryObj ? countryObj.flag : '';
-        }
-
-        // Tabla de patentes con XP requerido
-        const PATENTES = [
-          {"exp": 0, "nivel": 0},
-          {"exp": 550, "nivel": 1},
-          {"exp": 1200, "nivel": 2},
-          {"exp": 2500, "nivel": 3},
-          {"exp": 5000, "nivel": 4},
-          {"exp": 8700, "nivel": 5},
-          {"exp": 15000, "nivel": 6},
-          {"exp": 22000, "nivel": 7},
-          {"exp": 30500, "nivel": 8},
-          {"exp": 40500, "nivel": 9},
-          {"exp": 52000, "nivel": 10},
-          {"exp": 65000, "nivel": 11},
-          {"exp": 81000, "nivel": 12},
-          {"exp": 99000, "nivel": 13},
-          {"exp": 119000, "nivel": 14},
-          {"exp": 141000, "nivel": 15},
-          {"exp": 166000, "nivel": 16},
-          {"exp": 194000, "nivel": 17},
-          {"exp": 225000, "nivel": 18},
-          {"exp": 259000, "nivel": 19},
-          {"exp": 296000, "nivel": 20},
-          {"exp": 336000, "nivel": 21},
-          {"exp": 379000, "nivel": 22},
-          {"exp": 425000, "nivel": 23},
-          {"exp": 474000, "nivel": 24},
-          {"exp": 526000, "nivel": 25},
-          {"exp": 580000, "nivel": 26},
-          {"exp": 638000, "nivel": 27},
-          {"exp": 699000, "nivel": 28},
-          {"exp": 763000, "nivel": 29},
-          {"exp": 830000, "nivel": 30},
-          {"exp": 900000, "nivel": 31},
-          {"exp": 983000, "nivel": 32},
-          {"exp": 1074000, "nivel": 33},
-          {"exp": 1173000, "nivel": 34},
-          {"exp": 1280000, "nivel": 35},
-          {"exp": 1400000, "nivel": 36},
-          {"exp": 1533000, "nivel": 37},
-          {"exp": 1679000, "nivel": 38},
-          {"exp": 1838000, "nivel": 39},
-          {"exp": 2010000, "nivel": 40},
-          {"exp": 2200000, "nivel": 41},
-          {"exp": 2408000, "nivel": 42},
-          {"exp": 2634000, "nivel": 43},
-          {"exp": 2878000, "nivel": 44},
-          {"exp": 3140000, "nivel": 45},
-          {"exp": 3420000, "nivel": 46},
-          {"exp": 3718000, "nivel": 47},
-          {"exp": 4034000, "nivel": 48},
-          {"exp": 4368000, "nivel": 49},
-          {"exp": 4720000, "nivel": 50},
-          {"exp": 5100000, "nivel": 51},
-          {"exp": 5500000, "nivel": 52},
-          {"exp": 6000000, "nivel": 53},
-          {"exp": 6800000, "nivel": 54},
-          {"exp": 8000000, "nivel": 55},
-          {"exp": 9200000, "nivel": 56},
-          {"exp": 10400000, "nivel": 57},
-          {"exp": 11600000, "nivel": 58},
-          {"exp": 12800000, "nivel": 59},
-          {"exp": 14000000, "nivel": 60},
-          {"exp": 29000000, "nivel": 61},
-          {"exp": 44000000, "nivel": 62},
-          {"exp": 59000000, "nivel": 63},
-          {"exp": 74000000, "nivel": 64},
-          {"exp": 89000000, "nivel": 65}
-        ];
-
-        // Tabla de recompensas por nivel (NX por cada nivel)
-        const LEVEL_REWARDS = {
-          0: 100, 1: 200, 2: 300, 3: 400, 4: 500, 5: 600, 6: 700, 7: 800, 8: 900, 9: 1000,
-          10: 1100, 11: 1200, 12: 1300, 13: 1400, 14: 1500, 15: 1600, 16: 1700, 17: 1800, 18: 1900, 19: 2000,
-          20: 2100, 21: 2200, 22: 2300, 23: 2400, 24: 2500, 25: 2600, 26: 2700, 27: 2800, 28: 2900, 29: 3000,
-          30: 3100, 31: 3200, 32: 3300, 33: 3400, 34: 3500, 35: 3600, 36: 3700, 37: 3800, 38: 3900, 39: 4000,
-          40: 4100, 41: 4200, 42: 4300, 43: 4400, 44: 4500, 45: 4600, 46: 4700, 47: 4800, 48: 4900, 49: 5000,
-          50: 5100, 51: 5200, 52: 5300, 53: 5400, 54: 5500, 55: 5600, 56: 5700, 57: 5800, 58: 5900, 59: 6000,
-          60: 16100
-        };
-
-        // Calcular progreso de nivel basado en XP
-        let progressPercent = 0;
-        let levelMessage = '';
-        let currentLevelNumber = 0;
-        const userExp = dbProfile.Exp || 0;
-
-        // Detectar máximo nivel (XP negativo o muy alto)
-        if (userExp < 0 || userExp >= 89000000) {
-          // Máximo nivel alcanzado
-          currentLevelNumber = 65;
-          progressPercent = 100;
-          levelMessage = `Nivel Máximo (65)`;
-        } else {
-          // Encontrar nivel actual
-          let currentLevelIndex = 0;
-          for (let i = PATENTES.length - 1; i >= 0; i--) {
-            if (userExp >= PATENTES[i].exp) {
-              currentLevelIndex = i;
-              break;
-            }
-          }
-
-          const currentLevel = PATENTES[currentLevelIndex];
-          const nextLevel = PATENTES[currentLevelIndex + 1];
-          currentLevelNumber = currentLevel.nivel;
-
-          if (!nextLevel) {
-            // Máximo nivel alcanzado
-            progressPercent = 100;
-            levelMessage = `Nivel Máximo (${currentLevel.nivel})`;
-          } else {
-            // Calcular progreso hacia el siguiente nivel
-            const expNeeded = nextLevel.exp - currentLevel.exp;
-            const expGained = userExp - currentLevel.exp;
-            progressPercent = Math.round((expGained / expNeeded) * 100);
-            levelMessage = `Nivel ${currentLevel.nivel} → ${nextLevel.nivel}`;
-          }
-        }
-        
-        const combined = {
-          ...dbProfile,
-          avatar_url: storedData.avatar_url,
-          bio: storedData.bio,
-          country: storedData.country,
-          countryFlag: countryFlag,
-          nx: profile.gameCoins,
-          gp: profile.totalBalance,
-          progressPercent,
-          levelMessage,
-          level: currentLevelNumber,
-          levelRewards: LEVEL_REWARDS,
-          maxLevel: currentLevelNumber,
-        };
-        
-        setProfileData(combined);
-        setAvatarUrl(storedData.avatar_url || '');
-        setSelectedCountry(storedData.country || '');
-
-        // Cargar recompensas de nivel reclamadas
-        const claimedRewardsKey = `level_rewards_${profile?.username}`;
-        const rewardsVersionKey = `level_rewards_version_${profile?.username}`;
-        const currentVersion = '1.1'; // Versión de recompensas - cambiar para invalidar caché
-        
-        // Si la versión no coincide, limpiar todo
-        if (localStorage.getItem(rewardsVersionKey) !== currentVersion) {
-          localStorage.removeItem(claimedRewardsKey);
-          localStorage.setItem(rewardsVersionKey, currentVersion);
-        }
-        
-        const claimedRewardsData = localStorage.getItem(claimedRewardsKey) || '[]';
-        setClaimedLevelRewards(JSON.parse(claimedRewardsData));
-      } catch (error) {
-        console.error('Error loading profile:', error);
+        setGame({ ...dbProfile, ...storedData, nx: profile.gameCoins, gp: profile.totalBalance });
+      } catch {
+        setGame({ NickName: name, ...storedData, nx: profile.gameCoins, gp: profile.totalBalance, kills: 0, deaths: 0, wins: 0, losses: 0, level: profile.level || 0 });
       }
     })();
-  }, [profile]);
+  }, [profile?.username]);
 
-  if (!profileData) return null;
+  const pushLog = (title: string, detail: string) => {
+    if (!profile?.username) return;
+    const item: LogItem = { id: `${title}-${Date.now()}`, title, detail, at: new Date().toISOString() };
+    const next = [item, ...logs];
+    setLogs(next);
+    writeLogs(profile.username, next);
+  };
 
   const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onload = (event) => {
-        const base64 = event.target?.result as string;
-        setAvatarUrl(base64);
-        
-        localStorage.setItem(`profile_${profile?.username}`, JSON.stringify({
-          avatar_url: base64,
-          bio: '',
-          country: selectedCountry,
-        }));
-        
-        setProfileData({
-          ...profileData,
-          avatar_url: base64,
-        });
-      };
-      reader.readAsDataURL(file);
-    }
-  };
-
-  const handleCountrySelect = (countryCode: string) => {
-    setSelectedCountry(countryCode);
-    
-    localStorage.setItem(`profile_${profile?.username}`, JSON.stringify({
-      avatar_url: avatarUrl,
-      bio: '',
-      country: countryCode,
-    }));
-    
-    setProfileData({
-      ...profileData,
-      country: countryCode,
-    });
-    
-    setShowCountrySelector(false);
-  };
-
-  const handleClaimLevelReward = (level: number) => {
-    if (!profileData?.levelRewards) return;
-
-    const reward = profileData.levelRewards[level] || 0;
-    if (reward === 0 || claimedLevelRewards.includes(level)) return;
-
-    // Marcar como reclamado
-    const newClaimed = [...claimedLevelRewards, level];
-    setClaimedLevelRewards(newClaimed);
-    
-    // Guardar en localStorage
-    localStorage.setItem(`level_rewards_${profile?.username}`, JSON.stringify(newClaimed));
+    if (!file || !profile?.username) return;
+    const reader = new FileReader();
+    reader.onload = ev => {
+      const base64 = ev.target?.result as string;
+      setAvatarUrl(base64);
+      localStorage.setItem(`profile_${profile.username}`, JSON.stringify({ avatar_url: base64 }));
+    };
+    reader.readAsDataURL(file);
   };
 
   const handleChangePassword = async (e: React.FormEvent) => {
     e.preventDefault();
-    
     setPasswordError('');
     setPasswordSuccess('');
-
-    // Validar campos
     if (!currentPassword || !newPassword || !confirmPassword) {
-      setPasswordError('Todos los campos son requeridos');
+      setPasswordError('All fields are required.');
       return;
     }
-
     if (newPassword.length < 6) {
-      setPasswordError('La contraseña debe tener al menos 6 caracteres');
+      setPasswordError('Password must be at least 6 characters.');
       return;
     }
-
     if (newPassword !== confirmPassword) {
-      setPasswordError('Las contraseñas nuevas no coinciden');
+      setPasswordError('New passwords do not match.');
       return;
     }
-
-    if (currentPassword === newPassword) {
-      setPasswordError('La contraseña nueva debe ser diferente a la actual');
-      return;
-    }
-
     try {
       setLoadingPassword(true);
-      await api.changePassword(
-        profile?.id || 0,
-        currentPassword,
-        newPassword,
-        confirmPassword
-      );
-
-      setPasswordSuccess('¡Contraseña cambiada exitosamente!');
+      await api.changePassword(profile?.id || profile?.userId || 0, currentPassword, newPassword, confirmPassword);
+      setPasswordSuccess('Password changed successfully.');
       setCurrentPassword('');
       setNewPassword('');
       setConfirmPassword('');
-      
-      setTimeout(() => {
-        setShowChangePassword(false);
-        setPasswordSuccess('');
-      }, 2000);
+      pushLog('Password changed', 'Account password updated');
     } catch (error: any) {
-      setPasswordError(error.message || 'Error al cambiar la contraseña');
+      setPasswordError(error.message || 'Could not change password.');
     } finally {
       setLoadingPassword(false);
     }
   };
 
-  const selectedCountryData = COUNTRIES.find(c => c.code === selectedCountry);
-  const kdRatio = profileData.deaths > 0 ? (profileData.kills / profileData.deaths).toFixed(2) : profileData.kills.toFixed(2);
+  const logout = async () => {
+    pushLog('Signed out', 'Website session ended');
+    await signOut();
+    onNavigate('home');
+  };
+
+  const kd = game?.deaths > 0 ? (game.kills / game.deaths).toFixed(2) : (game?.kills || 0).toFixed(2);
 
   return (
-    <div className="space-y-6 pb-12">
-      {/* Header banner */}
-      <div className="relative overflow-hidden rounded-3xl border border-white/5">
-        <div 
-          className="h-52 bg-cover bg-center lg:h-64"
-          style={{ backgroundImage: "url('/src/assets/profile-banner.png')" }}
-        >
-          <div className="absolute inset-0 bg-black/10" />
+    <div className="inner-page page-width account-page">
+      <header className="page-heading account-page-heading">
+        <div>
+          <p className="eyebrow"><span className="tiny-square" /> PLAYER DASHBOARD</p>
+          <h1>MY ACCOUNT.</h1>
+          <p className="page-heading-description">
+            Welcome back, <strong>{name}</strong>. Make yourself at home.
+          </p>
         </div>
-        <div className="relative -mt-16 px-6 pb-6 lg:-mt-20 lg:px-8">
-          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-            <div className="flex items-center gap-3">
-              <div className="relative flex items-center justify-center rounded-lg shadow-lg h-24 w-24 flex-shrink-0 overflow-hidden">
-                <img 
-                  src={profileData?.UserType === 1 ? '/src/assets/ranks/RANK_GM.png' : `/src/assets/ranks/RANK_${profileData?.level || 0}.png`}
-                  alt={profileData?.UserType === 1 ? 'GM' : `Level ${profileData?.level}`}
-                  className="h-28 w-28 object-contain"
-                  onError={(e) => {
-                    e.currentTarget.src = '/src/assets/ranks/RANK_0.png';
-                  }}
-                />
-              </div>
-              <div>
-                <div className="flex items-center gap-2">
-                  <h1 className="text-3xl font-bold">{profileData.NickName}</h1>
-                  {selectedCountryData && (
-                    <img src={selectedCountryData.flag} alt={selectedCountryData.name} className="h-8 w-12 rounded-sm object-cover shadow-lg" />
-                  )}
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
+        <span className="account-preview-chip">
+          <Shield size={14} /> ACCOUNT CONNECTED
+        </span>
+      </header>
 
-      {/* Stats grid */}
-      <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
-        <StatBox icon={Trophy} label="Kills" value={profileData.kills.toLocaleString()} color="text-emerald-400" />
-        <StatBox icon={Target} label="Muertes" value={profileData.deaths.toLocaleString()} color="text-rose-400" />
-        <StatBox icon={TrendingUp} label="K/D Ratio" value={kdRatio} color="text-cyan-400" />
-        <StatBox icon={Wallet} label="NX" value={(profile?.gameCoins || 0).toLocaleString()} color="text-blue-400" />
-      </div>
-
-      {/* GP Balance Card */}
-      <div className="rounded-2xl border border-white/5 bg-gradient-to-br from-amber-900/30 via-[#0d1320] to-yellow-900/20 p-6 lg:p-8">
-        <div className="flex items-center justify-between">
-          <div>
-            <p className="text-sm text-slate-400 mb-1">GP BALANCE</p>
-            <p className="text-4xl lg:text-5xl font-black text-amber-400">{(profile?.totalBalance || 0).toLocaleString()}</p>
-            <p className="text-xs text-slate-500 mt-2">Moneda del juego</p>
+      <div className="account-layout">
+        <aside className="account-sidebar">
+          <div className="account-identity">
+            <label className="account-avatar" style={{ cursor: 'pointer' }}>
+              <img src={avatarUrl || '/caevo/hero.jpg'} alt="" />
+              <span />
+              <input type="file" accept="image/*" className="hidden" onChange={handleAvatarChange} />
+            </label>
+            <h2>{name}</h2>
+            {email.includes('@') && <p>{email}</p>}
+            <span className="account-member-tag">COMBAT ARMS PLAYER</span>
           </div>
-          <div className="text-right">
-            <Wallet className="h-16 w-16 text-amber-400 opacity-20" />
+          <nav className="account-navigation">
+            {([
+              ['overview', 'Overview', LayoutDashboard],
+              ['stats', 'Account stats', Activity],
+              ['logs', 'Account logs', Eye],
+              ['2fa', 'Two-factor auth', ShieldCheck],
+              ['password', 'Reset password', KeyRound],
+            ] as const).map(([id, label, Icon]) => (
+              <button key={id} type="button" aria-selected={tab === id} onClick={() => setTab(id)}>
+                <Icon size={16} />
+                {label}
+                <ChevronRight size={16} />
+              </button>
+            ))}
+          </nav>
+          <div className="account-sidebar-bottom">
+            <p><span /> Signed in</p>
+            <button type="button" onClick={logout}><LogOut size={14} /> Sign out</button>
           </div>
-        </div>
-      </div>
+        </aside>
 
-      <div className="grid gap-6 lg:grid-cols-3">
-        {/* Info */}
-        <div className="lg:col-span-2 space-y-6">
-          <div className="rounded-2xl border border-white/5 bg-[#0d1320] p-6">
-            <h2 className="mb-4 text-lg font-bold">Información del Personaje</h2>
-            <div className="space-y-4">
-              <div className="grid grid-cols-3 gap-3">
-                <div className="rounded-xl bg-white/5 px-4 py-2">
-                  <p className="text-xs text-slate-500">Kills</p>
-                  <p className="font-bold text-emerald-400">{profileData.kills.toLocaleString()}</p>
-                </div>
-                <div className="rounded-xl bg-white/5 px-4 py-2">
-                  <p className="text-xs text-slate-500">Muertes</p>
-                  <p className="font-bold text-rose-400">{profileData.deaths.toLocaleString()}</p>
-                </div>
-                <div className="rounded-xl bg-white/5 px-4 py-2">
-                  <p className="text-xs text-slate-500">K/D</p>
-                  <p className="font-bold text-cyan-400">{kdRatio}</p>
-                </div>
+        <div className="account-content">
+          {tab === 'overview' && (
+            <div className="account-overview">
+              <div className="account-stats">
+                <article>
+                  <div className="account-stat-icon"><UserRound size={18} /></div>
+                  <div>
+                    <p>ACCOUNT STATUS</p>
+                    <strong>Connected</strong>
+                    <small>Signed in to this website</small>
+                  </div>
+                </article>
+                <article>
+                  <div className="account-stat-icon"><ShieldCheck size={18} /></div>
+                  <div>
+                    <p>TWO-FACTOR AUTH</p>
+                    <strong>Website</strong>
+                    <small>Password sign-in protection</small>
+                  </div>
+                </article>
+                <article>
+                  <div className="account-stat-icon"><Calendar size={18} /></div>
+                  <div>
+                    <p>MEMBER SINCE</p>
+                    <strong>{monthLabel(joined)}</strong>
+                    <small>Account registration</small>
+                  </div>
+                </article>
               </div>
-            </div>
-          </div>
 
-          {/* Level Progress */}
-          <div className="rounded-2xl border border-white/5 bg-[#0d1320] p-6">
-            <h2 className="mb-4 text-lg font-bold">Progreso de Nivel</h2>
-            <div className="space-y-4">
-              <div className="grid grid-cols-2 gap-4 mb-4">
-                <div className="rounded-xl bg-gradient-to-br from-purple-500/20 to-purple-600/10 border border-purple-500/30 px-4 py-3">
-                  <p className="text-xs text-slate-400">NIVEL ACTUAL</p>
-                  <p className="text-3xl font-black text-purple-400 mt-1">{profileData.level}</p>
+              <section className="account-panel">
+                <div className="account-panel-head">
+                  <div>
+                    <p className="account-eyebrow">THE PLAYER BEHIND THE NAME</p>
+                    <h2>Profile details</h2>
+                    <p className="account-panel-description">Your identity across Combat Arms.</p>
+                  </div>
                 </div>
-                <div className="rounded-xl bg-gradient-to-br from-cyan-500/20 to-blue-600/10 border border-cyan-500/30 px-4 py-3">
-                  <p className="text-xs text-slate-400">PROGRESO</p>
-                  <p className="text-3xl font-black text-cyan-400 mt-1">{profileData.progressPercent || 0}%</p>
-                </div>
-              </div>
-              <div>
-                <p className="text-sm font-semibold text-cyan-400 mb-2">{profileData.levelMessage}</p>
-                <div className="relative w-full h-6 bg-slate-700/50 rounded-full overflow-hidden">
-                  <div 
-                    className="h-full bg-gradient-to-r from-cyan-500 to-blue-600 transition-all duration-300"
-                    style={{ width: `${profileData.progressPercent || 0}%` }}
-                  />
-                  <p className="absolute inset-0 flex items-center justify-center text-xs font-bold text-white">
-                    {profileData.progressPercent || 0}%
-                  </p>
-                </div>
-              </div>
-            </div>
-          </div>
+                <dl className="account-profile-details">
+                  <div>
+                    <dt><UserRound size={14} /> Display name</dt>
+                    <dd>{name}<small>Permanent sign-in name. Cannot be changed.</small></dd>
+                  </div>
+                  <div>
+                    <dt><Mail size={14} /> Email address</dt>
+                    <dd>{email}<small>Email changes are not available yet.</small></dd>
+                  </div>
+                  <div>
+                    <dt><Shield size={14} /> Email status</dt>
+                    <dd>Active<small>Account email status</small></dd>
+                  </div>
+                  <div>
+                    <dt><Calendar size={14} /> Date created</dt>
+                    <dd>{dateLabel(joined)}<small>Account creation date</small></dd>
+                  </div>
+                </dl>
+              </section>
 
-          {/* Clan Info */}
-          {profileData.clan && (
-            <div className="rounded-2xl border border-white/5 bg-[#0d1320] p-6">
-              <h2 className="mb-4 text-lg font-bold">Clan</h2>
-              <div className="space-y-2">
-                <p className="text-sm text-slate-400">Clan actual:</p>
-                <p className="text-xl font-bold text-purple-400">{profileData.clan}</p>
+              <div className="account-overview-grid">
+                <section className="account-panel account-security-card">
+                  <div className="account-large-icon"><ShieldCheck size={22} /></div>
+                  <h2>Account security.</h2>
+                  <p>Your website account is protected by your password. Keep it private and update it if you need to.</p>
+                  <button type="button" className="account-text-action" onClick={() => setTab('password')}>
+                    Reset password <ChevronRight size={14} />
+                  </button>
+                </section>
+                <section className="account-panel account-recent-card">
+                  <div className="account-panel-head">
+                    <div>
+                      <p className="account-eyebrow">LATEST ACTIVITY</p>
+                      <h2>Website activity</h2>
+                    </div>
+                  </div>
+                  <ul>
+                    {logs.slice(0, 4).map(log => (
+                      <li key={log.id}>
+                        <span className="account-activity-dot" />
+                        <div>
+                          <strong>{log.title}</strong>
+                          <p>{log.detail}</p>
+                        </div>
+                        <small>{dateLabel(log.at)}</small>
+                      </li>
+                    ))}
+                  </ul>
+                </section>
               </div>
             </div>
           )}
 
-          {/* Country Selector */}
-          <div className="rounded-2xl border border-white/5 bg-[#0d1320] p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <h2 className="text-lg font-bold">País / Región</h2>
-                <p className="text-sm text-slate-400 mt-1">Selecciona tu país una sola vez</p>
+          {tab === 'stats' && (
+            <section className="account-panel account-game-panel">
+              <div className="account-panel-head account-game-heading">
+                <div>
+                  <p className="account-eyebrow">GAME ACCOUNT</p>
+                  <h2>Account stats</h2>
+                </div>
+                <span className="account-game-sample">LIVE</span>
               </div>
-              {selectedCountryData && (
-                <img src={selectedCountryData.flag} alt={selectedCountryData.name} className="h-16 w-24 rounded-md object-cover" />
+              <div className="account-game-level">
+                <div className="account-game-insignia">
+                  <img src="/caevo/ca.ico" alt="" width={48} height={48} />
+                </div>
+                <div className="account-game-level-info">
+                  <span>CURRENT LEVEL</span>
+                  <h3>{game?.level ?? profile?.level ?? 0}</h3>
+                  <p className="account-game-rank-code">{game?.rankName || 'Combat Arms'}</p>
+                </div>
+              </div>
+              <div className="account-game-grid">
+                {[
+                  ['Kills', game?.kills ?? 0],
+                  ['Deaths', game?.deaths ?? 0],
+                  ['K/D', kd],
+                  ['Wins', game?.wins ?? 0],
+                  ['Losses', game?.losses ?? 0],
+                  ['NX', profile?.gameCoins ?? 0],
+                  ['GP', profile?.totalBalance ?? 0],
+                ].map(([label, value]) => (
+                  <article key={String(label)} className="account-game-card">
+                    <p>{label}</p>
+                    <strong>{typeof value === 'number' ? value.toLocaleString() : value}</strong>
+                  </article>
+                ))}
+              </div>
+              <p className="account-game-notes">Balances and stats reflect your game account.</p>
+            </section>
+          )}
+
+          {tab === 'logs' && (
+            <section className="account-panel account-logs-panel">
+              <div className="account-panel-head">
+                <div>
+                  <p className="account-eyebrow">RECENT ACTIVITY</p>
+                  <h2>Account logs</h2>
+                  <p className="account-panel-description">Your website sign-ins and account changes.</p>
+                </div>
+                <span className="account-sample-label">WEBSITE ACTIVITY</span>
+              </div>
+              {logs.length === 0 ? (
+                <div className="account-log-empty">No website activity in this category yet.</div>
+              ) : (
+                <div className="account-log-table-wrap">
+                  <table className="account-log-table">
+                    <thead>
+                      <tr>
+                        <th>Activity</th>
+                        <th>Detail</th>
+                        <th>Date</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {logs.map(log => (
+                        <tr key={log.id}>
+                          <td className="account-log-activity">
+                            <span className="account-log-icon"><Activity size={14} /></span>
+                            {log.title}
+                          </td>
+                          <td>{log.detail}</td>
+                          <td>{dateLabel(log.at)}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
               )}
-            </div>
+            </section>
+          )}
 
-            {selectedCountry ? (
-              <div className="mt-4 rounded-xl bg-white/5 px-4 py-3">
-                <p className="text-sm text-slate-400">País seleccionado:</p>
-                <div className="flex items-center gap-3 mt-2">
-                  {selectedCountryData && (
-                    <img src={selectedCountryData.flag} alt={selectedCountryData.name} className="h-12 w-16 rounded-md object-cover" />
-                  )}
-                  <p className="text-lg font-semibold text-white">{selectedCountryData?.name}</p>
-                </div>
-                <p className="text-xs text-slate-500 mt-2">✓ No se puede cambiar después de seleccionar</p>
-              </div>
-            ) : (
-              <div className="relative mt-4">
-                <button
-                  onClick={() => setShowCountrySelector(!showCountrySelector)}
-                  className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-left font-semibold text-white hover:bg-white/10 transition flex items-center justify-between"
-                >
-                  <span className="flex items-center gap-2">
-                    <Globe className="h-4 w-4" />
-                    Seleccionar país
-                  </span>
-                  <ChevronDown className={`h-4 w-4 transition ${showCountrySelector ? 'rotate-180' : ''}`} />
-                </button>
-
-                {showCountrySelector && (
-                  <div className="absolute top-full left-0 right-0 mt-2 z-10 rounded-xl border border-white/10 bg-[#0a0e17] shadow-xl max-h-64 overflow-y-auto">
-                    {COUNTRIES.map(country => (
-                      <button
-                        key={country.code}
-                        onClick={() => handleCountrySelect(country.code)}
-                        className="w-full px-4 py-3 text-left hover:bg-white/10 transition flex items-center gap-3 border-b border-white/5"
-                      >
-                        <img src={country.flag} alt={country.name} className="h-6 w-8 rounded object-cover" />
-                        <span className="text-sm font-semibold text-white">{country.name}</span>
-                      </button>
-                    ))}
-                  </div>
-                )}
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* Sidebar */}
-        <div className="space-y-6">
-          {/* Stats Card */}
-          <div className="rounded-2xl border border-white/5 bg-[#0d1320] p-6">
-            <h2 className="mb-4 text-sm font-bold">Estadísticas</h2>
-            <div className="space-y-3">
-              <div className="flex justify-between items-center text-sm">
-                <span className="text-slate-400">Victorias</span>
-                <span className="font-bold text-white">{profileData.wins.toLocaleString()}</span>
-              </div>
-              <div className="flex justify-between items-center text-sm">
-                <span className="text-slate-400">Derrotas</span>
-                <span className="font-bold text-white">{profileData.losses.toLocaleString()}</span>
-              </div>
-              <div className="flex justify-between items-center text-sm">
-                <span className="text-slate-400">Racha K/D</span>
-                <span className="font-bold text-cyan-400">{kdRatio}</span>
-              </div>
-            </div>
-          </div>
-
-          {/* Change Password Card */}
-          <div className="rounded-2xl border border-white/5 bg-[#0d1320] p-6">
-            <h2 className="mb-4 text-lg font-bold">Seguridad</h2>
-            {!showChangePassword ? (
-              <button
-                onClick={() => setShowChangePassword(true)}
-                className="w-full px-4 py-3 rounded-lg bg-blue-500/20 text-blue-400 hover:bg-blue-500/30 transition font-semibold"
-              >
-                Cambiar Contraseña
-              </button>
-            ) : (
-              <form onSubmit={handleChangePassword} className="space-y-3">
+          {tab === '2fa' && (
+            <section className="account-panel account-two-factor-panel">
+              <div className="account-panel-head">
                 <div>
-                  <label className="text-xs text-slate-400 block mb-2">Contraseña Actual</label>
-                  <input
-                    type="password"
-                    value={currentPassword}
-                    onChange={(e) => setCurrentPassword(e.target.value)}
-                    placeholder="Ingresa tu contraseña actual"
-                    className="w-full px-3 py-2 rounded-lg bg-white/10 border border-white/20 text-white placeholder-slate-500 focus:outline-none focus:border-blue-500"
-                  />
+                  <p className="account-eyebrow">WEBSITE PROTECTION</p>
+                  <h2>Two-factor authentication</h2>
                 </div>
-                
+              </div>
+              <div className="account-security-summary">
+                <div className="account-security-icon"><Shield size={22} /></div>
                 <div>
-                  <label className="text-xs text-slate-400 block mb-2">Nueva Contraseña</label>
-                  <input
-                    type="password"
-                    value={newPassword}
-                    onChange={(e) => setNewPassword(e.target.value)}
-                    placeholder="Mínimo 6 caracteres"
-                    className="w-full px-3 py-2 rounded-lg bg-white/10 border border-white/20 text-white placeholder-slate-500 focus:outline-none focus:border-blue-500"
-                  />
+                  <h3>Password protection is active</h3>
+                  <p className="account-2fa-scope">Authenticator 2FA is not enabled on this client yet. Your website sign-in uses your account password.</p>
                 </div>
+              </div>
+            </section>
+          )}
 
+          {tab === 'password' && (
+            <section className="account-panel">
+              <div className="account-panel-head">
                 <div>
-                  <label className="text-xs text-slate-400 block mb-2">Confirmar Nueva Contraseña</label>
-                  <input
-                    type="password"
-                    value={confirmPassword}
-                    onChange={(e) => setConfirmPassword(e.target.value)}
-                    placeholder="Repite la nueva contraseña"
-                    className="w-full px-3 py-2 rounded-lg bg-white/10 border border-white/20 text-white placeholder-slate-500 focus:outline-none focus:border-blue-500"
-                  />
+                  <p className="account-eyebrow">KEEP YOUR ACCESS SAFE</p>
+                  <h2>Reset password</h2>
+                  <p className="account-panel-description">Update the password you use to sign in to the website and game.</p>
                 </div>
-
-                {passwordError && (
-                  <div className="p-3 rounded-lg bg-red-500/20 border border-red-500/30 text-red-400 text-xs">
-                    {passwordError}
+              </div>
+              <form className="account-form" onSubmit={handleChangePassword}>
+                <div className="account-field">
+                  <label className="account-field-label">Current password</label>
+                  <div className="account-input-wrap">
+                    <Lock size={16} />
+                    <input type="password" value={currentPassword} onChange={e => setCurrentPassword(e.target.value)} placeholder="Enter your current password" />
                   </div>
-                )}
-
-                {passwordSuccess && (
-                  <div className="p-3 rounded-lg bg-emerald-500/20 border border-emerald-500/30 text-emerald-400 text-xs">
-                    {passwordSuccess}
+                </div>
+                <div className="account-field">
+                  <label className="account-field-label">New password</label>
+                  <div className="account-input-wrap">
+                    <KeyRound size={16} />
+                    <input type="password" value={newPassword} onChange={e => setNewPassword(e.target.value)} placeholder="Minimum 6 characters" />
                   </div>
-                )}
-
-                <div className="flex gap-2">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setShowChangePassword(false);
-                      setCurrentPassword('');
-                      setNewPassword('');
-                      setConfirmPassword('');
-                      setPasswordError('');
-                      setPasswordSuccess('');
-                    }}
-                    className="flex-1 px-3 py-2 rounded-lg bg-slate-700/20 text-slate-300 hover:bg-slate-700/30 transition font-semibold text-sm"
-                  >
-                    Cancelar
-                  </button>
-                  <button
-                    type="submit"
-                    disabled={loadingPassword}
-                    className="flex-1 px-3 py-2 rounded-lg bg-blue-500/20 text-blue-400 hover:bg-blue-500/30 transition font-semibold text-sm disabled:opacity-50"
-                  >
-                    {loadingPassword ? 'Cambiando...' : 'Cambiar'}
+                </div>
+                <div className="account-field">
+                  <label className="account-field-label">Confirm new password</label>
+                  <div className="account-input-wrap">
+                    <KeyRound size={16} />
+                    <input type="password" value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)} placeholder="Repeat the new password" />
+                  </div>
+                </div>
+                {passwordError && <p className="account-field-error">{passwordError}</p>}
+                {passwordSuccess && <p className="account-feedback is-success">{passwordSuccess}</p>}
+                <div className="account-actions">
+                  <button type="submit" className="account-action" disabled={loadingPassword}>
+                    {loadingPassword ? 'Saving…' : 'Change password'}
                   </button>
                 </div>
               </form>
-            )}
-          </div>
+            </section>
+          )}
         </div>
       </div>
-    </div>
-  );
-}
-
-function StatBox({ icon: Icon, label, value, color }: { icon: typeof Trophy; label: string; value: string; color: string }) {
-  return (
-    <div className="rounded-2xl border border-white/5 bg-[#0d1320] p-5">
-      <Icon className={`h-5 w-5 ${color}`} />
-      <p className="mt-3 text-2xl font-bold">{value}</p>
-      <p className="text-xs text-slate-500">{label}</p>
     </div>
   );
 }

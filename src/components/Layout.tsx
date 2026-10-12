@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import {
   Trophy, Store, Users, LifeBuoy, Shield, Wallet, History,
-  Menu, LogOut, Crown, Gift, Home, Download, BookOpen, UserRound, UserRoundPlus,
+  Menu, LogOut, Crown, Gift, Home, Download, BookOpen, UserRound, UserRoundPlus, ChevronDown,
 } from 'lucide-react';
 
 export type PageId = 'home' | 'profile' | 'rankings' | 'store' | 'clans' | 'support' | 'admin' | 'wallet' | 'purchase-history' | 'level-rewards' | 'birthday' | 'guide' | 'download' | 'signin' | 'signup';
@@ -41,6 +41,7 @@ export default function Layout({ currentPage, onNavigate, children }: Props) {
   const [mobileOpen, setMobileOpen] = useState(false);
   const publicPages: PageId[] = ['home', 'guide', 'download', 'signin', 'signup'];
   const isPublic = publicPages.includes(currentPage);
+  const isFullBleed = isPublic || currentPage === 'profile';
 
   const navItems = PRIMARY_NAV.filter(item => !item.adminOnly || profile?.is_admin);
 
@@ -115,10 +116,12 @@ export default function Layout({ currentPage, onNavigate, children }: Props) {
               <>
                 <button
                   onClick={() => go('profile')}
-                  className="hidden items-center gap-2 rounded-full border border-white/10 px-3 py-1.5 text-sm sm:flex"
+                  className="account-button hidden sm:inline-flex"
                 >
-                  <span className="font-semibold">{profile.NickName || profile.username}</span>
+                  <UserRound className="h-3.5 w-3.5" />
+                  {profile.nickname || profile.username}
                   {profile.is_admin && <Crown className="h-3.5 w-3.5 text-[#f5a000]" />}
+                  <ChevronDown className="h-3.5 w-3.5" />
                 </button>
                 <button
                   onClick={signOut}
@@ -157,7 +160,7 @@ export default function Layout({ currentPage, onNavigate, children }: Props) {
         </>
       )}
 
-      <main className={isPublic ? 'relative' : 'relative mx-auto max-w-[1400px] px-4 py-8 lg:px-8'}>
+      <main className={isFullBleed ? 'relative' : 'relative mx-auto max-w-[1400px] px-4 py-8 lg:px-8'}>
         {loading ? (
           <div className="flex h-[70vh] items-center justify-center">
             <div className="h-8 w-8 animate-spin rounded-full border-2 border-[#f5a000]/30 border-t-[#f5a000]" />

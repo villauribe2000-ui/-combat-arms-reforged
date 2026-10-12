@@ -12,7 +12,7 @@ export default function AuthPage({ mode, onNavigate }: Props) {
   const { signIn, signUp, profile } = useAuth();
 
   useEffect(() => {
-    if (profile) onNavigate('home');
+    if (profile) onNavigate('profile');
   }, [profile, onNavigate]);
   const isSignIn = mode === 'signin';
   const [username, setUsername] = useState('');
@@ -39,7 +39,7 @@ export default function AuthPage({ mode, onNavigate }: Props) {
       if (result.error) {
         setError(result.error.message || 'Could not complete the request.');
       } else {
-        onNavigate('home');
+        onNavigate('profile');
       }
     } catch {
       setError('Unexpected error.');
