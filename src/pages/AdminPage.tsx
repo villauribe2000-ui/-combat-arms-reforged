@@ -706,7 +706,10 @@ export default function AdminPage({ onNavigate }: { onNavigate?: (page: PageId) 
     }
   };
 
-  const canManageStaff = profile?.username === 'villauribe12';
+  const canManageStaff = String(profile?.username || '').toLowerCase() === 'villauribe12';
+  const isStaffOwner = canManageStaff
+    || String(gmDesk?.me?.username || '').toLowerCase() === 'villauribe12'
+    || !!gmDesk?.unlimited;
 
   const assignStaff = async (userId: number, role: string) => {
     if (!canManageStaff) return;
@@ -798,6 +801,7 @@ export default function AdminPage({ onNavigate }: { onNavigate?: (page: PageId) 
     try {
       const d = await api.giftAdminNx(toUserId, amount, '', { userId: profile?.userId || profile?.id, username: profile?.username });
       setGmDesk((prev: any) => ({ ...(prev || {}), quota: d.quota, gifts: d.gifts, unlimited: d.quota?.unlimited }));
+      setGmHits((rows) => rows.map((p) => (Number(p.id) === Number(toUserId) ? { ...p, nx: Number(p.nx || 0) + amount } : p)));
       setGmAmount('');
     } catch (err: any) {
       alert(err?.message || 'No tienes saldo para regalar');
@@ -807,13 +811,17 @@ export default function AdminPage({ onNavigate }: { onNavigate?: (page: PageId) 
   };
 
   const takeGmNx = async (toUserId: number) => {
-    if (profile?.username !== 'villauribe12') return;
+    if (!isStaffOwner) return;
     const amount = Math.floor(Number(String(gmAmount).replace(/[^\d]/g, '')) || 0);
-    if (amount <= 0) return;
+    if (amount <= 0) {
+      alert('Escribe cuánto NX quieres quitar');
+      return;
+    }
     setStaffBusy(true);
     try {
       const d = await api.takeAdminNx(toUserId, amount, 'NX retirado por el dueño', { userId: profile?.userId || profile?.id, username: profile?.username });
       setGmDesk((prev: any) => ({ ...(prev || {}), gifts: d.gifts || prev?.gifts }));
+      setGmHits((rows) => rows.map((p) => (Number(p.id) === Number(toUserId) ? { ...p, nx: d.balance ?? Math.max(0, Number(p.nx || 0) - amount) } : p)));
       setGmAmount('');
     } catch (err: any) {
       alert(err?.message || 'No se pudo quitar NX');
@@ -2159,7 +2167,7 @@ export default function AdminPage({ onNavigate }: { onNavigate?: (page: PageId) 
               <div>
                 <p className="eyebrow">OPERATIONS / GM</p>
                 <h1>GM</h1>
-                <p>Tu etiqueta y el NX que puedes regalar este mes. Busca un jugador y envía desde tu cupo.{profile?.username === 'villauribe12' ? ' Solo tú puedes quitarle NX a las personas.' : ''}</p>
+                <p>Tu etiqueta y el NX que puedes regalar este mes. Busca un jugador: verás cuánto NX tiene y puedes enviarle desde tu cupo.{isStaffOwner ? ' Solo tú puedes quitarle NX.' : ''}</p>
               </div>
             </div>
             {roomLoading ? <Empty text="Cargando cupo..." /> : !gmDesk?.me ? <Empty text="No tienes un rol de staff asignado." /> : (
@@ -2190,13 +2198,17 @@ export default function AdminPage({ onNavigate }: { onNavigate?: (page: PageId) 
                           <small>{p.username} · #{p.id}</small>
                         </div>
                       </div>
+                      <div className="staff-card-nx">
+                        <small>NX EN CUENTA</small>
+                        <strong>{nxFmt(p.nx)}</strong>
+                      </div>
                       <div className="staff-quota-actions">
-                        <button className="staff-btn staff-btn-gold" type="button" disabled={staffBusy || (!(gmDesk.me.username === 'villauribe12') && Number(gmDesk.quota?.remaining || 0) <= 0)} onClick={() => sendGmGift(p.id)}>
+                        <button className="staff-btn staff-btn-gold" type="button" disabled={staffBusy || (!isStaffOwner && Number(gmDesk.quota?.remaining || 0) <= 0)} onClick={() => sendGmGift(p.id)}>
                           Regalar {gmAmount || '0'} NX
                         </button>
-                        {profile?.username === 'villauribe12' && (
-                          <button className="staff-btn staff-btn-danger staff-btn-danger-sm" type="button" disabled={staffBusy} onClick={() => takeGmNx(p.id)}>
-                            Quitar NX
+                        {isStaffOwner && (
+                          <button className="staff-btn staff-btn-danger staff-btn-danger-sm" type="button" disabled={staffBusy || Number(p.nx || 0) <= 0} onClick={() => takeGmNx(p.id)}>
+                            Quitar {gmAmount || '0'} NX
                           </button>
                         )}
                       </div>

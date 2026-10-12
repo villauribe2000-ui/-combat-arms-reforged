@@ -1416,10 +1416,40 @@ router.get('/staff/search', async (req, res) => {
   const staffRows = await web(`SELECT userId, role, siteAdmin, isGm FROM admin_users`);
   const adminMap = {};
   for (const row of staffRows) adminMap[Number(row.userId)] = row;
+  const oids = list.map((p) => Number(p.id)).filter((n) => Number.isFinite(n) && n > 0);
+  const nxMap = {};
+  if (oids.length) {
+    const bals = await vis(`
+      SELECT oid, strNexonID, ISNULL(RealBalance, 0) as RealBalance
+      FROM VISMS_UserList
+      WHERE oid IN (${oids.join(',')})`);
+    for (const row of bals) nxMap[Number(row.oid)] = asNum(row.RealBalance);
+    const missing = list.filter((p) => nxMap[Number(p.id)] == null && p.username);
+    if (missing.length) {
+      const names = missing.map((p) => String(p.username).replace(/'/g, "''"));
+      const extra = await vis(`
+        SELECT oid, strNexonID, ISNULL(RealBalance, 0) as RealBalance
+        FROM VISMS_UserList
+        WHERE strNexonID IN (${names.map((n) => `N'${n}'`).join(',')})`);
+      const byName = {};
+      for (const row of extra) byName[String(row.strNexonID || '').toLowerCase()] = asNum(row.RealBalance);
+      for (const p of missing) {
+        const hit = byName[String(p.username).toLowerCase()];
+        if (hit != null) nxMap[Number(p.id)] = hit;
+      }
+    }
+  }
   res.json({
     data: list.map((p) => {
       const flags = roleFlags(adminMap[p.id]);
-      return { ...p, webRole: flags.role, webGm: flags.webGm, siteAdmin: flags.siteAdmin, isGM: p.UserType === 1 || flags.webGm };
+      return {
+        ...p,
+        nx: nxMap[Number(p.id)] ?? 0,
+        webRole: flags.role,
+        webGm: flags.webGm,
+        siteAdmin: flags.siteAdmin,
+        isGM: p.UserType === 1 || flags.webGm,
+      };
     }),
   });
 });
@@ -1589,14 +1619,26 @@ router.post('/staff/take-nx', async (req, res) => {
       SELECT TOP 1 oidUser as id, strNexonID as username, NickName
       FROM CBT_User WHERE oidUser = @id AND DeleteDate IS NULL`, { id: toUserId }))[0];
     if (!target) return res.status(404).json({ error: 'player not found' });
-    const bal = await queryVisms(`SELECT ISNULL(RealBalance, 0) as RealBalance FROM VISMS_UserList WHERE oid = @oid`, { oid: toUserId });
+    let bal = await queryVisms(`SELECT ISNULL(RealBalance, 0) as RealBalance FROM VISMS_UserList WHERE oid = @oid`, { oid: toUserId });
+    if (!bal?.recordset?.[0]) {
+      bal = await queryVisms(`SELECT ISNULL(RealBalance, 0) as RealBalance FROM VISMS_UserList WHERE strNexonID = @u`, { u: target.username });
+    }
     const current = Math.floor(Number(bal?.recordset?.[0]?.RealBalance || 0));
     if (current <= 0) return res.status(400).json({ error: 'El jugador no tiene NX' });
     const take = Math.min(amount, current);
-    const updated = await queryVisms(
-      `UPDATE VISMS_UserList SET RealBalance = ISNULL(RealBalance, 0) - @nx WHERE oid = @oid AND ISNULL(RealBalance, 0) >= @nx`,
+    const sqlTake = `
+      SET RealBalance = ISNULL(RealBalance, 0) - @nx,
+          TotalBalance = CASE WHEN ISNULL(TotalBalance, 0) >= @nx THEN ISNULL(TotalBalance, 0) - @nx ELSE 0 END`;
+    let updated = await queryVisms(
+      `UPDATE VISMS_UserList ${sqlTake} WHERE oid = @oid AND ISNULL(RealBalance, 0) >= @nx`,
       { nx: take, oid: toUserId },
     );
+    if (!updated?.rowsAffected?.[0]) {
+      updated = await queryVisms(
+        `UPDATE VISMS_UserList ${sqlTake} WHERE strNexonID = @u AND ISNULL(RealBalance, 0) >= @nx`,
+        { nx: take, u: target.username },
+      );
+    }
     if (!updated?.rowsAffected?.[0]) {
       return res.status(500).json({ error: 'no se pudo quitar NX en VISMS' });
     }
@@ -1625,7 +1667,10 @@ router.post('/staff/take-nx', async (req, res) => {
         fromUserId, toUserId, amount: -take, period,
       });
     }
-    const left = await queryVisms(`SELECT ISNULL(RealBalance, 0) as RealBalance FROM VISMS_UserList WHERE oid = @oid`, { oid: toUserId });
+    let left = await queryVisms(`SELECT ISNULL(RealBalance, 0) as RealBalance FROM VISMS_UserList WHERE oid = @oid`, { oid: toUserId });
+    if (!left?.recordset?.[0]) {
+      left = await queryVisms(`SELECT ISNULL(RealBalance, 0) as RealBalance FROM VISMS_UserList WHERE strNexonID = @u`, { u: target.username });
+    }
     res.json({
       ok: true,
       taken: take,
