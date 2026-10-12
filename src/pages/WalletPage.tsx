@@ -239,11 +239,13 @@ export default function WalletPage() {
 
     try {
       setSubmittingCode(true);
+      const oidUser = Number(profile.userId || profile.id);
+      if (!oidUser) throw new Error('Sesión inválida. Vuelve a iniciar sesión.');
       await api.submitPaymentCode(
-        parseInt(profile.id),
+        oidUser,
         profile.username,
-        profile.NickName || profile.username,
-        paymentCode,
+        profile.nickname || profile.username,
+        paymentCode.trim(),
         selectedProofPackage.coins,
         selectedProofPackage.price
       );
@@ -379,7 +381,7 @@ export default function WalletPage() {
     if (customNxAmount) {
       setSelectedProofPackage({
         id: 0,
-        coins: parseInt(customNxAmount),
+        coins: parseInt(customNxAmount) + customNxBonus,
         price: checkoutPrice,
       });
       setShowProofModal(true);

@@ -336,7 +336,7 @@ export default function AdminPage({ onNavigate }: { onNavigate?: (page: PageId) 
   useEffect(() => {
     if (!profile) return;
     loadData();
-  }, [profile]);
+  }, [profile, section]);
 
   useEffect(() => {
     const locked = NAV.find((n) => n.id === section)?.ownerOnly;
@@ -861,9 +861,9 @@ export default function AdminPage({ onNavigate }: { onNavigate?: (page: PageId) 
   }
 
   const pendingCodes = paymentCodes;
-  const pendingCount = payments.filter(p => p.status === 'pending').length;
-  const totalNX = payments.filter(p => p.status === 'pending').reduce((sum, p) => sum + p.nxAmount, 0);
-  const totalDollars = payments.filter(p => p.status === 'pending').reduce((sum, p) => sum + p.dollarAmount, 0);
+  const pendingCount = pendingCodes.length;
+  const totalNX = pendingCodes.reduce((sum, p) => sum + Number(p.nxAmount || 0), 0);
+  const totalDollars = pendingCodes.reduce((sum, p) => sum + Number(p.dollarAmount || 0), 0);
   const totalCodesNX = pendingCodes.reduce((sum, c) => sum + c.nxAmount, 0);
   const totalCodesDollars = pendingCodes.reduce((sum, c) => sum + c.dollarAmount, 0);
   const pendingRefunds = refunds.filter(p => p.status === 'pending');
@@ -1954,15 +1954,19 @@ export default function AdminPage({ onNavigate }: { onNavigate?: (page: PageId) 
               <article><p>NX</p><strong>{totalNX.toLocaleString()}</strong></article>
               <article><p>MONEY</p><strong>${totalDollars.toFixed(2)}</strong></article>
             </div>
-            {loading ? <Empty text="Loading..." /> : payments.filter(p => p.status === 'pending').length === 0 ? <Empty text="No hay solicitudes pendientes" /> : payments.filter(p => p.status === 'pending').map(payment => (
-              <div className="admin-row" key={payment.id}>
+            {loading ? <Empty text="Loading..." /> : pendingCodes.length === 0 ? <Empty text="No hay solicitudes pendientes" /> : pendingCodes.map((code) => (
+              <div className="admin-row" key={code.id}>
                 <div>
-                  <b>{payment.NickName}</b>
-                  <span>{payment.username} · {payment.nxAmount.toLocaleString()} NX · ${payment.dollarAmount.toFixed(2)}</span>
+                  <b>{code.NickName || code.username}</b>
+                  <span>{code.username} · {code.paymentCode} · {Number(code.nxAmount).toLocaleString()} NX · ${Number(code.dollarAmount).toFixed(2)}</span>
                 </div>
                 <div className="admin-actions">
-                  <button className="admin-ok" disabled={approving === payment.id} onClick={() => handleApprove(payment.id)}>Aprobar</button>
-                  <button className="admin-no" disabled={rejecting === payment.id} onClick={() => handleReject(payment.id)}>Rechazar</button>
+                  <button className="admin-ok" disabled={approvingCode === code.id} onClick={() => handleApproveCode(code.id)}>
+                    {approvingCode === code.id ? '...' : 'Aprobar'}
+                  </button>
+                  <button className="admin-no" disabled={rejectingCode === code.id} onClick={() => handleRejectCode(code.id)}>
+                    {rejectingCode === code.id ? '...' : 'Rechazar'}
+                  </button>
                 </div>
               </div>
             ))}

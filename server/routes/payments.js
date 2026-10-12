@@ -1,7 +1,32 @@
 import { Router } from 'express';
-import { query, queryVisms, queryWeb } from '../db.js';
+import { queryVisms, queryWeb } from '../db.js';
 
 const router = Router();
+const STAFF_OWNER = 'villauribe12';
+
+async function ensurePaymentCodes() {
+  await queryWeb(`
+    IF OBJECT_ID('PaymentCodes', 'U') IS NULL
+    BEGIN
+      CREATE TABLE PaymentCodes (
+        id INT PRIMARY KEY IDENTITY(1,1),
+        oidUser INT NOT NULL,
+        username NVARCHAR(50) NOT NULL,
+        NickName NVARCHAR(50),
+        paymentCode NVARCHAR(100) UNIQUE NOT NULL,
+        nxAmount DECIMAL(10,2) NOT NULL,
+        dollarAmount DECIMAL(10,2) NOT NULL,
+        status NVARCHAR(20) DEFAULT 'pending',
+        createdAt DATETIME DEFAULT GETDATE(),
+        approvedAt DATETIME NULL,
+        approvedBy NVARCHAR(50) NULL,
+        rejectedAt DATETIME NULL,
+        rejectionReason NVARCHAR(500) NULL
+      );
+    END
+    IF COL_LENGTH('PaymentCodes', 'note') IS NULL ALTER TABLE PaymentCodes ADD note NVARCHAR(300) NULL;
+  `);
+}
 
 // Crear solicitud de pago (cuando usuario paga en PayPal)
 // DESHABILITADO: Tabla PaymentRequests no existe en la BD
@@ -19,12 +44,14 @@ router.post('/request', async (req, res) => {
   }
 });
 
-// Obtener solicitudes pendientes (para admin)
-// DESHABILITADO: Tabla PaymentRequests no existe
 router.get('/pending', async (req, res) => {
   try {
-    console.log('[PAYMENT] Solicitud de pendientes (deshabilitada)');
-    res.json([]);
+    await ensurePaymentCodes();
+    const result = await queryWeb(
+      `SELECT id, oidUser, username, NickName, paymentCode, nxAmount, dollarAmount, status, createdAt
+       FROM PaymentCodes WHERE status = 'pending' ORDER BY createdAt DESC`
+    );
+    res.json(result.recordset || []);
   } catch (error) {
     console.error('Get pending payments error:', error);
     res.status(500).json({ error: 'Error al obtener solicitudes' });
@@ -105,6 +132,7 @@ router.post('/submit-payment-code', async (req, res) => {
 
     console.log(`[PAYMENT CODE] Nueva solicitud - ${username} envió código: ${paymentCode} para ${nxAmount} NX`);
 
+    await ensurePaymentCodes();
     await queryWeb(
       `INSERT INTO PaymentCodes (oidUser, username, NickName, paymentCode, nxAmount, dollarAmount, status)
        VALUES (@oidUser, @username, @NickName, @paymentCode, @nxAmount, @dollarAmount, 'pending')`,
@@ -137,7 +165,7 @@ router.post('/submit-payment-code', async (req, res) => {
 router.get('/payment-codes/pending', async (req, res) => {
   try {
     console.log('[PAYMENT CODE] Obteniendo códigos pendientes');
-    
+    await ensurePaymentCodes();
     const result = await queryWeb(
       'SELECT id, oidUser, username, NickName, paymentCode, nxAmount, dollarAmount, createdAt FROM PaymentCodes WHERE status = @status ORDER BY createdAt DESC',
       { status: 'pending' }
@@ -175,15 +203,15 @@ router.post('/payment-codes/approve/:codeId', async (req, res) => {
     if (!adminUsername) {
       return res.status(400).json({ error: 'Admin username requerido' });
     }
-    if (adminUsername !== 'villauribe12') {
+    if (adminUsername !== STAFF_OWNER) {
       return res.status(403).json({ error: 'Solo el dueño puede aprobar códigos' });
     }
 
     console.log(`[PAYMENT CODE] Aprobando código #${codeId} por ${adminUsername}`);
+    await ensurePaymentCodes();
 
-    // Obtener datos del código desde combatarms_web
     const codeResult = await queryWeb(
-      'SELECT oidUser, username, nxAmount FROM PaymentCodes WHERE id = @id',
+      `SELECT oidUser, username, nxAmount, status FROM PaymentCodes WHERE id = @id`,
       { id: codeId }
     );
 
@@ -191,36 +219,42 @@ router.post('/payment-codes/approve/:codeId', async (req, res) => {
       return res.status(404).json({ error: 'Código no encontrado' });
     }
 
-    const { oidUser, username, nxAmount } = codeResult.recordset[0];
+    const { oidUser, username, nxAmount, status } = codeResult.recordset[0];
+    if (String(status).toLowerCase() !== 'pending') {
+      return res.status(400).json({ error: 'Esta recarga ya no está pendiente' });
+    }
 
-    // Actualizar estado del código en combatarms_web
+    const nx = Math.floor(Number(nxAmount) || 0);
+    if (nx <= 0) return res.status(400).json({ error: 'Monto NX inválido' });
+
+    let credited = false;
+    let updated = await queryVisms(
+      `UPDATE VISMS_UserList SET RealBalance = ISNULL(RealBalance, 0) + @nx WHERE oid = @oid`,
+      { nx, oid: oidUser }
+    );
+    if (updated?.rowsAffected?.[0]) credited = true;
+    if (!credited) {
+      updated = await queryVisms(
+        `UPDATE VISMS_UserList SET RealBalance = ISNULL(RealBalance, 0) + @nx WHERE strNexonID = @username`,
+        { nx, username }
+      );
+      credited = Boolean(updated?.rowsAffected?.[0]);
+    }
+    if (!credited) {
+      return res.status(500).json({ error: 'No se pudo acreditar NX en la cuenta' });
+    }
+
     await queryWeb(
-      `UPDATE PaymentCodes 
+      `UPDATE PaymentCodes
        SET status = 'approved', approvedAt = GETDATE(), approvedBy = @adminUsername
-       WHERE id = @id`,
-      {
-        id: codeId,
-        adminUsername: adminUsername
-      }
+       WHERE id = @id AND status = 'pending'`,
+      { id: codeId, adminUsername }
     );
 
-    // Actualizar NX en VISMS (tabla de moneda)
-    // Usando queryVisms para conectar a BD VISMS
-    const updateResult = await queryVisms(
-      `UPDATE VISMS_UserList 
-       SET RealBalance = RealBalance + @nxAmount
-       WHERE strNexonID = @username`,
-      {
-        username: username,
-        nxAmount: nxAmount
-      }
-    );
-
-    console.log(`[PAYMENT CODE] ✓ NX añadido: ${username} recibió ${nxAmount} NX`);
-
+    console.log(`[PAYMENT CODE] ${username} +${nx} NX oid=${oidUser}`);
     res.json({
       success: true,
-      message: `Código aprobado. ${nxAmount} NX añadidos a ${username}`,
+      message: `Recarga aprobada. ${nx} NX añadidos a ${username}`,
     });
 
   } catch (error) {
