@@ -7,7 +7,7 @@ import AdminPlayerAccount from '@/components/AdminPlayerAccount';
 import {
   XCircle, Loader, RotateCcw, MessageSquare, Send,
   LayoutDashboard, Users, Radio, Shield, Store, Landmark, FileBarChart, Swords, LogIn,
-  Link2, Megaphone, Map, Zap, ArrowLeft, Ticket, KeyRound, CreditCard, ExternalLink, ChevronRight, Search
+  Link2, Megaphone, Map, Zap, ArrowLeft, Ticket, KeyRound, CreditCard, ExternalLink, ChevronRight, Search, Activity, TrendingUp
 } from 'lucide-react';
 
 interface PaymentCode {
@@ -111,6 +111,56 @@ function flagCode(code?: string, nation?: string) {
   const raw = String(code || nation || '').trim();
   if (raw.length === 2) return raw.toLowerCase();
   return ISO3[raw.toUpperCase()] || '';
+}
+
+function PeakChart({ points }: { points: { t: string; peak: number }[] }) {
+  if (!points?.length) return <div className="ol-empty">No CCU samples in the last 48 hours.</div>;
+  const w = 960;
+  const h = 240;
+  const pad = { l: 40, r: 18, t: 18, b: 38 };
+  const max = Math.max(2, ...points.map((p) => Number(p.peak || 0)));
+  const innerW = w - pad.l - pad.r;
+  const innerH = h - pad.t - pad.b;
+  const coords = points.map((p, i) => {
+    const x = pad.l + (points.length === 1 ? innerW / 2 : (i / (points.length - 1)) * innerW);
+    const y = pad.t + innerH - (Number(p.peak || 0) / max) * innerH;
+    return { x, y, p };
+  });
+  const line = coords.map((c) => `${c.x},${c.y}`).join(' ');
+  const last = coords[coords.length - 1];
+  const first = coords[0];
+  const mid = coords[Math.floor(coords.length / 2)];
+  const ticks = [0, Math.round(max / 2), max];
+  return (
+    <svg className="ol-chart" viewBox={`0 0 ${w} ${h}`} preserveAspectRatio="none">
+      {ticks.map((tick) => {
+        const y = pad.t + innerH - (tick / max) * innerH;
+        return (
+          <g key={tick}>
+            <line x1={pad.l} y1={y} x2={w - pad.r} y2={y} stroke="#262626" strokeWidth="1" />
+            <text x={pad.l - 8} y={y + 4} textAnchor="end" fill="#666" fontSize="11">{tick}</text>
+          </g>
+        );
+      })}
+      <polygon
+        points={`${pad.l},${pad.t + innerH} ${line} ${w - pad.r},${pad.t + innerH}`}
+        fill="url(#olFill)"
+      />
+      <polyline points={line} fill="none" stroke="#df8104" strokeWidth="2.4" />
+      {last && <circle cx={last.x} cy={last.y} r="4.5" fill="#df8104" />}
+      <defs>
+        <linearGradient id="olFill" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor="#df8104" stopOpacity="0.28" />
+          <stop offset="100%" stopColor="#df8104" stopOpacity="0" />
+        </linearGradient>
+      </defs>
+      {[first, mid, last].filter(Boolean).map((c, i) => (
+        <text key={i} x={c.x} y={h - 10} textAnchor="middle" fill="#777" fontSize="11">
+          {String(c.p.t).slice(5, 13)}
+        </text>
+      ))}
+    </svg>
+  );
 }
 
 function stamp(v: any) {
@@ -634,20 +684,89 @@ export default function AdminPage({ onNavigate }: { onNavigate?: (page: PageId) 
         )}
 
         {section === 'online' && (
-          <div className="admin-panel">
-            <div className="admin-toolbar">
-              <h1>ONLINE</h1>
-              <span className="admin-chip">{room.data?.length || 0} Status=1</span>
+          <>
+            <div className="pl-hero">
+              <div className="pl-hero-ico"><Radio /></div>
+              <div>
+                <p className="eyebrow">CONTROL ROOM / COMBAT ARMS</p>
+                <h1>ONLINE</h1>
+                <p>Players on the game servers, recorded by the server mon for about once a minute.</p>
+              </div>
             </div>
-            <p className="sub">{room.source}{room.concurrent ? ` · CCU ${room.concurrent.Total_UserCnt} @ ${dt(room.concurrent.CreateDate)}` : ''}</p>
-            <Grid rows={room.data} cols={[
-              { key: 'NickName', label: 'NICK' },
-              { key: 'username', label: 'ACCOUNT' },
-              { key: 'kills', label: 'KILLS' },
-              { key: 'Exp', label: 'EXP' },
-              { key: 'lastLoginDate', label: 'LOGIN', fmt: dt },
-            ]} />
-          </div>
+            {roomLoading ? <Empty text="Leyendo jugadores conectados..." /> : (
+              <>
+                <div className="ol-kpis">
+                  <article>
+                    <p>ONLINE NOW</p>
+                    <strong className="ol-green">{room.onlineNow ?? (room.data || []).length}</strong>
+                    <Activity />
+                    <small>AT {stamp(room.sampledAt)}</small>
+                  </article>
+                  <article>
+                    <p>PEAK TODAY</p>
+                    <strong>{room.peakToday ?? 0}</strong>
+                    <TrendingUp />
+                  </article>
+                  <article>
+                    <p>PEAK, LAST 48 HOURS</p>
+                    <strong className="ol-gold">{room.peak48 ?? 0}</strong>
+                    <Users />
+                  </article>
+                </div>
+                <section className="ol-panel">
+                  <div className="pd-card-top">
+                    <h2>PEAK PER HOUR</h2>
+                    <span className="pd-chip">Game server time</span>
+                  </div>
+                  <p className="ol-peak-label">{Math.max(room.peak48 || 0, room.onlineNow || 0)} <small>players</small></p>
+                  <PeakChart points={room.hourly || []} />
+                </section>
+                <section className="ol-panel">
+                  <div className="pd-card-top">
+                    <h2>CONNECTED PLAYERS</h2>
+                    <span className="pd-chip">{(room.data || []).length} ONLINE</span>
+                  </div>
+                  <p className="sub">Live accounts with Status = 1 in CBT_User.</p>
+                  <table className="pl-table">
+                    <thead>
+                      <tr>
+                        <th>PLAYER</th>
+                        <th>ACCOUNT</th>
+                        <th>EXP</th>
+                        <th>LAST GAME LOGIN</th>
+                        <th>STATUS</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {(room.data || []).length === 0 ? (
+                        <tr><td colSpan={5} className="pd-empty">No players connected right now.</td></tr>
+                      ) : room.data.map((p: any) => (
+                        <tr
+                          key={p.id}
+                          className="pl-row"
+                          onClick={() => { setSection('players'); setPlayerId(p.id); }}
+                        >
+                          <td>
+                            <div className="pl-player">
+                              <img src={rankIcon({ exp: p.Exp, UserType: p.UserType })} alt="" onError={(e) => { e.currentTarget.src = '/ranks/RANK_0.png'; }} />
+                              <div>
+                                <b>{p.isGM ? `[GM]${p.NickName || p.username}` : (p.NickName || p.username)}</b>
+                                <small>#{p.id}</small>
+                              </div>
+                            </div>
+                          </td>
+                          <td>{p.username}</td>
+                          <td>{Number(p.Exp || 0).toLocaleString()}</td>
+                          <td>{stamp(p.lastLoginDate)}</td>
+                          <td><span className="pl-status">ONLINE</span></td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </section>
+              </>
+            )}
+          </>
         )}
 
         {section === 'clans' && (

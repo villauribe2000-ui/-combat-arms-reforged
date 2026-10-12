@@ -192,6 +192,21 @@
 .inv-thumb.g3{border-color:#3a2c18;color:#e6c36a}
 .inv-thumb.g4{border-color:#4a2218;color:#e08a8a}
 .inv-table td{vertical-align:middle}
+.ol-kpis{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin-bottom:14px}
+.ol-kpis article{position:relative;background:#141414;border:1px solid #262626;border-radius:8px;padding:16px 18px 18px;min-height:110px}
+.ol-kpis p{margin:0;font-size:10px;letter-spacing:1.1px;color:#7a7a7a;font-weight:800}
+.ol-kpis strong{display:block;margin-top:10px;font-size:42px;line-height:1;font-family:var(--font-heading),Impact,sans-serif}
+.ol-kpis svg{position:absolute;right:16px;top:16px;width:16px;height:16px;color:#df8104}
+.ol-kpis small{display:block;margin-top:10px;color:#6f6f6f;font-size:11px;letter-spacing:.4px}
+.ol-green{color:#7dcea0}
+.ol-gold{color:#df8104}
+.ol-panel{background:#141414;border:1px solid #262626;border-radius:8px;padding:16px 18px 10px;margin-bottom:14px}
+.ol-panel h2{font-size:15px;margin:0;letter-spacing:.4px}
+.ol-peak-label{font-size:28px;margin:10px 0 4px;font-family:var(--font-heading),Impact,sans-serif}
+.ol-peak-label small{font-size:13px;color:#888;font-family:Manrope,Arial,sans-serif;font-weight:600}
+.ol-chart{width:100%;height:240px;display:block}
+.ol-empty{color:#777;padding:28px;text-align:center}
+@media (max-width:900px){.ol-kpis{grid-template-columns:1fr}}
 @media (max-width:1100px){
   .pd-split,.pd-hero{grid-template-columns:1fr}
   .pd-hero{flex-wrap:wrap}

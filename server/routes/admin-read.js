@@ -309,11 +309,56 @@ router.get('/players/:id', async (req, res) => {
 
 router.get('/online', async (_req, res) => {
   const list = await ca(`
-    SELECT TOP 80 oidUser as id, strNexonID as username, NickName, Exp, KillCnt as kills, lastLoginDate, Status
-    FROM CBT_User WHERE DeleteDate IS NULL AND Status = 1
-    ORDER BY lastLoginDate DESC`);
-  const cu = await log(`SELECT TOP 1 CreateDate, Total_UserCnt FROM CBT_Stat_CU_Ex ORDER BY CreateDate DESC`);
-  res.json({ data: list, concurrent: cu[0] || null, source: 'CBT_User.Status=1 + COMBATARMS_LOG.CBT_Stat_CU_Ex' });
+    SELECT u.oidUser as id, u.strNexonID as username, u.NickName, u.Exp, u.KillCnt as kills,
+      u.lastLoginDate, u.Status, u.UserType, u.NationCode, u.CreateDate,
+      a.strEmail as email, g.CountryCode, g.CountryName
+    FROM CBT_User u
+    LEFT JOIN CBT_UserAuth a ON a.oidUser = u.oidUser
+    LEFT JOIN CBT_GeoIPDetailInfo g ON g.CountryIndex = u.nationindex
+    WHERE u.DeleteDate IS NULL AND u.Status = 1
+    ORDER BY ISNULL(u.lastLoginDate, u.CreateDate) DESC`);
+  const samples = await log(`
+    SELECT CreateDate, Total_UserCnt
+    FROM CBT_Stat_CU_Ex
+    WHERE CreateDate >= DATEADD(hour, -48, GETDATE())
+    ORDER BY CreateDate`);
+  const latestCu = await log(`SELECT TOP 1 CreateDate, Total_UserCnt FROM CBT_Stat_CU_Ex ORDER BY CreateDate DESC`);
+  const peakTodayRow = await log(`
+    SELECT MAX(Total_UserCnt) as peak
+    FROM CBT_Stat_CU_Ex
+    WHERE CAST(CreateDate AS DATE) = CAST(GETDATE() AS DATE)`);
+  const peak48Row = await log(`
+    SELECT MAX(Total_UserCnt) as peak
+    FROM CBT_Stat_CU_Ex
+    WHERE CreateDate >= DATEADD(hour, -48, GETDATE())`);
+
+  const hourMap = {};
+  for (const row of samples) {
+    const d = new Date(row.CreateDate);
+    if (Number.isNaN(d.getTime())) continue;
+    const key = `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, '0')}-${String(d.getUTCDate()).padStart(2, '0')} ${String(d.getUTCHours()).padStart(2, '0')}`;
+    const val = Number(row.Total_UserCnt || 0);
+    hourMap[key] = Math.max(hourMap[key] || 0, val);
+  }
+  const hourly = [];
+  const end = new Date();
+  end.setUTCMinutes(0, 0, 0);
+  for (let i = 47; i >= 0; i -= 1) {
+    const d = new Date(end.getTime() - i * 3600000);
+    const key = `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, '0')}-${String(d.getUTCDate()).padStart(2, '0')} ${String(d.getUTCHours()).padStart(2, '0')}`;
+    hourly.push({ t: `${key}:00`, peak: hourMap[key] || 0 });
+  }
+
+  res.json({
+    data: list.map((p) => ({ ...p, isGM: p.UserType === 1 })),
+    onlineNow: list.length,
+    sampledAt: new Date().toISOString(),
+    peakToday: Number(peakTodayRow[0]?.peak || 0),
+    peak48: Number(peak48Row[0]?.peak || 0),
+    hourly,
+    concurrent: latestCu[0] || null,
+    source: 'CBT_User.Status=1 + COMBATARMS_LOG.CBT_Stat_CU_Ex',
+  });
 });
 
 router.get('/clans', async (_req, res) => {
