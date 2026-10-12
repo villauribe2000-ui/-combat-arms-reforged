@@ -39,18 +39,81 @@ router.get('/overview', async (_req, res) => {
 
 router.get('/players', async (req, res) => {
   const q = String(req.query.q || '').trim();
-  const params = {};
-  let where = `WHERE DeleteDate IS NULL`;
-  if (q) {
-    where += ` AND (strNexonID LIKE @q OR NickName LIKE @q)`;
+  const role = String(req.query.role || 'all');
+  const status = String(req.query.status || 'all');
+  const page = Math.max(1, parseInt(String(req.query.page || '1'), 10) || 1);
+  const limit = 25;
+  const offset = (page - 1) * limit;
+  const params = { offset, limit };
+  let where = `u.DeleteDate IS NULL`;
+
+  if (q.startsWith('#') && /^\d+$/.test(q.slice(1))) {
+    where += ` AND u.oidUser = @oid`;
+    params.oid = parseInt(q.slice(1), 10);
+  } else if (/^\d+$/.test(q) && q.length <= 8) {
+    where += ` AND u.oidUser = @oid`;
+    params.oid = parseInt(q, 10);
+  } else if (q) {
+    where += ` AND (u.strNexonID LIKE @q OR u.NickName LIKE @q OR a.strEmail LIKE @q OR CAST(u.oidUser AS VARCHAR(20)) LIKE @q)`;
     params.q = `%${q}%`;
   }
+
+  if (status === 'online') where += ` AND u.Status = 1`;
+  if (status === 'banned') {
+    where += ` AND (u.Status = 2 OR (u.StatusEndDate IS NOT NULL AND u.StatusEndDate > GETDATE()) OR (a.BlockEndDate IS NOT NULL AND a.BlockEndDate > GETDATE()))`;
+  }
+  if (status === 'active') {
+    where += ` AND u.Status <> 2 AND (u.StatusEndDate IS NULL OR u.StatusEndDate < GETDATE()) AND (a.BlockEndDate IS NULL OR a.BlockEndDate < GETDATE())`;
+  }
+  if (role === 'gm') where += ` AND u.UserType = 1`;
+  if (role === 'player') where += ` AND ISNULL(u.UserType, 0) <> 1`;
+
+  const admins = await web(`SELECT userId, role FROM admin_users`);
+  const adminMap = {};
+  for (const row of admins) adminMap[row.userId] = row.role;
+  if (role === 'admin') {
+    const ids = admins.map((r) => Number(r.userId)).filter((n) => Number.isFinite(n));
+    where += ids.length ? ` AND u.oidUser IN (${ids.join(',')})` : ` AND 1 = 0`;
+  }
+
+  const total = n(await ca(`
+    SELECT COUNT(*) as n
+    FROM CBT_User u
+    LEFT JOIN CBT_UserAuth a ON a.oidUser = u.oidUser
+    WHERE ${where}`, params));
+
   const list = await ca(`
-    SELECT TOP 80 oidUser as id, strNexonID as username, NickName, Exp, KillCnt as kills, DeadCnt as deaths,
-      WinCnt as wins, LoseCnt as losses, Money, Status, UserType, lastLoginDate, CreateDate, usedNX
-    FROM CBT_User ${where}
-    ORDER BY lastLoginDate DESC`, params);
-  res.json({ data: list, source: 'COMBATARMS.CBT_User' });
+    SELECT u.oidUser as id, u.strNexonID as username, u.NickName, u.Exp, u.UserType, u.Status,
+      u.CreateDate, u.lastLoginDate, u.NationCode, u.nationindex, u.StatusEndDate,
+      a.strEmail as email, a.BlockEndDate,
+      g.CountryCode, g.CountryName
+    FROM CBT_User u
+    LEFT JOIN CBT_UserAuth a ON a.oidUser = u.oidUser
+    LEFT JOIN CBT_GeoIPDetailInfo g ON g.CountryIndex = u.nationindex
+    WHERE ${where}
+    ORDER BY u.oidUser DESC
+    OFFSET @offset ROWS FETCH NEXT @limit ROWS ONLY`, params);
+
+  const data = list.map((p) => {
+    const banned = p.Status === 2 || (p.StatusEndDate && new Date(p.StatusEndDate) > new Date()) || (p.BlockEndDate && new Date(p.BlockEndDate) > new Date());
+    const webRole = adminMap[p.id];
+    return {
+      ...p,
+      webRole: webRole || null,
+      isGM: p.UserType === 1,
+      accountStatus: banned ? 'banned' : 'active',
+    };
+  });
+
+  res.json({
+    data,
+    total,
+    page,
+    limit,
+    showingFrom: data.length ? offset + 1 : 0,
+    showingTo: offset + data.length,
+    source: 'CBT_User + CBT_UserAuth + CBT_GeoIPDetailInfo',
+  });
 });
 
 router.get('/online', async (_req, res) => {

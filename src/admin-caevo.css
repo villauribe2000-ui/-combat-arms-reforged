@@ -1,10 +1,10 @@
-.admin-shell{display:grid;grid-template-columns:232px minmax(0,1fr);min-height:100vh;background:#101010}
-.admin-side{background:#141414;border-right:1px solid #2d2d2d;display:flex;flex-direction:column;min-height:100vh}
-.admin-brand{display:flex;align-items:center;gap:10px;padding:18px 16px;border-bottom:1px solid #2d2d2d}
+.admin-shell{display:grid;grid-template-columns:248px minmax(0,1fr);min-height:100vh;background:#0d0d0d}
+.admin-side{background:#141414;border-right:1px solid #2a2a2a;display:flex;flex-direction:column;min-height:100vh}
+.admin-brand{display:flex;align-items:center;gap:10px;padding:16px 16px 14px;border-bottom:1px solid #2a2a2a}
 .admin-brand img{width:28px;height:28px}
-.admin-brand strong{display:block;font-size:12px;letter-spacing:.4px}
-.admin-brand small{display:block;font-size:9px;letter-spacing:1.2px;color:#df8104;font-weight:800}
-.admin-find{margin:12px 12px 8px;height:36px;background:#111;border:1px solid #333;color:#eee;padding:0 10px;font-size:12px;width:calc(100% - 24px)}
+.admin-brand strong{display:block;font-size:12px;letter-spacing:.6px}
+.admin-brand small{display:block;font-size:9px;letter-spacing:1.4px;color:#df8104;font-weight:800}
+.admin-find{margin:12px 12px 8px;height:38px;background:#101010;border:1px solid #333;color:#eee;padding:0 12px;font-size:12px;width:calc(100% - 24px);border-radius:2px}
 .admin-nav{padding:8px 10px 20px;overflow:auto;flex:1}
 .admin-nav p{font-size:9px;letter-spacing:1.3px;color:#777;font-weight:800;margin:14px 8px 6px}
 .admin-nav button{
@@ -15,7 +15,17 @@
 .admin-nav button.admin-on{color:#ed9622;background:linear-gradient(90deg,#df81041e,transparent);box-shadow:inset 2px 0 #df8104}
 .admin-nav svg{width:15px;height:15px;flex-shrink:0}
 .admin-back{margin:8px 12px 16px;border:1px solid #463824;background:#1b1813;color:#d8a25c;min-height:40px;font-size:12px;font-weight:800}
-.admin-main{min-width:0;padding:18px 22px 40px}
+.admin-main{min-width:0;padding:0 0 40px;background:#101010}
+.admin-head{display:flex;justify-content:space-between;align-items:center;min-height:58px;padding:0 22px;border-bottom:1px solid #2a2a2a;background:#121212}
+.admin-crumb{color:#8a8a8a;font-size:12px;display:flex;align-items:center;gap:8px}
+.admin-crumb b{color:#e8e8e8;font-weight:700}
+.admin-head-actions{display:flex;gap:14px;align-items:center}
+.admin-viewweb{border:0;background:transparent;color:#cfcfcf;font-size:12px;font-weight:700}
+.admin-who{display:flex;align-items:center;gap:8px;padding-left:12px;border-left:1px solid #333}
+.admin-avatar{width:28px;height:28px;border-radius:50%;background:#df8104;color:#111;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:12px}
+.admin-who strong{display:block;font-size:12px;line-height:1.1}
+.admin-who small{display:block;font-size:9px;letter-spacing:1px;color:#df8104;font-weight:800}
+.admin-body{padding:18px 22px 40px}
 .admin-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;color:#8a8a8a;font-size:12px}
 .admin-top-actions{display:flex;gap:8px;align-items:center}
 .admin-chip{border:1px solid #3d3324;background:#df81040a;color:#e6aa55;padding:8px 10px;font-size:11px;font-weight:700}
@@ -88,6 +98,47 @@
   .admin-metrics,.admin-stats{grid-template-columns:repeat(2,minmax(0,1fr))}
   .admin-split{grid-template-columns:1fr}
 }
+.pl-hero{
+  display:flex;align-items:center;gap:16px;min-height:92px;margin-bottom:14px;padding:18px 20px;
+  border:1px solid #3d3324;border-radius:4px;
+  background:linear-gradient(90deg,#2a1c0c 0%,#1a140c 42%,#141414 100%)
+}
+.pl-hero-ico{width:42px;height:42px;border-radius:50%;border:1px solid #664319;display:flex;align-items:center;justify-content:center;color:#df8104;background:#1b140c;flex-shrink:0}
+.pl-hero-ico svg{width:20px;height:20px}
+.pl-hero .eyebrow{font-size:10px;letter-spacing:1.6px;color:#c49a5c;font-weight:800;margin:0 0 4px}
+.pl-hero h1{font-family:var(--font-heading),Impact,sans-serif;font-size:34px;line-height:1;margin:0;letter-spacing:.5px}
+.pl-hero p{margin:6px 0 0;color:#9a9a9a;font-size:13px}
+.pl-filters{display:flex;gap:8px;margin-bottom:18px;flex-wrap:wrap}
+.pl-filters input,.pl-filters select{
+  height:42px;background:#141414;border:1px solid #333;color:#eee;padding:0 12px;font-size:13px
+}
+.pl-filters input{flex:1;min-width:260px}
+.pl-filters select{min-width:150px;color:#bbb}
+.pl-apply{height:42px;padding:0 22px;border:0;background:#df8104;color:#111;font-weight:800;font-size:13px}
+.pl-meta{display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:8px;gap:12px;flex-wrap:wrap}
+.pl-meta h2{font-family:var(--font-heading),Impact,sans-serif;font-size:22px;letter-spacing:.6px;margin:0}
+.pl-meta span{color:#777;font-size:11px}
+.pl-table{width:100%;border-collapse:collapse}
+.pl-table th{text-align:left;font-size:10px;letter-spacing:1.1px;color:#7a7a7a;font-weight:800;padding:10px 8px;border-bottom:1px solid #2a2a2a}
+.pl-table td{padding:14px 8px;border-bottom:1px solid #222;vertical-align:middle;font-size:13px;color:#d8d8d8}
+.pl-player{display:flex;align-items:center;gap:10px}
+.pl-player img{width:28px;height:28px;object-fit:contain}
+.pl-player b{display:block;font-size:13px;color:#f2f2f2}
+.pl-player small{display:block;color:#888;font-size:11px;margin-top:2px}
+.pl-mail{color:#cfcfcf}
+.pl-roles{display:flex;gap:6px;flex-wrap:wrap}
+.pl-pill{font-size:9px;letter-spacing:.8px;font-weight:800;padding:4px 7px;border:1px solid #333}
+.pl-pill-super{color:#e6c36a;border-color:#6a5420;background:#2a220e}
+.pl-pill-admin{color:#d7b56a;border-color:#5c4a22;background:#241c0e}
+.pl-pill-gm{color:#c9a45a;border-color:#5c4a22;background:#1f1a10}
+.pl-pill-player{color:#8a8a8a;border-color:#333;background:#171717}
+.pl-flag{display:flex;align-items:center;gap:8px;color:#cfcfcf}
+.pl-flag img{width:18px;height:13px;object-fit:cover;border:1px solid #333}
+.pl-status{color:#7dcea0;font-size:10px;letter-spacing:1px;font-weight:800}
+.pl-status-ban{color:#e08a8a}
+.pl-pager{display:flex;justify-content:flex-end;gap:8px;margin-top:14px}
+.pl-pager button{height:34px;padding:0 12px;border:1px solid #333;background:#171717;color:#ccc;font-size:12px}
+.pl-pager button:disabled{opacity:.35}
 @media (max-width:800px){
   .admin-shell{grid-template-columns:1fr}
   .admin-side{min-height:auto}

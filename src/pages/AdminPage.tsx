@@ -2,10 +2,11 @@ import { useEffect, useState } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { api } from '@/lib/api';
 import type { PageId } from '@/components/Layout';
+import { rankIcon } from '@/lib/ranks';
 import {
   XCircle, Loader, RotateCcw, MessageSquare, Send,
   LayoutDashboard, Users, Radio, Shield, Store, Landmark, FileBarChart, Swords, LogIn,
-  Link2, Megaphone, Map, Zap, ArrowLeft, Search, RefreshCw, Ticket, KeyRound, CreditCard
+  Link2, Megaphone, Map, Zap, ArrowLeft, Ticket, KeyRound, CreditCard, ExternalLink
 } from 'lucide-react';
 
 interface PaymentCode {
@@ -90,6 +91,35 @@ const NAV: { id: Section; label: string; icon: typeof LayoutDashboard; group: st
   { id: 'boosts', label: 'Boosts', icon: Zap, group: 'WORLD' },
 ];
 
+const ISO3: Record<string, string> = {
+  AFG:'af',ALB:'al',DZA:'dz',AND:'ad',AGO:'ao',ARG:'ar',ARM:'am',AUS:'au',AUT:'at',AZE:'az',
+  BHS:'bs',BHR:'bh',BGD:'bd',BLR:'by',BEL:'be',BLZ:'bz',BOL:'bo',BIH:'ba',BRA:'br',BRN:'bn',
+  BGR:'bg',KHM:'kh',CAN:'ca',CHL:'cl',CHN:'cn',COL:'co',CRI:'cr',HRV:'hr',CUB:'cu',CYP:'cy',
+  CZE:'cz',DNK:'dk',DOM:'do',ECU:'ec',EGY:'eg',SLV:'sv',EST:'ee',FIN:'fi',FRA:'fr',GEO:'ge',
+  DEU:'de',GRC:'gr',GTM:'gt',HND:'hn',HKG:'hk',HUN:'hu',ISL:'is',IND:'in',IDN:'id',IRN:'ir',
+  IRQ:'iq',IRL:'ie',ISR:'il',ITA:'it',JAM:'jm',JPN:'jp',JOR:'jo',KAZ:'kz',KEN:'ke',KOR:'kr',
+  KWT:'kw',LVA:'lv',LBN:'lb',LBY:'ly',LTU:'lt',LUX:'lu',MYS:'my',MEX:'mx',MDA:'md',MNG:'mn',
+  MNE:'me',MAR:'ma',NPL:'np',NLD:'nl',NZL:'nz',NIC:'ni',NGA:'ng',NOR:'no',OMN:'om',PAK:'pk',
+  PAN:'pa',PRY:'py',PER:'pe',PHL:'ph',POL:'pl',PRT:'pt',PRI:'pr',QAT:'qa',ROU:'ro',RUS:'ru',
+  SAU:'sa',SRB:'rs',SGP:'sg',SVK:'sk',SVN:'si',ZAF:'za',ESP:'es',LKA:'lk',SWE:'se',CHE:'ch',
+  SYR:'sy',TWN:'tw',THA:'th',TTO:'tt',TUN:'tn',TUR:'tr',UKR:'ua',ARE:'ae',GBR:'gb',USA:'us',
+  URY:'uy',UZB:'uz',VEN:'ve',VIE:'vn',VNM:'vn',YEM:'ye'
+};
+
+function flagCode(code?: string, nation?: string) {
+  const raw = String(code || nation || '').trim();
+  if (raw.length === 2) return raw.toLowerCase();
+  return ISO3[raw.toUpperCase()] || '';
+}
+
+function stamp(v: any) {
+  if (!v) return '—';
+  const d = new Date(v);
+  if (Number.isNaN(d.getTime())) return '—';
+  const p = (n: number) => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`;
+}
+
 export default function AdminPage({ onNavigate }: { onNavigate?: (page: PageId) => void }) {
   const { profile } = useAuth();
   const [paymentCodes, setPaymentCodes] = useState<PaymentCode[]>([]);
@@ -115,6 +145,10 @@ export default function AdminPage({ onNavigate }: { onNavigate?: (page: PageId) 
   const [room, setRoom] = useState<any>({});
   const [roomLoading, setRoomLoading] = useState(false);
   const [clock, setClock] = useState(new Date());
+  const [playerQ, setPlayerQ] = useState('');
+  const [playerRole, setPlayerRole] = useState('all');
+  const [playerStatus, setPlayerStatus] = useState('all');
+  const [playerPage, setPlayerPage] = useState(1);
 
   const READ_SECTIONS: Section[] = ['players', 'online', 'clans', 'shop', 'economy', 'reports', 'matches', 'logins', 'linked', 'announcements', 'maps', 'boosts'];
 
@@ -128,17 +162,28 @@ export default function AdminPage({ onNavigate }: { onNavigate?: (page: PageId) 
     return () => clearInterval(t);
   }, []);
 
+  const loadPlayers = (page = playerPage) => {
+    setRoomLoading(true);
+    api.getAdminSection('players', { q: playerQ, role: playerRole, status: playerStatus, page })
+      .then(setRoom)
+      .catch(() => setRoom({}))
+      .finally(() => setRoomLoading(false));
+  };
+
   useEffect(() => {
+    if (section === 'players') {
+      loadPlayers(playerPage);
+      return;
+    }
     if (!READ_SECTIONS.includes(section)) return;
     let live = true;
     setRoomLoading(true);
-    const q = section === 'players' ? find : undefined;
-    api.getAdminSection(section, q)
+    api.getAdminSection(section)
       .then((d) => { if (live) setRoom(d || {}); })
       .catch(() => { if (live) setRoom({}); })
       .finally(() => { if (live) setRoomLoading(false); });
     return () => { live = false; };
-  }, [section]);
+  }, [section, playerPage]);
 
   const loadData = async () => {
     try {
@@ -357,10 +402,10 @@ export default function AdminPage({ onNavigate }: { onNavigate?: (page: PageId) 
           <img src="/caevo/ca.ico" alt="" />
           <div>
             <strong>COMBAT ARMS</strong>
-            <small>CONTROL ROOM</small>
+            <small>ADMIN CONSOLE</small>
           </div>
         </div>
-        <input className="admin-find" placeholder="Find..." value={find} onChange={(e) => setFind(e.target.value)} />
+        <input className="admin-find" placeholder="Find a section..." value={find} onChange={(e) => setFind(e.target.value)} />
         <nav className="admin-nav">
           {groups.map(group => (
             <div key={group}>
@@ -382,14 +427,22 @@ export default function AdminPage({ onNavigate }: { onNavigate?: (page: PageId) 
       </aside>
 
       <div className="admin-main">
-        <div className="admin-top">
-          <span>CONTROL ROOM / {section.toUpperCase()}</span>
-          <div className="admin-top-actions">
-            <span className="admin-chip">SQL READ ONLY</span>
-            <button className="admin-chip" onClick={loadData}><RefreshCw className="mr-1 inline h-3 w-3" /> Refresh</button>
-            <Search className="h-4 w-4" />
+        <div className="admin-head">
+          <div className="admin-crumb">
+            Administration <span>›</span> <b>{NAV.find((n) => n.id === section)?.label || section}</b>
+          </div>
+          <div className="admin-head-actions">
+            <button className="admin-viewweb" onClick={() => onNavigate?.('home')}>View website <ExternalLink className="ml-1 inline h-3 w-3" /></button>
+            <div className="admin-who">
+              <span className="admin-avatar">{(profile.username || 'A').slice(0, 1).toUpperCase()}</span>
+              <div>
+                <strong>{profile.username}</strong>
+                <small>ADMINISTRATOR</small>
+              </div>
+            </div>
           </div>
         </div>
+        <div className="admin-body">
 
         {section === 'overview' && (
           <>
@@ -447,25 +500,105 @@ export default function AdminPage({ onNavigate }: { onNavigate?: (page: PageId) 
         )}
 
         {section === 'players' && (
-          <div className="admin-panel">
-            <div className="admin-toolbar">
-              <h1>PLAYERS</h1>
-              <button className="admin-chip" onClick={() => {
-                setRoomLoading(true);
-                api.getAdminSection('players', find).then(setRoom).catch(() => setRoom({})).finally(() => setRoomLoading(false));
-              }}>Search Find</button>
+          <>
+            <div className="pl-hero">
+              <div className="pl-hero-ico"><Users /></div>
+              <div>
+                <p className="eyebrow">CONTROL ROOM / COMBAT ARMS</p>
+                <h1>PLAYERS</h1>
+                <p>Search accounts by login, nickname, email or account number</p>
+              </div>
             </div>
-            <p className="sub">CBT_User — nick, EXP, kills, last login. Search uses Find in the sidebar.</p>
-            <Grid rows={room.data} cols={[
-              { key: 'NickName', label: 'NICK' },
-              { key: 'username', label: 'ACCOUNT' },
-              { key: 'Exp', label: 'EXP' },
-              { key: 'kills', label: 'KILLS' },
-              { key: 'wins', label: 'WINS' },
-              { key: 'Status', label: 'STATUS', fmt: (v) => (v === 1 ? 'ONLINE' : 'OFFLINE') },
-              { key: 'lastLoginDate', label: 'LAST LOGIN', fmt: dt },
-            ]} />
-          </div>
+            <form className="pl-filters" onSubmit={(e) => { e.preventDefault(); setPlayerPage(1); loadPlayers(1); }}>
+              <input
+                value={playerQ}
+                onChange={(e) => setPlayerQ(e.target.value)}
+                placeholder="Login, nickname, email or #id"
+              />
+              <select value={playerRole} onChange={(e) => setPlayerRole(e.target.value)}>
+                <option value="all">All roles</option>
+                <option value="admin">Admin</option>
+                <option value="gm">GM</option>
+                <option value="player">Player</option>
+              </select>
+              <select value={playerStatus} onChange={(e) => setPlayerStatus(e.target.value)}>
+                <option value="all">All statuses</option>
+                <option value="active">Active</option>
+                <option value="online">Online</option>
+                <option value="banned">Banned</option>
+              </select>
+              <button className="pl-apply" type="submit">Apply</button>
+            </form>
+            <div className="pl-meta">
+              <h2>{room.total ?? 0} ACCOUNTS</h2>
+              <span>Account number • newest first &nbsp;&nbsp; Showing {room.showingFrom || 0}–{room.showingTo || 0}</span>
+            </div>
+            {roomLoading ? <Empty text="Leyendo cuentas..." /> : (
+              <table className="pl-table">
+                <thead>
+                  <tr>
+                    <th>PLAYER</th>
+                    <th>EMAIL</th>
+                    <th>ROLE</th>
+                    <th>FLAG</th>
+                    <th>REGISTERED</th>
+                    <th>LAST GAME LOGIN</th>
+                    <th>STATUS</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {(room.data || []).length === 0 ? (
+                    <tr><td colSpan={7} style={{ color: '#777', padding: 28 }}>No accounts match this search.</td></tr>
+                  ) : room.data.map((p: any) => {
+                    const code = flagCode(p.CountryCode, p.NationCode);
+                    const superAdmin = p.username === 'villauribe12' || String(p.webRole || '').toLowerCase() === 'superadmin';
+                    const isAdmin = superAdmin || Boolean(p.webRole);
+                    return (
+                      <tr key={p.id}>
+                        <td>
+                          <div className="pl-player">
+                            <img src={rankIcon({ exp: p.Exp, UserType: p.UserType })} alt="" onError={(e) => { e.currentTarget.src = '/ranks/RANK_0.png'; }} />
+                            <div>
+                              <b>{p.isGM ? `[GM]${p.NickName || p.username}` : (p.NickName || p.username)}</b>
+                              <small>{p.username}_ #{p.id}</small>
+                            </div>
+                          </div>
+                        </td>
+                        <td className="pl-mail">{p.email || '—'}</td>
+                        <td>
+                          <div className="pl-roles">
+                            {superAdmin && <span className="pl-pill pl-pill-super">SUPERADMIN</span>}
+                            {isAdmin && !superAdmin && <span className="pl-pill pl-pill-admin">ADMINISTRATOR</span>}
+                            {p.isGM && <span className="pl-pill pl-pill-gm">GM</span>}
+                            {!isAdmin && !p.isGM && <span className="pl-pill pl-pill-player">PLAYER</span>}
+                          </div>
+                        </td>
+                        <td>
+                          <div className="pl-flag">
+                            {code ? <img src={`https://flagcdn.com/20x15/${code}.png`} alt="" /> : null}
+                            <span>{p.CountryName || p.NationCode || '—'}</span>
+                          </div>
+                        </td>
+                        <td>{stamp(p.CreateDate)}</td>
+                        <td>{stamp(p.lastLoginDate)}</td>
+                        <td>
+                          <span className={p.accountStatus === 'banned' ? 'pl-status-ban' : 'pl-status'}>
+                            {p.accountStatus === 'banned' ? 'BANNED' : 'ACTIVE'}
+                          </span>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            )}
+            {(room.total || 0) > (room.limit || 25) && (
+              <div className="pl-pager">
+                <button disabled={playerPage <= 1} onClick={() => setPlayerPage((n) => Math.max(1, n - 1))}>Prev</button>
+                <button disabled={(room.showingTo || 0) >= (room.total || 0)} onClick={() => setPlayerPage((n) => n + 1)}>Next</button>
+              </div>
+            )}
+          </>
         )}
 
         {section === 'online' && (
@@ -823,6 +956,7 @@ export default function AdminPage({ onNavigate }: { onNavigate?: (page: PageId) 
             </div>
           </div>
         )}
+        </div>
       </div>
     </div>
   );

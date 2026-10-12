@@ -148,9 +148,17 @@ class ApiClient {
     return await this.request<any>('GET', '/admin/overview');
   }
 
-  async getAdminSection(section: string, q?: string) {
-    const url = q ? `/admin/${section}?q=${encodeURIComponent(q)}` : `/admin/${section}`;
-    return await this.request<any>('GET', url);
+  async getAdminSection(section: string, params?: Record<string, string | number | undefined> | string) {
+    const query = new URLSearchParams();
+    if (typeof params === 'string') {
+      if (params) query.set('q', params);
+    } else {
+      Object.entries(params || {}).forEach(([key, value]) => {
+        if (value !== undefined && value !== '' && value !== 'all') query.set(key, String(value));
+      });
+    }
+    const qs = query.toString();
+    return await this.request<any>('GET', `/admin/${section}${qs ? `?${qs}` : ''}`);
   }
 
   async getClans(search?: string) {
