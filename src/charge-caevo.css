@@ -54,6 +54,8 @@
 .charge-checkout-row strong{color:#eee}
 .charge-checkout-note{font-size:11px !important;letter-spacing:0 !important;font-weight:500 !important;color:#8a8a8a !important;line-height:1.6;margin:14px 0 16px}
 .charge-actions{display:flex;flex-direction:column;gap:8px}
+.charge-paypal{min-height:48px}
+.charge-paypal iframe{width:100% !important}
 .charge-review{
   min-height:46px;background:#df8104;color:#111;font-weight:800;border:0;font-size:13px
 }

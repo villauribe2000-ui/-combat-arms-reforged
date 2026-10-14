@@ -1,7 +1,21 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { api } from '@/lib/api';
 import { Crown, X, CheckCircle, AlertCircle, Gift, TrendingUp, Coins } from 'lucide-react';
+
+const PAYPAL_CLIENT_ID = '7Li538YT5l50YF9zwZo_FU3_W0xsFV1eni9vVTULMnE';
+const PAYPAL_BUTTON_ID = '9VVE28GCM8GXA';
+const PAYPAL_CONTAINER_ID = `paypal-container-${PAYPAL_BUTTON_ID}`;
+
+declare global {
+  interface Window {
+    paypal?: {
+      HostedButtons: (options: { hostedButtonId: string }) => {
+        render: (selector: string) => Promise<void>;
+      };
+    };
+  }
+}
 
 interface GcoinPackage {
   id: number;
@@ -13,8 +27,10 @@ export default function WalletPage() {
   const { profile } = useAuth();
   const [nxBalance, setNxBalance] = useState(0);
   const [gpBalance, setGpBalance] = useState(0);
-  const [purchasing, setPurchasing] = useState(false);
   const [selectedPackage, setSelectedPackage] = useState<GcoinPackage | null>(null);
+  const [paypalReady, setPaypalReady] = useState(false);
+  const [paypalError, setPaypalError] = useState(false);
+  const paypalRendered = useRef(false);
   const [showProofModal, setShowProofModal] = useState(false);
   const [selectedProofPackage, setSelectedProofPackage] = useState<GcoinPackage | null>(null);
   const [paymentCode, setPaymentCode] = useState<string>('');
@@ -158,32 +174,39 @@ export default function WalletPage() {
     return () => clearInterval(interval);
   }, [profile?.gameCoins, profile?.totalBalance, profile?.username]);
 
-  const handlePurchaseClick = async (pkg: GcoinPackage) => {
+  useEffect(() => {
     if (!profile) return;
-    try {
-      setPurchasing(true);
-      setSelectedPackage(pkg);
-      
-      try {
-        await api.createPaymentRequest(
-          parseInt(profile.id),
-          profile.username,
-          profile.NickName || profile.username,
-          pkg.coins,
-          pkg.price
-        );
-      } catch (err) {
-        console.log('Payment request creation skipped');
-      }
-      
-      const paypalLink = `https://paypal.me/LBetancourthQuenguan/${pkg.price}`;
-      window.location.href = paypalLink;
-    } catch (error) {
-      console.error('Error:', error);
-      setNotification({ type: 'error', message: 'Error al procesar. Intenta de nuevo.' });
-      setPurchasing(false);
+
+    const renderButton = () => {
+      if (paypalRendered.current || !window.paypal?.HostedButtons) return;
+      if (!document.getElementById(PAYPAL_CONTAINER_ID)) return;
+      paypalRendered.current = true;
+      window.paypal.HostedButtons({
+        hostedButtonId: PAYPAL_BUTTON_ID,
+      }).render(`#${PAYPAL_CONTAINER_ID}`).then(() => {
+        setPaypalReady(true);
+      }).catch(() => {
+        paypalRendered.current = false;
+        setPaypalError(true);
+      });
+    };
+
+    const scriptId = 'paypal-hosted-sdk';
+    const existing = document.getElementById(scriptId) as HTMLScriptElement | null;
+    if (existing) {
+      if (window.paypal) renderButton();
+      else existing.addEventListener('load', renderButton, { once: true });
+      return;
     }
-  };
+
+    const script = document.createElement('script');
+    script.id = scriptId;
+    script.src = `https://www.paypal.com/sdk/js?client-id=${PAYPAL_CLIENT_ID}&components=hosted-buttons&disable-funding=venmo&currency=USD`;
+    script.async = true;
+    script.onload = () => renderButton();
+    script.onerror = () => setPaypalError(true);
+    document.body.appendChild(script);
+  }, [profile]);
 
   const handleProofImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -358,20 +381,6 @@ export default function WalletPage() {
       : 0;
   const canCheckout = checkoutNx >= 1000;
 
-  const startCheckout = () => {
-    if (selectedPackage) {
-      handlePurchaseClick(selectedPackage);
-      return;
-    }
-    if (!customNxAmount) {
-      setNotification({ type: 'error', message: 'Por favor ingresa una cantidad válida' });
-      setTimeout(() => setNotification(null), 3000);
-      return;
-    }
-    sessionStorage.setItem('customNxAmount', customNxAmount);
-    window.location.href = `https://paypal.me/LBetancourthQuenguan/${checkoutPrice.toFixed(2)}`;
-  };
-
   const openPaidModal = () => {
     if (selectedPackage) {
       setSelectedProofPackage(selectedPackage);
@@ -474,13 +483,17 @@ export default function WalletPage() {
             </div>
           )}
           <p className="charge-checkout-note">
-            After you pay, send us the transaction code with Ya pagué. An administrator confirms it, then NX is added to your account.
+            Pay with the PayPal button. Then send the transaction code with Ya pagué. An administrator confirms it, then NX is added to your account.
             You can have up to 3 orders waiting for approval at a time.
           </p>
           <div className="charge-actions">
-            <button type="button" className="charge-review" disabled={!canCheckout || purchasing} onClick={startCheckout}>
-              {purchasing ? 'Opening PayPal...' : 'Review order'}
-            </button>
+            <div id={PAYPAL_CONTAINER_ID} className="charge-paypal" />
+            {!paypalReady && !paypalError && (
+              <p className="charge-checkout-note">Loading PayPal…</p>
+            )}
+            {paypalError && (
+              <p className="charge-checkout-note">PayPal could not load. Refresh the page and try again.</p>
+            )}
             <button type="button" className="charge-paid" disabled={!canCheckout} onClick={openPaidModal}>
               Ya pagué
             </button>
