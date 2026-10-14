@@ -387,6 +387,15 @@ class ApiClient {
   }
 
   // Nuevo sistema de códigos de pago
+  async completePaypalPayment(orderId: string, amount: number, custom: boolean, nx: number) {
+    return await this.request<{ success: boolean; nx: number; bonus: number; already?: boolean }>('POST', '/payments/paypal-complete', {
+      orderId,
+      amount,
+      custom,
+      nx,
+    });
+  }
+
   async submitPaymentCode(oidUser: number, username: string, NickName: string, paymentCode: string, nxAmount: number, dollarAmount: number) {
     return await this.request<{ success: boolean; message: string }>('POST', '/payments/submit-payment-code', {
       oidUser,

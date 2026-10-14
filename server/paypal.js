@@ -80,6 +80,21 @@ export async function createPayPalOrder(amount, description) {
   }
 }
 
+export async function getPayPalOrder(orderId) {
+  if (!PAYPAL_CLIENT_ID || !PAYPAL_CLIENT_SECRET) return null;
+  const accessToken = await getPayPalAccessToken();
+  const response = await fetch(`${PAYPAL_API_URL}/v2/checkout/orders/${encodeURIComponent(orderId)}`, {
+    headers: { Authorization: `Bearer ${accessToken}` },
+  });
+  if (response.status === 404) return null;
+  if (!response.ok) {
+    const error = new Error('PayPal no confirmó este pago');
+    error.status = response.status;
+    throw error;
+  }
+  return response.json();
+}
+
 // Capture PayPal order
 export async function capturePayPalOrder(orderId) {
   try {

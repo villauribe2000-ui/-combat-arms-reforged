@@ -7,6 +7,85 @@ const PAYPAL_CLIENT_ID = 'BAASxJaQf7fBU25aaCHGJtS-7Li538YT5l5OYF9zwZo_FU3_WOxsFV
 const PAYPAL_BUTTON_ID = '9VVE28GCM8GXA';
 const PAYPAL_CONTAINER_ID = `paypal-container-${PAYPAL_BUTTON_ID}`;
 
+type PaypalPaid = { orderId: string; amount: number };
+const paypalPaidWaiters = new Set<(paid: PaypalPaid) => void>();
+
+function numberInPayload(value: unknown): number {
+  if (typeof value === 'number' && value >= 0.01 && value <= 1000) return value;
+  if (typeof value === 'string' && value.trim() && !Number.isNaN(Number(value))) {
+    const amount = Number(value);
+    if (amount >= 0.01 && amount <= 1000) return amount;
+  }
+  if (value && typeof value === 'object') {
+    let best = 0;
+    for (const nested of Object.values(value as Record<string, unknown>)) {
+      best = Math.max(best, numberInPayload(nested));
+    }
+    return best;
+  }
+  return 0;
+}
+
+function amountFromPaypal(data: any): number {
+  const value = data?.purchase_units?.[0]?.payments?.captures?.[0]?.amount?.value
+    || data?.purchase_units?.[0]?.amount?.value
+    || data?.amount?.value;
+  const amount = Number(value);
+  return amount >= 0.01 && amount <= 1000 ? amount : 0;
+}
+
+function amountFromDom(): number {
+  const input = document.querySelector(
+    `#paypal-form-fields-container-${PAYPAL_BUTTON_ID} #amount`
+  ) as HTMLInputElement | null;
+  const amount = Number(input?.value);
+  return amount >= 0.01 && amount <= 1000 ? amount : 0;
+}
+
+function installPaypalWatcher() {
+  const win = window as Window & { __caevoPaypalWatch?: boolean };
+  if (win.__caevoPaypalWatch) return;
+  win.__caevoPaypalWatch = true;
+  const amounts = new Map<string, number>();
+  const proto = XMLHttpRequest.prototype;
+  const origOpen = proto.open;
+  const origSend = proto.send;
+  proto.open = function (this: XMLHttpRequest, ...args: unknown[]) {
+    (this as XMLHttpRequest & { __ppUrl?: string }).__ppUrl = String(args[1] ?? '');
+    return origOpen.apply(this, args as Parameters<XMLHttpRequest['open']>);
+  };
+  proto.send = function (this: XMLHttpRequest, body?: Document | XMLHttpRequestBodyInit | null) {
+    const url = (this as XMLHttpRequest & { __ppUrl?: string }).__ppUrl || '';
+    this.addEventListener('load', () => {
+      if (this.status < 200 || this.status >= 300) return;
+      try {
+        const data = JSON.parse(this.responseText || '{}');
+        if (url.includes(`/v1/checkout/links/${PAYPAL_BUTTON_ID}/create-context`)) {
+          const orderId = String(data.context_id || data.id || '');
+          const amount = numberInPayload(JSON.parse(String(body || '{}')));
+          if (orderId && amount > 0) amounts.set(orderId, amount);
+          return;
+        }
+        if (!url.includes(`/v1/checkout/links/${PAYPAL_BUTTON_ID}/pay`)) return;
+        if (data?.details?.[0]?.issue) return;
+        let orderId = '';
+        try {
+          orderId = String(JSON.parse(String(body || '{}')).context_id || '');
+        } catch {
+          orderId = '';
+        }
+        orderId = String(data.id || data.context_id || orderId);
+        const amount = amountFromPaypal(data) || amounts.get(orderId) || amountFromDom();
+        if (!orderId || !amount) return;
+        paypalPaidWaiters.forEach(fn => fn({ orderId, amount }));
+      } catch {
+        // PayPal sometimes returns an empty body before the popup closes.
+      }
+    });
+    return origSend.call(this, body);
+  };
+}
+
 declare global {
   interface Window {
     paypal?: {
@@ -24,13 +103,16 @@ interface GcoinPackage {
 }
 
 export default function WalletPage() {
-  const { profile } = useAuth();
+  const { profile, refreshProfile } = useAuth();
   const [nxBalance, setNxBalance] = useState(0);
   const [gpBalance, setGpBalance] = useState(0);
   const [selectedPackage, setSelectedPackage] = useState<GcoinPackage | null>(null);
   const [paypalReady, setPaypalReady] = useState(false);
   const [paypalError, setPaypalError] = useState(false);
   const paypalRendered = useRef(false);
+  const selectedPackageRef = useRef<GcoinPackage | null>(null);
+  const customNxRef = useRef('');
+  const creditingRef = useRef(new Set<string>());
   const [showProofModal, setShowProofModal] = useState(false);
   const [selectedProofPackage, setSelectedProofPackage] = useState<GcoinPackage | null>(null);
   const [paymentCode, setPaymentCode] = useState<string>('');
@@ -42,6 +124,8 @@ export default function WalletPage() {
   const [timeUntilReset, setTimeUntilReset] = useState<string>('');
   const [customNxAmount, setCustomNxAmount] = useState<string>('');
   const [customNxBonus, setCustomNxBonus] = useState<number>(0);
+  selectedPackageRef.current = selectedPackage;
+  customNxRef.current = customNxAmount;
 
   const packages: GcoinPackage[] = [
     { id: 1, coins: 15000, price: 1.00 },
@@ -173,6 +257,43 @@ export default function WalletPage() {
 
     return () => clearInterval(interval);
   }, [profile?.gameCoins, profile?.totalBalance, profile?.username]);
+
+  useEffect(() => {
+    if (!profile) return;
+    installPaypalWatcher();
+    const onPaid = async ({ orderId, amount }: PaypalPaid) => {
+      if (creditingRef.current.has(orderId)) return;
+      creditingRef.current.add(orderId);
+      const custom = !selectedPackageRef.current;
+      const nx = custom
+        ? parseInt(customNxRef.current || '0', 10)
+        : selectedPackageRef.current?.coins || 0;
+      try {
+        const result = await api.completePaypalPayment(orderId, amount, custom, nx);
+        const bonusText = !result.already && result.bonus
+          ? ` Incluye un bono de ${result.bonus.toLocaleString()} NX.`
+          : '';
+        setNotification({
+          type: 'success',
+          message: result.already
+            ? 'Ese pago de PayPal ya estaba aplicado.'
+            : `Listo. Se agregaron ${Number(result.nx).toLocaleString()} NX a tu cuenta.${bonusText}`,
+        });
+        if (!result.already) setNxBalance(current => current + Number(result.nx || 0));
+        await refreshProfile();
+      } catch (error: any) {
+        creditingRef.current.delete(orderId);
+        setNotification({
+          type: 'error',
+          message: error?.message || 'PayPal no confirmó el pago. El NX no se agregó.',
+        });
+      }
+    };
+    paypalPaidWaiters.add(onPaid);
+    return () => {
+      paypalPaidWaiters.delete(onPaid);
+    };
+  }, [profile, refreshProfile]);
 
   useEffect(() => {
     if (!profile) return;
@@ -506,8 +627,7 @@ export default function WalletPage() {
             </div>
           )}
           <p className="charge-checkout-note">
-            Pay with the PayPal button. Then send the transaction code with Ya pagué. An administrator confirms it, then NX is added to your account.
-            You can have up to 3 orders waiting for approval at a time.
+            When PayPal completes the payment, the NX is added to your account automatically. A custom amount includes a 10% bonus.
           </p>
           <div className="charge-actions">
             <div id={PAYPAL_CONTAINER_ID} className="charge-paypal" />
