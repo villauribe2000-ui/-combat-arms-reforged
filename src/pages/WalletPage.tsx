@@ -3,7 +3,7 @@ import { useAuth } from '@/context/AuthContext';
 import { api } from '@/lib/api';
 import { Crown, X, CheckCircle, AlertCircle, Gift, TrendingUp, Coins } from 'lucide-react';
 
-const PAYPAL_CLIENT_ID = '7Li538YT5l50YF9zwZo_FU3_W0xsFV1eni9vVTULMnE';
+const PAYPAL_CLIENT_ID = 'BAASxJaQf7fBU25aaCHGJtS-7Li538YT5l5OYF9zwZo_FU3_WOxsFV1eni9vVTULMnEzAwkHShoEYOzWzE';
 const PAYPAL_BUTTON_ID = '9VVE28GCM8GXA';
 const PAYPAL_CONTAINER_ID = `paypal-container-${PAYPAL_BUTTON_ID}`;
 
