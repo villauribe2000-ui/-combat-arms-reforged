@@ -56,6 +56,13 @@
 .charge-actions{display:flex;flex-direction:column;gap:8px}
 .charge-paypal{min-height:48px}
 .charge-paypal iframe{width:100% !important}
+.charge-paypal .amount-container input,
+.charge-paypal .amount-container .currency-symbol,
+.charge-paypal .amount-container .currency-label{
+  color:#111 !important;
+  -webkit-text-fill-color:#111 !important;
+  caret-color:#111;
+}
 .charge-review{
   min-height:46px;background:#df8104;color:#111;font-weight:800;border:0;font-size:13px
 }

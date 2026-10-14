@@ -208,6 +208,29 @@ export default function WalletPage() {
     document.body.appendChild(script);
   }, [profile]);
 
+  useEffect(() => {
+    if (!paypalReady) return;
+    const input = document.querySelector(
+      `#paypal-form-fields-container-${PAYPAL_BUTTON_ID} #amount`
+    ) as HTMLInputElement | null;
+    if (!input) return;
+
+    let price = 0;
+    if (selectedPackage) {
+      price = selectedPackage.price;
+    } else if (customNxAmount) {
+      const amount = parseInt(customNxAmount, 10);
+      if (amount >= 1000) price = Math.max(0.01, parseFloat((amount / 16000).toFixed(2)));
+    }
+    if (!price) return;
+
+    const value = price.toFixed(2);
+    if (input.value === value) return;
+    input.value = value;
+    input.dispatchEvent(new Event('input', { bubbles: true }));
+    input.dispatchEvent(new Event('change', { bubbles: true }));
+  }, [paypalReady, selectedPackage, customNxAmount]);
+
   const handleProofImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
