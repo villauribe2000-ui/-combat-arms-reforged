@@ -2,7 +2,7 @@ import {
   ArrowDownToLine, ArrowRight, Check, ChevronRight, Cpu, Download, HardDrive, Info, Monitor, Package, Settings2, ShieldCheck, Wifi,
 } from 'lucide-react';
 
-export const CLIENT_DOWNLOAD_URL = 'https://www.mediafire.com/file/51ej6w1e72cfo0d/CombatArmsEvolution-Setup.exe/file';
+export const CLIENT_DOWNLOAD_URL = 'https://www.mediafire.com/file/634jyd28cehqm4d/CombatArmsEvolution-Setup.exe/file';
 
 const SPECS = [
   { icon: Cpu, name: 'Processor', sub: 'CPU', min: 'Intel Pentium III · 1 GHz+', rec: 'Intel Pentium 4 · 2.4 GHz+' },
