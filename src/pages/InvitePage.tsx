@@ -100,7 +100,7 @@ export default function InvitePage() {
           <h1>INVITA Y GANA.</h1>
           <p className="page-heading-description">
             Comparte tu código. Quien lo canjea recibe {reward.toLocaleString('es-CO')} NX y tú también.
-            Cada cuenta puede canjear un código una sola vez. La misma IP no puede usarlo.
+            Cada cuenta puede canjear un código una sola vez.
           </p>
         </div>
       </header>
@@ -165,7 +165,6 @@ export default function InvitePage() {
           <li>Una cuenta que ya existe recibe su código al entrar aquí.</li>
           <li>Una cuenta que todavía no ha canjeado escribe ese código y los dos reciben {reward.toLocaleString('es-CO')} NX.</li>
           <li>Después de canjear, esa cuenta ya no puede poner otro código. El suyo sigue disponible para invitar a más gente.</li>
-          <li>Si la cuenta nueva entra desde la misma IP del dueño del código, o esa IP ya cobró el premio, el canje se rechaza.</li>
         </ol>
         {info?.recent?.length ? (
           <ul className="invite-recent">
