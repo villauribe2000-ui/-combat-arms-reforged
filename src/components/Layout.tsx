@@ -16,13 +16,13 @@ type NavItem = {
 
 const PRIMARY_NAV: NavItem[] = [
   { id: 'home', label: 'Inicio', icon: Home },
+  { id: 'invite', label: 'Invitar', icon: Ticket },
   { id: 'rankings', label: 'Rankings', icon: Trophy },
   { id: 'store', label: 'Tienda', icon: Store },
   { id: 'wallet', label: 'Billetera', icon: Wallet },
   { id: 'purchase-history', label: 'Historial', icon: History },
   { id: 'level-rewards', label: 'Recompensas', icon: Crown },
   { id: 'birthday', label: 'Cumpleaños', icon: Gift },
-  { id: 'invite', label: 'Invitar', icon: Ticket },
   { id: 'guide', label: 'Guide', icon: BookOpen },
   { id: 'support', label: 'Soporte', icon: LifeBuoy },
   { id: 'admin', label: 'Admin', icon: Shield, adminOnly: true },
@@ -141,6 +141,14 @@ export default function Layout({ currentPage, onNavigate, children }: Props) {
           </nav>
 
           <div className="ml-auto flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => go('invite')}
+              className="inline-flex items-center gap-1 rounded-md bg-[#df8104] px-3 py-2 text-[12px] font-bold text-black hover:bg-[#f5a000]"
+            >
+              <Ticket className="h-3.5 w-3.5" />
+              Invitar
+            </button>
             {profile ? (
               <div className="user-menu-wrap" ref={menuRef}>
                 <button
