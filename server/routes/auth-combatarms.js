@@ -9,6 +9,7 @@ import crypto from 'crypto';
 import jwt from 'jsonwebtoken';
 import { userIsSiteAdmin } from '../site-admin.js';
 import { actorFromReq, pinFromBody, pinRow, savePin, checkPin, ensurePinTable } from '../login-pin.js';
+import { noteReferralVisit } from './referral.js';
 
 const router = express.Router();
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-change-this';
@@ -132,6 +133,9 @@ router.post('/login', async (req, res) => {
     const profile = userDetails.recordset?.[0];
     const wallet = balance.recordset?.[0];
     const staff = await userIsSiteAdmin(user.oidUser, user.strNexonID);
+    noteReferralVisit(user.oidUser, user.strNexonID, getClientIP(req)).catch((error) => {
+      console.warn('[REFERRAL] login', error.message);
+    });
 
     return res.json({
       success: true,
@@ -288,6 +292,9 @@ router.post('/register', async (req, res) => {
 
     // Generar JWT
     const token = generateToken(oidUser, username);
+    noteReferralVisit(oidUser, username, getClientIP(req)).catch((error) => {
+      console.warn('[REFERRAL] register', error.message);
+    });
 
     return res.json({
       success: true,

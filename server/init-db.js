@@ -160,6 +160,43 @@ async function initializeTables() {
     `);
     console.log('   ✓ BirthdayRewards lista\n');
 
+    console.log('7️⃣ Creando tablas de invitación...');
+    await queryWeb(`
+      IF OBJECT_ID('ReferralCodes', 'U') IS NULL
+      BEGIN
+        CREATE TABLE ReferralCodes (
+          oidUser INT NOT NULL PRIMARY KEY,
+          username NVARCHAR(50) NOT NULL,
+          code NVARCHAR(12) NOT NULL UNIQUE,
+          createdAt DATETIME NOT NULL DEFAULT GETDATE()
+        );
+      END
+      IF OBJECT_ID('ReferralIps', 'U') IS NULL
+      BEGIN
+        CREATE TABLE ReferralIps (
+          oidUser INT NOT NULL,
+          ip NVARCHAR(45) NOT NULL,
+          lastSeen DATETIME NOT NULL DEFAULT GETDATE(),
+          CONSTRAINT PK_ReferralIps PRIMARY KEY (oidUser, ip)
+        );
+      END
+      IF OBJECT_ID('ReferralRedemptions', 'U') IS NULL
+      BEGIN
+        CREATE TABLE ReferralRedemptions (
+          id INT IDENTITY(1,1) PRIMARY KEY,
+          referrerOid INT NOT NULL,
+          referredOid INT NOT NULL UNIQUE,
+          referredUsername NVARCHAR(50) NOT NULL,
+          code NVARCHAR(12) NOT NULL,
+          referredIp NVARCHAR(45) NOT NULL UNIQUE,
+          nxEach INT NOT NULL,
+          createdAt DATETIME NOT NULL DEFAULT GETDATE()
+        );
+        CREATE INDEX idx_referral_referrer ON ReferralRedemptions(referrerOid);
+      END
+    `);
+    console.log('   ✓ Invitaciones listas\n');
+
     console.log('✅ Todas las tablas inicializadas exitosamente en combatarms_web\n');
 
   } catch (error) {

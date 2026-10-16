@@ -333,6 +333,22 @@ class ApiClient {
     });
   }
 
+  async getReferral() {
+    return await this.request<{
+      code: string;
+      reward: number;
+      redeemed: boolean;
+      redeemedCode: string | null;
+      uses: number;
+      earned: number;
+      recent: { username: string; at: string }[];
+    }>('GET', '/referral/me');
+  }
+
+  async redeemReferral(code: string) {
+    return await this.request<{ success: boolean; message: string; reward: number }>('POST', '/referral/redeem', { code });
+  }
+
   async claimBirthdayReward(username: string) {
     return await this.request<{ success: boolean; message: string; nxAmount: number }>('POST', '/birthday/claim', {
       username,

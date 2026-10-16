@@ -16,6 +16,7 @@ import supportRoutes from './routes/support.js';
 import marketplaceRoutes from './routes/marketplace.js';
 import combatarmsWebRoutes from './routes/combatarms-web.js';
 import adminReadRoutes from './routes/admin-read.js';
+import referralRoutes, { ensureReferralTables } from './routes/referral.js';
 // import birthdayRoutes from './routes/birthdays.js';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -23,6 +24,7 @@ const __dirname = path.dirname(__filename);
 
 const app = express();
 const PORT = process.env.PORT || 5000;
+app.set('trust proxy', 1);
 
 // Middleware
 app.use(cors());
@@ -70,6 +72,7 @@ app.use('/api/refund', refundRoutes);
 app.use('/api/support', supportRoutes);
 app.use('/api/marketplace', marketplaceRoutes);
 app.use('/api/combatarms-web', combatarmsWebRoutes);
+app.use('/api/referral', authMiddleware, referralRoutes);
 app.use('/api/protected', authMiddleware, dataRoutes);
 
 if (!process.env.VERCEL) {
@@ -175,6 +178,12 @@ async function start() {
       
       // Ejecutar migraciones solo si BD está disponible
       await runMigrations();
+      try {
+        await ensureReferralTables();
+        console.log('[REFERRAL] Tablas listas');
+      } catch (referralError) {
+        console.warn('[REFERRAL] No se pudieron preparar las tablas:', referralError.message);
+      }
     } catch (dbError) {
       console.warn('⚠️ Advertencia: No se pudo conectar a la BD');
       console.warn('El servidor iniciará sin BD, pero algunas funciones no funcionarán');

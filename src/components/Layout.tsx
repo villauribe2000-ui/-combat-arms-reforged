@@ -2,10 +2,10 @@ import { useEffect, useRef, useState } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import {
   Trophy, Store, LifeBuoy, Shield, Wallet, History,
-  Menu, LogOut, Crown, Gift, Home, Download, BookOpen, UserRound, UserRoundPlus, ChevronDown, Coins, LayoutGrid,
+  Menu, LogOut, Crown, Gift, Home, Download, BookOpen, UserRound, UserRoundPlus, ChevronDown, Coins, LayoutGrid, Ticket,
 } from 'lucide-react';
 
-export type PageId = 'home' | 'profile' | 'account' | 'rankings' | 'store' | 'support' | 'admin' | 'wallet' | 'purchase-history' | 'level-rewards' | 'birthday' | 'guide' | 'download' | 'signin' | 'signup';
+export type PageId = 'home' | 'profile' | 'account' | 'rankings' | 'store' | 'support' | 'admin' | 'wallet' | 'purchase-history' | 'level-rewards' | 'birthday' | 'invite' | 'guide' | 'download' | 'signin' | 'signup';
 
 type NavItem = {
   id: PageId;
@@ -22,6 +22,7 @@ const PRIMARY_NAV: NavItem[] = [
   { id: 'purchase-history', label: 'Historial', icon: History },
   { id: 'level-rewards', label: 'Recompensas', icon: Crown },
   { id: 'birthday', label: 'Cumpleaños', icon: Gift },
+  { id: 'invite', label: 'Invitar', icon: Ticket },
   { id: 'guide', label: 'Guide', icon: BookOpen },
   { id: 'support', label: 'Soporte', icon: LifeBuoy },
   { id: 'admin', label: 'Admin', icon: Shield, adminOnly: true },
@@ -42,7 +43,7 @@ export default function Layout({ currentPage, onNavigate, children }: Props) {
   const menuRef = useRef<HTMLDivElement>(null);
   const publicPages: PageId[] = ['home', 'guide', 'download', 'signin', 'signup', 'rankings'];
   const isPublic = publicPages.includes(currentPage);
-  const isFullBleed = isPublic || currentPage === 'profile' || currentPage === 'account' || currentPage === 'wallet' || currentPage === 'store' || currentPage === 'purchase-history' || currentPage === 'level-rewards' || currentPage === 'support' || currentPage === 'birthday' || currentPage === 'admin';
+  const isFullBleed = isPublic || currentPage === 'profile' || currentPage === 'account' || currentPage === 'wallet' || currentPage === 'store' || currentPage === 'purchase-history' || currentPage === 'level-rewards' || currentPage === 'support' || currentPage === 'birthday' || currentPage === 'invite' || currentPage === 'admin';
 
   useEffect(() => {
     const onDoc = (e: MouseEvent) => {
@@ -175,6 +176,13 @@ export default function Layout({ currentPage, onNavigate, children }: Props) {
                       <span>
                         <strong>Charge Coins</strong>
                         <small>Buy NX</small>
+                      </span>
+                    </button>
+                    <button type="button" onClick={() => { setMenuOpen(false); go('invite'); }}>
+                      <Ticket size={16} />
+                      <span>
+                        <strong>Invitar</strong>
+                        <small>Comparte tu código y gana NX</small>
                       </span>
                     </button>
                     <button type="button" onClick={() => { setMenuOpen(false); go('account'); }}>
