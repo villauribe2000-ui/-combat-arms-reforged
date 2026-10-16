@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { queryVisms, queryWeb } from '../db.js';
+import { query, queryVisms, queryWeb } from '../db.js';
 import { verifyToken } from '../auth.js';
 import { getPayPalOrder } from '../paypal.js';
 
@@ -396,11 +396,39 @@ async function creditNx(oidUser, username, nx) {
   return Boolean(updated?.rowsAffected?.[0]);
 }
 
+router.get('/gift-search', async (req, res) => {
+  try {
+    const header = req.headers.authorization || '';
+    const user = verifyToken(header.startsWith('Bearer ') ? header.slice(7) : '');
+    if (!Number(user?.id || user?.userId)) return res.status(401).json({ error: 'Sesión inválida' });
+
+    const raw = String(req.query.q || '').trim().slice(0, 32);
+    const term = raw.replace(/[%_\[\]]/g, '');
+    if (term.length < 2) return res.json([]);
+
+    const result = await query(
+      `SELECT TOP 8 oidUser, strNexonID, NickName
+       FROM CBT_User
+       WHERE strNexonID LIKE @q OR NickName LIKE @q
+       ORDER BY CASE WHEN NickName = @exact OR strNexonID = @exact THEN 0 ELSE 1 END, NickName`,
+      { q: `%${term}%`, exact: term }
+    );
+    res.json((result.recordset || []).map((row) => ({
+      id: row.oidUser,
+      username: row.strNexonID,
+      nickname: row.NickName || row.strNexonID,
+    })));
+  } catch (error) {
+    console.error('[GIFT SEARCH]', error.message);
+    res.status(500).json({ error: 'No se pudo buscar jugadores' });
+  }
+});
+
 router.post('/paypal-complete', async (req, res) => {
   try {
     const header = req.headers.authorization || '';
     const user = verifyToken(header.startsWith('Bearer ') ? header.slice(7) : '');
-    const oidUser = Number(user?.id);
+    const oidUser = Number(user?.id || user?.userId);
     const username = String(user?.username || '');
     if (!oidUser || !username) return res.status(401).json({ error: 'Sesión inválida. Vuelve a iniciar sesión.' });
 
@@ -435,6 +463,22 @@ router.post('/paypal-complete', async (req, res) => {
     const grant = nxFromPayment(paid, custom, req.body?.nx);
     if (!grant) return res.status(400).json({ error: 'La compra mínima es 1,000 NX' });
 
+    let targetOid = oidUser;
+    let targetName = username;
+    let targetNick = user.NickName || username;
+    const recipientId = Number(req.body?.recipientId || 0);
+    if (recipientId && recipientId !== oidUser) {
+      const found = await query(
+        `SELECT TOP 1 oidUser, strNexonID, NickName FROM CBT_User WHERE oidUser = @id`,
+        { id: recipientId }
+      );
+      const recipient = found.recordset?.[0];
+      if (!recipient) return res.status(404).json({ error: 'Ese jugador no existe' });
+      targetOid = Number(recipient.oidUser);
+      targetName = String(recipient.strNexonID || '');
+      targetNick = recipient.NickName || targetName;
+    }
+
     await ensurePaymentCodes();
     const paymentCode = `paypal:${orderId}`.slice(0, 100);
     const existing = await queryWeb(
@@ -455,13 +499,15 @@ router.post('/paypal-complete', async (req, res) => {
         `INSERT INTO PaymentCodes (oidUser, username, NickName, paymentCode, nxAmount, dollarAmount, status, note)
          VALUES (@oidUser, @username, @NickName, @paymentCode, @nxAmount, @dollarAmount, 'pending', @note)`,
         {
-          oidUser,
-          username,
-          NickName: user.NickName || username,
+          oidUser: targetOid,
+          username: targetName,
+          NickName: targetNick,
           paymentCode,
           nxAmount: grant.nx,
           dollarAmount: grant.price,
-          note: custom ? `PayPal automático +${grant.bonus} NX de bono` : 'PayPal automático',
+          note: targetOid === oidUser
+            ? (custom ? `PayPal automático +${grant.bonus} NX de bono` : 'PayPal automático')
+            : `Regalo de ${username}${custom ? ` +${grant.bonus} NX de bono` : ''}`,
         }
       );
     } catch (error) {
@@ -471,7 +517,7 @@ router.post('/paypal-complete', async (req, res) => {
       throw error;
     }
 
-    const credited = await creditNx(oidUser, username, grant.nx);
+    const credited = await creditNx(targetOid, targetName, grant.nx);
     if (!credited) {
       await queryWeb(`DELETE FROM PaymentCodes WHERE paymentCode = @paymentCode AND status = 'pending'`, { paymentCode });
       return res.status(500).json({ error: 'No se pudo acreditar el NX' });
@@ -484,8 +530,14 @@ router.post('/paypal-complete', async (req, res) => {
       { paymentCode }
     );
 
-    console.log(`[PAYPAL] ${username} +${grant.nx} NX (bono ${grant.bonus}) $${grant.price} ${orderId}`);
-    res.json({ success: true, nx: grant.nx, bonus: grant.bonus, price: grant.price });
+    console.log(`[PAYPAL] ${username} -> ${targetName} +${grant.nx} NX (bono ${grant.bonus}) $${grant.price} ${orderId}`);
+    res.json({
+      success: true,
+      nx: grant.nx,
+      bonus: grant.bonus,
+      price: grant.price,
+      recipient: targetOid === oidUser ? null : targetNick,
+    });
   } catch (error) {
     console.error('PayPal complete error:', error);
     res.status(500).json({ error: 'No se pudo acreditar el NX' });

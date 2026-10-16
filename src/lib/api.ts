@@ -403,12 +403,17 @@ class ApiClient {
   }
 
   // Nuevo sistema de códigos de pago
-  async completePaypalPayment(orderId: string, amount: number, custom: boolean, nx: number) {
-    return await this.request<{ success: boolean; nx: number; bonus: number; already?: boolean }>('POST', '/payments/paypal-complete', {
+  async searchGiftPlayers(q: string) {
+    return await this.request<{ id: number; username: string; nickname: string }[]>('GET', `/payments/gift-search?q=${encodeURIComponent(q)}`);
+  }
+
+  async completePaypalPayment(orderId: string, amount: number, custom: boolean, nx: number, recipientId?: number) {
+    return await this.request<{ success: boolean; nx: number; bonus: number; already?: boolean; recipient?: string | null }>('POST', '/payments/paypal-complete', {
       orderId,
       amount,
       custom,
       nx,
+      recipientId: recipientId || 0,
     });
   }
 

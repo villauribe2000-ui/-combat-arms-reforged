@@ -124,6 +124,12 @@ export default function WalletPage() {
   const [timeUntilReset, setTimeUntilReset] = useState<string>('');
   const [customNxAmount, setCustomNxAmount] = useState<string>('');
   const [customNxBonus, setCustomNxBonus] = useState<number>(0);
+  const [giftQuery, setGiftQuery] = useState('');
+  const [giftResults, setGiftResults] = useState<{ id: number; username: string; nickname: string }[]>([]);
+  const [giftTarget, setGiftTarget] = useState<{ id: number; username: string; nickname: string } | null>(null);
+  const [giftSearching, setGiftSearching] = useState(false);
+  const giftTargetRef = useRef<{ id: number; username: string; nickname: string } | null>(null);
+  giftTargetRef.current = giftTarget;
   selectedPackageRef.current = selectedPackage;
   customNxRef.current = customNxAmount;
 
@@ -269,17 +275,20 @@ export default function WalletPage() {
         ? parseInt(customNxRef.current || '0', 10)
         : selectedPackageRef.current?.coins || 0;
       try {
-        const result = await api.completePaypalPayment(orderId, amount, custom, nx);
+        const result = await api.completePaypalPayment(orderId, amount, custom, nx, giftTargetRef.current?.id);
         const bonusText = !result.already && result.bonus
           ? ` Incluye un bono de ${result.bonus.toLocaleString()} NX.`
           : '';
+        const who = result.recipient || giftTargetRef.current?.nickname;
         setNotification({
           type: 'success',
           message: result.already
             ? 'Ese pago de PayPal ya estaba aplicado.'
-            : `Listo. Se agregaron ${Number(result.nx).toLocaleString()} NX a tu cuenta.${bonusText}`,
+            : who
+              ? `Listo. Se agregaron ${Number(result.nx).toLocaleString()} NX a ${who}.${bonusText}`
+              : `Listo. Se agregaron ${Number(result.nx).toLocaleString()} NX a tu cuenta.${bonusText}`,
         });
-        if (!result.already) setNxBalance(current => current + Number(result.nx || 0));
+        if (!result.already && !who) setNxBalance(current => current + Number(result.nx || 0));
         await refreshProfile();
       } catch (error: any) {
         creditingRef.current.delete(orderId);
@@ -294,6 +303,33 @@ export default function WalletPage() {
       paypalPaidWaiters.delete(onPaid);
     };
   }, [profile, refreshProfile]);
+
+  useEffect(() => {
+    if (!profile || giftTarget) return;
+    const term = giftQuery.trim();
+    if (term.length < 2) {
+      setGiftResults([]);
+      return;
+    }
+    let alive = true;
+    const timer = window.setTimeout(async () => {
+      try {
+        setGiftSearching(true);
+        const rows = await api.searchGiftPlayers(term);
+        if (!alive) return;
+        const mine = Number(profile.userId || profile.id || 0);
+        setGiftResults(rows.filter(row => row.id !== mine));
+      } catch {
+        if (alive) setGiftResults([]);
+      } finally {
+        if (alive) setGiftSearching(false);
+      }
+    }, 250);
+    return () => {
+      alive = false;
+      window.clearTimeout(timer);
+    };
+  }, [giftQuery, giftTarget, profile]);
 
   useEffect(() => {
     if (!profile) return;
@@ -626,8 +662,46 @@ export default function WalletPage() {
               <strong>+{customNxBonus.toLocaleString()} NX</strong>
             </div>
           )}
+          <div className="charge-gift">
+            <p>Regalar NX</p>
+            {giftTarget ? (
+              <div className="charge-gift-picked">
+                <span>
+                  <strong>{giftTarget.nickname}</strong>
+                  <small>{giftTarget.username}</small>
+                </span>
+                <button type="button" onClick={() => { setGiftTarget(null); setGiftQuery(''); setGiftResults([]); }} aria-label="Quitar jugador">
+                  <X size={14} />
+                </button>
+              </div>
+            ) : (
+              <>
+                <input
+                  value={giftQuery}
+                  onChange={e => setGiftQuery(e.target.value)}
+                  placeholder="Busca usuario o nick"
+                  autoComplete="off"
+                />
+                {giftSearching && <small>Buscando…</small>}
+                {giftResults.length > 0 && (
+                  <ul>
+                    {giftResults.map(player => (
+                      <li key={player.id}>
+                        <button type="button" onClick={() => { setGiftTarget(player); setGiftQuery(''); setGiftResults([]); }}>
+                          <strong>{player.nickname}</strong>
+                          <small>{player.username}</small>
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </>
+            )}
+          </div>
           <p className="charge-checkout-note">
-            When PayPal completes the payment, the NX is added to your account automatically. A custom amount includes a 10% bonus.
+            {giftTarget
+              ? `Este pago le suma el NX a ${giftTarget.nickname}, no a tu cuenta.`
+              : 'When PayPal completes the payment, the NX is added to your account automatically. A custom amount includes a 10% bonus.'}
           </p>
           <div className="charge-actions">
             <div id={PAYPAL_CONTAINER_ID} className="charge-paypal" />
