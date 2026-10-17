@@ -161,6 +161,22 @@ class ApiClient {
     return await this.request<{ total: number }>('GET', '/stats/players-count');
   }
 
+  async getEvents() {
+    return await this.request<any>('GET', '/admin/events');
+  }
+
+  async getEvent(key: string) {
+    return await this.request<any>('GET', `/admin/events/${key}`);
+  }
+
+  async saveEvent(key: string, body: any) {
+    return await this.request<any>('POST', `/admin/events/${key}`, body);
+  }
+
+  async searchEventProducts(q: string) {
+    return await this.request<any>('GET', `/admin/events/products?q=${encodeURIComponent(q)}`);
+  }
+
   async getAdminOverview() {
     return await this.request<any>('GET', '/admin/overview');
   }
