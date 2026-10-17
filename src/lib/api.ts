@@ -434,7 +434,7 @@ class ApiClient {
   }
 
   async completePaypalPayment(orderId: string, amount: number, custom: boolean, nx: number, recipientId?: number) {
-    return await this.request<{ success: boolean; nx: number; bonus: number; already?: boolean; recipient?: string | null }>('POST', '/payments/paypal-complete', {
+    return await this.request<{ success: boolean; nx: number; bonus: number; pending?: boolean; already?: boolean; recipient?: string | null }>('POST', '/payments/paypal-complete', {
       orderId,
       amount,
       custom,

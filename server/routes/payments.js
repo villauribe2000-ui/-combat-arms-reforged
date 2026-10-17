@@ -1,8 +1,6 @@
 import { Router } from 'express';
 import { query, queryVisms, queryWeb } from '../db.js';
 import { verifyToken } from '../auth.js';
-import { getPayPalOrder } from '../paypal.js';
-
 const router = Router();
 const STAFF_OWNER = 'villauribe12';
 
@@ -384,19 +382,6 @@ function nxFromPayment(paid, custom, requestedNx) {
   return { nx: base + bonus, bonus, price };
 }
 
-async function creditNx(oidUser, username, nx) {
-  let updated = await queryVisms(
-    `UPDATE VISMS_UserList SET RealBalance = ISNULL(RealBalance, 0) + @nx WHERE oid = @oid`,
-    { nx, oid: oidUser }
-  );
-  if (updated?.rowsAffected?.[0]) return true;
-  updated = await queryVisms(
-    `UPDATE VISMS_UserList SET RealBalance = ISNULL(RealBalance, 0) + @nx WHERE strNexonID = @username`,
-    { nx, username }
-  );
-  return Boolean(updated?.rowsAffected?.[0]);
-}
-
 router.get('/gift-search', async (req, res) => {
   try {
     const header = req.headers.authorization || '';
@@ -435,29 +420,12 @@ router.post('/paypal-complete', async (req, res) => {
 
     const orderId = String(req.body?.orderId || '').trim();
     const custom = Boolean(req.body?.custom);
-    let paid = roundMoney(req.body?.amount);
-    if (!/^[A-Za-z0-9_-]{8,64}$/.test(orderId)) {
-      return res.status(400).json({ error: 'PayPal no confirmó el pago' });
+    const paid = roundMoney(req.body?.amount);
+    if (orderId.length < 4 || orderId.length > 80) {
+      return res.status(400).json({ error: 'Falta el número del pago' });
     }
     if (!Number.isFinite(paid) || paid < 0.01 || paid > 1000) {
       return res.status(400).json({ error: 'Monto de PayPal no válido' });
-    }
-
-    if (process.env.PAYPAL_CLIENT_SECRET) {
-      try {
-        const order = await getPayPalOrder(orderId);
-        if (order?.status && order.status !== 'COMPLETED' && order.status !== 'APPROVED') {
-          console.error(`[PAYPAL] Orden ${orderId} en estado ${order.status}`);
-          return res.status(400).json({ error: 'PayPal no confirmó este pago' });
-        }
-        const verified = Number(
-          order?.purchase_units?.[0]?.payments?.captures?.[0]?.amount?.value
-          || order?.purchase_units?.[0]?.amount?.value
-        );
-        if (verified > 0) paid = roundMoney(verified);
-      } catch (error) {
-        console.error(`[PAYPAL] No se pudo leer la orden ${orderId}:`, error?.status || error?.message || error);
-      }
     }
 
     const grant = nxFromPayment(paid, custom, req.body?.nx);
@@ -486,29 +454,12 @@ router.post('/paypal-complete', async (req, res) => {
       { paymentCode }
     );
     if (existing.recordset?.length) {
-      const row = existing.recordset[0];
-      if (String(row.status) === 'approved') {
-        return res.json({
-          success: true,
-          already: true,
-          nx: Number(row.nxAmount) || grant.nx,
-          bonus: grant.bonus,
-        });
-      }
-      const credited = await creditNx(targetOid, targetName, grant.nx);
-      if (!credited) return res.status(500).json({ error: 'No se pudo acreditar el NX' });
-      await queryWeb(
-        `UPDATE PaymentCodes
-         SET status = 'approved', approvedAt = GETDATE(), approvedBy = 'paypal', nxAmount = @nxAmount, dollarAmount = @dollarAmount
-         WHERE paymentCode = @paymentCode`,
-        { paymentCode, nxAmount: grant.nx, dollarAmount: grant.price }
-      );
-      console.log(`[PAYPAL] Reintento ${username} -> ${targetName} +${grant.nx} NX $${grant.price} ${orderId}`);
       return res.json({
         success: true,
-        nx: grant.nx,
+        pending: String(existing.recordset[0].status) !== 'approved',
+        already: true,
+        nx: Number(existing.recordset[0].nxAmount) || grant.nx,
         bonus: grant.bonus,
-        price: grant.price,
         recipient: targetOid === oidUser ? null : targetNick,
       });
     }
@@ -525,33 +476,21 @@ router.post('/paypal-complete', async (req, res) => {
           nxAmount: grant.nx,
           dollarAmount: grant.price,
           note: targetOid === oidUser
-            ? (custom ? `PayPal automático +${grant.bonus} NX de bono` : 'PayPal automático')
-            : `Regalo de ${username}${custom ? ` +${grant.bonus} NX de bono` : ''}`,
+            ? (custom ? `Tarjeta PayPal, sin confirmar. Bono ${grant.bonus} NX` : 'Tarjeta PayPal, sin confirmar')
+            : `Regalo de ${username}, sin confirmar${custom ? `. Bono ${grant.bonus} NX` : ''}`,
         }
       );
     } catch (error) {
       if (String(error?.message || '').includes('UNIQUE') || error?.number === 2627 || error?.number === 2601) {
-        return res.json({ success: true, already: true, nx: grant.nx, bonus: grant.bonus });
+        return res.json({ success: true, pending: true, already: true, nx: grant.nx, bonus: grant.bonus });
       }
       throw error;
     }
 
-    const credited = await creditNx(targetOid, targetName, grant.nx);
-    if (!credited) {
-      await queryWeb(`DELETE FROM PaymentCodes WHERE paymentCode = @paymentCode AND status = 'pending'`, { paymentCode });
-      return res.status(500).json({ error: 'No se pudo acreditar el NX' });
-    }
-
-    await queryWeb(
-      `UPDATE PaymentCodes
-       SET status = 'approved', approvedAt = GETDATE(), approvedBy = 'paypal'
-       WHERE paymentCode = @paymentCode AND status = 'pending'`,
-      { paymentCode }
-    );
-
-    console.log(`[PAYPAL] ${username} -> ${targetName} +${grant.nx} NX (bono ${grant.bonus}) $${grant.price} ${orderId}`);
+    console.log(`[PAYPAL] Pendiente ${username} -> ${targetName} +${grant.nx} NX $${grant.price} ${orderId}`);
     res.json({
       success: true,
+      pending: true,
       nx: grant.nx,
       bonus: grant.bonus,
       price: grant.price,
@@ -559,7 +498,7 @@ router.post('/paypal-complete', async (req, res) => {
     });
   } catch (error) {
     console.error('PayPal complete error:', error);
-    res.status(500).json({ error: 'No se pudo acreditar el NX' });
+    res.status(500).json({ error: 'No se pudo dejar el pago pendiente' });
   }
 });
 
