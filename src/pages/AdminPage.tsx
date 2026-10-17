@@ -725,8 +725,10 @@ export default function AdminPage({ onNavigate }: { onNavigate?: (page: PageId) 
 
   const canManageStaff = String(profile?.username || '').toLowerCase() === 'villauribe12';
   const isStaffOwner = canManageStaff
-    || String(gmDesk?.me?.username || '').toLowerCase() === 'villauribe12'
-    || !!gmDesk?.unlimited;
+    || String(gmDesk?.me?.username || '').toLowerCase() === 'villauribe12';
+  const unlimitedGift = Boolean(gmDesk?.unlimited)
+    || ['villauribe12', 'john_exe'].includes(String(gmDesk?.me?.username || '').toLowerCase())
+    || ['villauribe12', 'john_exe'].includes(String(profile?.username || '').toLowerCase());
 
   const assignStaff = async (userId: number, role: string) => {
     if (!canManageStaff) return;
@@ -809,7 +811,7 @@ export default function AdminPage({ onNavigate }: { onNavigate?: (page: PageId) 
   const sendGmGift = async (toUserId: number) => {
     const amount = Math.floor(Number(String(gmAmount).replace(/[^\d]/g, '')) || 0);
     if (amount <= 0) return;
-    const owner = profile?.username === 'villauribe12' || gmDesk?.unlimited || gmDesk?.me?.username === 'villauribe12';
+    const owner = unlimitedGift;
     if (!owner && amount > Number(gmDesk?.quota?.remaining || 0)) {
       alert('No tienes saldo para regalar');
       return;
@@ -2127,7 +2129,7 @@ export default function AdminPage({ onNavigate }: { onNavigate?: (page: PageId) 
                     </div>
                     <div className="staff-quota-chip">
                       <small>CUPO / RESTANTE</small>
-                      <strong>{nxFmt(p.remaining)} <span>/ {nxFmt(p.monthlyAllotment)}</span></strong>
+                      <strong>{p.unlimited || String(p.username || '').toLowerCase() === 'john_exe' ? 'ILIMITADO' : <>{nxFmt(p.remaining)} <span>/ {nxFmt(p.monthlyAllotment)}</span></>}</strong>
                     </div>
                     <ChevronRight className="staff-card-go" />
                   </button>
@@ -2152,11 +2154,11 @@ export default function AdminPage({ onNavigate }: { onNavigate?: (page: PageId) 
                     {(staffDesk?.staff || staffOpen).webGm && <span className="pl-pill pl-pill-gm">GM</span>}
                   </div>
                   <div className="staff-metrics">
-                    <article><p>ASIGNADO / MES</p><strong>{nxFmt(staffDesk?.quota?.monthlyAllotment ?? staffOpen.monthlyAllotment)}</strong></article>
+                    <article><p>ASIGNADO / MES</p><strong>{staffDesk?.unlimited || staffDesk?.quota?.unlimited || String((staffDesk?.staff || staffOpen).username || '').toLowerCase() === 'john_exe' ? 'ILIMITADO' : nxFmt(staffDesk?.quota?.monthlyAllotment ?? staffOpen.monthlyAllotment)}</strong></article>
                     <article><p>USADO</p><strong>{nxFmt(staffDesk?.quota?.used ?? staffOpen.used)}</strong></article>
-                    <article><p>RESTA</p><strong>{nxFmt(staffDesk?.quota?.remaining ?? staffOpen.remaining)}</strong></article>
+                    <article><p>RESTA</p><strong>{staffDesk?.unlimited || staffDesk?.quota?.unlimited || String((staffDesk?.staff || staffOpen).username || '').toLowerCase() === 'john_exe' ? 'ILIMITADO' : nxFmt(staffDesk?.quota?.remaining ?? staffOpen.remaining)}</strong></article>
                   </div>
-                  {canManageStaff && (
+                  {canManageStaff && !(staffDesk?.unlimited || staffDesk?.quota?.unlimited || String((staffDesk?.staff || staffOpen).username || '').toLowerCase() === 'john_exe') && (
                     <form className="staff-toolbar staff-quota-actions" onSubmit={(e) => { e.preventDefault(); saveQuota('set'); }}>
                       <input value={quotaInput} onChange={(e) => setQuotaInput(e.target.value)} placeholder="NX que le dejas de cupo" />
                       <button className="staff-btn staff-btn-gold" type="submit" disabled={staffBusy}>Poner cupo</button>
@@ -2164,7 +2166,9 @@ export default function AdminPage({ onNavigate }: { onNavigate?: (page: PageId) 
                       <button className="staff-btn staff-btn-danger staff-btn-danger-sm" type="button" disabled={staffBusy} onClick={() => saveQuota('clear')}>Quitar cupo</button>
                     </form>
                   )}
-                  <p className="staff-note">Quitar cupo deja RESTANTE en 0 (ya no puede regalar). Poner cupo le deja exactamente esa cantidad para regalar. Sumar se la agrega al restante actual.</p>
+                  <p className="staff-note">{staffDesk?.unlimited || staffDesk?.quota?.unlimited || String((staffDesk?.staff || staffOpen).username || '').toLowerCase() === 'john_exe'
+                    ? 'Este GM no tiene cupo. Puede regalar el NX que quiera a cualquier jugador.'
+                    : 'Quitar cupo deja RESTANTE en 0 (ya no puede regalar). Poner cupo le deja exactamente esa cantidad para regalar. Sumar se la agrega al restante actual.'}</p>
                   <h3>REGALOS DE ESTE MES</h3>
                   <div className="staff-gift-list">
                     {(staffDesk?.gifts || []).length === 0 ? <p className="staff-note">Todavía no ha regalado NX.</p> : (staffDesk.gifts || []).map((g: any) => (
@@ -2193,7 +2197,9 @@ export default function AdminPage({ onNavigate }: { onNavigate?: (page: PageId) 
               <div>
                 <p className="eyebrow">OPERATIONS / GM</p>
                 <h1>GM</h1>
-                <p>Tu etiqueta y el NX que puedes regalar este mes. Busca un jugador: verás cuánto NX tiene y puedes enviarle desde tu cupo.{isStaffOwner ? ' Solo tú puedes quitarle NX.' : ''}</p>
+                <p>{unlimitedGift && !isStaffOwner
+                  ? 'Puedes regalar el NX que quieras al jugador que busques. No tienes cupo.'
+                  : `Tu etiqueta y el NX que puedes regalar este mes. Busca un jugador: verás cuánto NX tiene y puedes enviarle desde tu cupo.${isStaffOwner ? ' Solo tú puedes quitarle NX.' : ''}`}</p>
               </div>
             </div>
             {roomLoading ? <Empty text="Cargando cupo..." /> : !gmDesk?.me ? <Empty text="No tienes un rol de staff asignado." /> : (
@@ -2203,11 +2209,11 @@ export default function AdminPage({ onNavigate }: { onNavigate?: (page: PageId) 
                     <p>TU ETIQUETA</p>
                     <strong style={{ fontSize: 22 }}>{String(gmDesk.me.webRole || 'STAFF').toUpperCase()}</strong>
                   </article>
-                  <article><p>CUPO DEL MES</p><strong>{gmDesk.unlimited || gmDesk.me.username === 'villauribe12' ? 'ILIMITADO' : nxFmt(gmDesk.quota?.monthlyAllotment)}</strong></article>
+                  <article><p>CUPO DEL MES</p><strong>{unlimitedGift ? 'ILIMITADO' : nxFmt(gmDesk.quota?.monthlyAllotment)}</strong></article>
                   <article><p>YA REGALADO</p><strong>{nxFmt(gmDesk.quota?.used)}</strong></article>
-                  <article><p>TE QUEDA</p><strong>{gmDesk.unlimited || gmDesk.me.username === 'villauribe12' ? 'ILIMITADO' : nxFmt(gmDesk.quota?.remaining)}</strong></article>
+                  <article><p>TE QUEDA</p><strong>{unlimitedGift ? 'ILIMITADO' : nxFmt(gmDesk.quota?.remaining)}</strong></article>
                 </div>
-                {!(gmDesk.unlimited || gmDesk.me.username === 'villauribe12') && Number(gmDesk.quota?.remaining || 0) <= 0 && (
+                {!unlimitedGift && Number(gmDesk.quota?.remaining || 0) <= 0 && (
                   <p className="staff-alert">No tienes saldo para regalar</p>
                 )}
                 <form className="staff-toolbar" onSubmit={searchGmPlayers}>
@@ -2248,7 +2254,7 @@ export default function AdminPage({ onNavigate }: { onNavigate?: (page: PageId) 
                         placeholder="Cantidad"
                       />
                       <div className="staff-quota-actions">
-                        <button className="staff-btn staff-btn-gold" type="button" disabled={staffBusy || (!isStaffOwner && Number(gmDesk.quota?.remaining || 0) <= 0)} onClick={() => sendGmGift(p.id)}>
+                        <button className="staff-btn staff-btn-gold" type="button" disabled={staffBusy || (!unlimitedGift && Number(gmDesk.quota?.remaining || 0) <= 0)} onClick={() => sendGmGift(p.id)}>
                           Regalar {gmAmount || '0'} NX
                         </button>
                         {isStaffOwner && (

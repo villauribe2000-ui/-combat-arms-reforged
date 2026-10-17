@@ -304,10 +304,10 @@ export default function AdminPlayerAccount({ id, onBack }: { id: number; onBack:
         <section className="pd-card">
           <div className="pd-card-top">
             <h2><Gift /> REGALOS NX</h2>
-            <span className="pd-chip">{profile?.username === 'villauribe12' ? 'ILIMITADO' : `CUPO ${Number(giftQuota?.remaining || 0).toLocaleString()} NX`}</span>
+            <span className="pd-chip">{profile?.username?.toLowerCase() === 'villauribe12' || profile?.username?.toLowerCase() === 'john_exe' || giftQuota?.unlimited ? 'ILIMITADO' : `CUPO ${Number(giftQuota?.remaining || 0).toLocaleString()} NX`}</span>
           </div>
           <p className="sub">Se descuenta de tu cupo de GM, entra al juego y queda en Charge Coins con el mensaje.</p>
-          {profile?.username !== 'villauribe12' && Number(giftQuota?.remaining || 0) <= 0 && (
+          {profile?.username?.toLowerCase() !== 'villauribe12' && profile?.username?.toLowerCase() !== 'john_exe' && !giftQuota?.unlimited && Number(giftQuota?.remaining || 0) <= 0 && (
             <p className="staff-alert">No tienes saldo para regalar</p>
           )}
           <form
@@ -316,7 +316,7 @@ export default function AdminPlayerAccount({ id, onBack }: { id: number; onBack:
               e.preventDefault();
               const amount = Math.floor(Number(String(giftAmount).replace(/[^\d]/g, '')) || 0);
               if (amount <= 0) return;
-              const owner = profile?.username === 'villauribe12';
+              const owner = profile?.username?.toLowerCase() === 'villauribe12' || profile?.username?.toLowerCase() === 'john_exe' || giftQuota?.unlimited;
               if (!owner && amount > Number(giftQuota?.remaining || 0)) {
                 alert('No tienes saldo para regalar');
                 return;
@@ -339,7 +339,7 @@ export default function AdminPlayerAccount({ id, onBack }: { id: number; onBack:
           >
             <input value={giftAmount} onChange={(e) => setGiftAmount(e.target.value)} placeholder="Cantidad NX, ej. 50000" />
             <input value={giftMessage} onChange={(e) => setGiftMessage(e.target.value)} placeholder="Mensaje para Charge Coins" maxLength={300} />
-            <button className="staff-btn staff-btn-gold" type="submit" disabled={giftBusy || (profile?.username !== 'villauribe12' && Number(giftQuota?.remaining || 0) <= 0)}>
+            <button className="staff-btn staff-btn-gold" type="submit" disabled={giftBusy || (profile?.username?.toLowerCase() !== 'villauribe12' && profile?.username?.toLowerCase() !== 'john_exe' && !giftQuota?.unlimited && Number(giftQuota?.remaining || 0) <= 0)}>
               Enviar NX
             </button>
             {profile?.username === 'villauribe12' && (
@@ -369,8 +369,10 @@ export default function AdminPlayerAccount({ id, onBack }: { id: number; onBack:
             )}
           </form>
           <p className="staff-note">
-            {profile?.username === 'villauribe12'
-              ? 'Como dueño puedes poner NX sin límite y también quitar NX a esta cuenta. Queda en Historial.'
+            {profile?.username?.toLowerCase() === 'villauribe12' || profile?.username?.toLowerCase() === 'john_exe' || giftQuota?.unlimited
+              ? (profile?.username?.toLowerCase() === 'villauribe12'
+                ? 'Como dueño puedes poner NX sin límite y también quitar NX a esta cuenta. Queda en Historial.'
+                : 'Puedes poner el NX que quieras a este jugador. No tiene cupo.')
               : `Usado ${Number(giftQuota?.used || 0).toLocaleString()} · asignado ${Number(giftQuota?.monthlyAllotment || 0).toLocaleString()} este mes.`}
           </p>
           <h3 style={{ fontSize: 11, letterSpacing: '1.2px', color: '#888', margin: '18px 0 8px' }}>ENVIOS A ESTA CUENTA</h3>

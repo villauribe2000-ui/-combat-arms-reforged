@@ -8,6 +8,11 @@ const JWT_SECRETS = [...new Set([
   'your-secret-key-change-this',
 ].filter(Boolean))];
 const STAFF_OWNER = 'villauribe12';
+const UNLIMITED_GM = new Set(['villauribe12', 'john_exe']);
+
+function unlimitedGm(username) {
+  return UNLIMITED_GM.has(String(username || '').toLowerCase());
+}
 
 function readAuthToken(req) {
   const header = String(req.headers.authorization || req.headers.Authorization || '');
@@ -1367,6 +1372,7 @@ async function loadStaffBundle() {
     }
     const monthlyAllotment = asNum(q?.monthlyAllotment);
     const used = asNum(q?.used);
+    const unlimited = unlimitedGm(user.username || row.username);
     staff.push({
       userId: Number(row.userId),
       username: user.username || row.username,
@@ -1382,7 +1388,8 @@ async function loadStaffBundle() {
       grantedAt: row.grantedAt,
       monthlyAllotment,
       used,
-      remaining: Math.max(0, monthlyAllotment - used),
+      remaining: unlimited ? Number.MAX_SAFE_INTEGER : Math.max(0, monthlyAllotment - used),
+      unlimited,
       period,
     });
   }
@@ -1483,7 +1490,7 @@ router.get('/staff/me', async (req, res) => {
     }
     const quota = await getQuota(me.userId, me.username);
     const gifts = await giftsFor(quota.userId || me.userId, 80);
-    const unlimited = actor.username === STAFF_OWNER;
+    const unlimited = unlimitedGm(actor.username) || unlimitedGm(me.username);
     res.json({
       me,
       quota: unlimited ? { ...quota, remaining: Number.MAX_SAFE_INTEGER, unlimited: true } : quota,
@@ -1531,8 +1538,10 @@ router.get('/staff/:userId/desk', async (req, res) => {
     if (!row) return res.status(404).json({ error: 'not staff' });
     const flags = roleFlags(row);
     const user = (await ca(`SELECT TOP 1 oidUser as id, strNexonID as username, NickName FROM CBT_User WHERE oidUser = @id`, { id: userId }))[0] || {};
-    const quota = await getQuota(userId, user.username || row.username);
+    const staffName = user.username || row.username;
+    const quota = await getQuota(userId, staffName);
     const gifts = await giftsFor(quota.userId || userId, 80);
+    const unlimited = unlimitedGm(staffName);
     res.json({
       staff: {
         userId,
@@ -1544,8 +1553,9 @@ router.get('/staff/:userId/desk', async (req, res) => {
         grantedBy: row.grantedBy,
         grantedAt: row.grantedAt,
       },
-      quota,
+      quota: unlimited ? { ...quota, remaining: Number.MAX_SAFE_INTEGER, unlimited: true } : quota,
       gifts,
+      unlimited,
     });
   } catch (e) {
     res.status(500).json({ error: e.message });
@@ -1712,7 +1722,7 @@ router.post('/staff/gift', async (req, res) => {
     const amount = Math.floor(Number(req.body?.amount) || 0);
     const message = String(req.body?.message || '').trim().slice(0, 300);
     if (!Number.isFinite(toUserId) || amount <= 0) return res.status(400).json({ error: 'invalid amount' });
-    if (amount > 50000000) return res.status(400).json({ error: 'amount too large' });
+    if (amount > 2000000000) return res.status(400).json({ error: 'amount too large' });
     const quota = await getQuota(me.userId, username);
     let fromUserId = Number(quota.userId || me.userId || actor.userId || 0);
     if (!fromUserId) {
@@ -1723,7 +1733,7 @@ router.post('/staff/gift', async (req, res) => {
       SELECT TOP 1 oidUser as id, strNexonID as username, NickName
       FROM CBT_User WHERE oidUser = @id AND DeleteDate IS NULL`, { id: toUserId }))[0];
     if (!target) return res.status(404).json({ error: 'player not found' });
-    const unlimited = username === STAFF_OWNER;
+    const unlimited = unlimitedGm(username) || unlimitedGm(actor.username);
     if (!unlimited && (quota.monthlyAllotment <= 0 || amount > quota.remaining)) {
       return res.status(400).json({ error: 'No tienes saldo para regalar' });
     }
