@@ -121,7 +121,7 @@ router.post('/reject/:paymentId', async (req, res) => {
 // Enviar código de pago (nuevo sistema)
 router.post('/submit-payment-code', async (req, res) => {
   try {
-    const { oidUser, username, NickName, paymentCode, nxAmount, dollarAmount } = req.body;
+    const { oidUser, username, NickName, paymentCode, nxAmount, dollarAmount, note } = req.body;
 
     if (!oidUser || !username || !paymentCode || !nxAmount || !dollarAmount) {
       return res.status(400).json({ error: 'Datos incompletos' });
@@ -136,15 +136,16 @@ router.post('/submit-payment-code', async (req, res) => {
 
     await ensurePaymentCodes();
     await queryWeb(
-      `INSERT INTO PaymentCodes (oidUser, username, NickName, paymentCode, nxAmount, dollarAmount, status)
-       VALUES (@oidUser, @username, @NickName, @paymentCode, @nxAmount, @dollarAmount, 'pending')`,
+      `INSERT INTO PaymentCodes (oidUser, username, NickName, paymentCode, nxAmount, dollarAmount, status, note)
+       VALUES (@oidUser, @username, @NickName, @paymentCode, @nxAmount, @dollarAmount, 'pending', @note)`,
       {
         oidUser: oidUser,
         username: username,
         NickName: NickName || username,
         paymentCode: paymentCode,
         nxAmount: nxAmount,
-        dollarAmount: dollarAmount
+        dollarAmount: dollarAmount,
+        note: note ? String(note).slice(0, 300) : null,
       }
     );
 

@@ -443,7 +443,7 @@ class ApiClient {
     }, { keepalive: true });
   }
 
-  async submitPaymentCode(oidUser: number, username: string, NickName: string, paymentCode: string, nxAmount: number, dollarAmount: number) {
+  async submitPaymentCode(oidUser: number, username: string, NickName: string, paymentCode: string, nxAmount: number, dollarAmount: number, note?: string) {
     return await this.request<{ success: boolean; message: string }>('POST', '/payments/submit-payment-code', {
       oidUser,
       username,
@@ -451,6 +451,7 @@ class ApiClient {
       paymentCode,
       nxAmount,
       dollarAmount,
+      note,
     });
   }
 

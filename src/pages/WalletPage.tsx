@@ -1,32 +1,7 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { api } from '@/lib/api';
 import { Crown, X, CheckCircle, AlertCircle, Gift, TrendingUp, Coins } from 'lucide-react';
-
-const PAYPAL_CLIENT_ID = 'BAASxJaQf7fBU25aaCHGJtS-7Li538YT5l5OYF9zwZo_FU3_WOxsFV1eni9vVTULMnEzAwkHShoEYOzWzE';
-const PAYPAL_CONTAINER_ID = 'paypal-nx-button';
-let paypalCheckoutAmount = 0;
-
-function amountFromPaypal(data: any): number {
-  const value = data?.purchase_units?.[0]?.payments?.captures?.[0]?.amount?.value
-    || data?.purchase_units?.[0]?.amount?.value
-    || data?.amount?.value;
-  const amount = Number(value);
-  return amount >= 0.01 && amount <= 1000 ? amount : 0;
-}
-
-declare global {
-  interface Window {
-    paypal?: {
-      Buttons?: (options: {
-        onClick?: (data: unknown, actions: { resolve: () => Promise<void>; reject: () => Promise<void> }) => Promise<void> | void;
-        createOrder: (data: unknown, actions: { order: { create: (order: unknown) => Promise<string> } }) => Promise<string>;
-        onApprove: (data: { orderID: string }, actions: { order: { capture: () => Promise<any> } }) => Promise<void>;
-        onError?: (error: unknown) => void;
-      }) => { render: (selector: string) => Promise<void> };
-    };
-  }
-}
 
 interface GcoinPackage {
   id: number;
@@ -35,16 +10,11 @@ interface GcoinPackage {
 }
 
 export default function WalletPage() {
-  const { profile, refreshProfile } = useAuth();
+  const { profile } = useAuth();
   const [nxBalance, setNxBalance] = useState(0);
   const [gpBalance, setGpBalance] = useState(0);
   const [selectedPackage, setSelectedPackage] = useState<GcoinPackage | null>(null);
-  const [paypalReady, setPaypalReady] = useState(false);
-  const [paypalError, setPaypalError] = useState(false);
-  const paypalRendered = useRef(false);
-  const selectedPackageRef = useRef<GcoinPackage | null>(null);
-  const customNxRef = useRef('');
-  const creditingRef = useRef(new Set<string>());
+  const [purchasing, setPurchasing] = useState(false);
   const [showProofModal, setShowProofModal] = useState(false);
   const [selectedProofPackage, setSelectedProofPackage] = useState<GcoinPackage | null>(null);
   const [paymentCode, setPaymentCode] = useState<string>('');
@@ -60,10 +30,6 @@ export default function WalletPage() {
   const [giftResults, setGiftResults] = useState<{ id: number; username: string; nickname: string }[]>([]);
   const [giftTarget, setGiftTarget] = useState<{ id: number; username: string; nickname: string } | null>(null);
   const [giftSearching, setGiftSearching] = useState(false);
-  const giftTargetRef = useRef<{ id: number; username: string; nickname: string } | null>(null);
-  giftTargetRef.current = giftTarget;
-  selectedPackageRef.current = selectedPackage;
-  customNxRef.current = customNxAmount;
 
   const packages: GcoinPackage[] = [
     { id: 1, coins: 15000, price: 1.00 },
@@ -196,98 +162,6 @@ export default function WalletPage() {
     return () => clearInterval(interval);
   }, [profile?.gameCoins, profile?.totalBalance, profile?.username]);
 
-  const creditPaypalRef = useRef<(orderId: string, amount: number) => Promise<void>>(async () => {});
-  creditPaypalRef.current = async (orderId: string, amount: number) => {
-    if (creditingRef.current.has(orderId)) return;
-    creditingRef.current.add(orderId);
-    const custom = !selectedPackageRef.current;
-    const nx = custom
-      ? parseInt(customNxRef.current || '0', 10)
-      : selectedPackageRef.current?.coins || 0;
-    try {
-      const result = await api.completePaypalPayment(orderId, amount, custom, nx, giftTargetRef.current?.id);
-      const bonusText = !result.already && result.bonus
-        ? ` Incluye un bono de ${result.bonus.toLocaleString()} NX.`
-        : '';
-      const who = result.recipient || giftTargetRef.current?.nickname;
-      setNotification({
-        type: 'success',
-        message: result.already
-          ? 'Ese pago de PayPal ya estaba aplicado.'
-          : who
-            ? `Listo. Se agregaron ${Number(result.nx).toLocaleString()} NX a ${who}.${bonusText}`
-            : `Listo. Se agregaron ${Number(result.nx).toLocaleString()} NX a tu cuenta.${bonusText}`,
-      });
-      if (!result.already && !who) setNxBalance(current => current + Number(result.nx || 0));
-      await refreshProfile();
-    } catch (error: any) {
-      creditingRef.current.delete(orderId);
-      setNotification({
-        type: 'error',
-        message: error?.message || 'PayPal no confirmó el pago. El NX no se agregó.',
-      });
-    }
-  };
-
-  useEffect(() => {
-    if (!profile) return;
-
-    const renderButton = () => {
-      if (paypalRendered.current || !window.paypal?.Buttons) return;
-      if (!document.getElementById(PAYPAL_CONTAINER_ID)) return;
-      paypalRendered.current = true;
-      window.paypal.Buttons({
-        onClick: (_data, actions) => {
-          if (paypalCheckoutAmount >= 0.01) return actions.resolve();
-          setNotification({ type: 'error', message: 'Elige un paquete o escribe un monto antes de pagar.' });
-          return actions.reject();
-        },
-        createOrder: (_data, actions) => actions.order.create({
-          intent: 'CAPTURE',
-          purchase_units: [{
-            amount: {
-              currency_code: 'USD',
-              value: paypalCheckoutAmount.toFixed(2),
-            },
-            description: 'NX',
-          }],
-        }),
-        onApprove: async (data, actions) => {
-          const details = await actions.order.capture();
-          const amount = amountFromPaypal(details) || paypalCheckoutAmount;
-          await creditPaypalRef.current(data.orderID, amount);
-        },
-        onError: () => {
-          setNotification({
-            type: 'error',
-            message: 'PayPal no pudo completar el pago. El NX no se agregó.',
-          });
-        },
-      }).render(`#${PAYPAL_CONTAINER_ID}`).then(() => {
-        setPaypalReady(true);
-      }).catch(() => {
-        paypalRendered.current = false;
-        setPaypalError(true);
-      });
-    };
-
-    const scriptId = 'paypal-buttons-sdk';
-    const existing = document.getElementById(scriptId) as HTMLScriptElement | null;
-    if (existing) {
-      if (window.paypal?.Buttons) renderButton();
-      else existing.addEventListener('load', renderButton, { once: true });
-      return;
-    }
-
-    const script = document.createElement('script');
-    script.id = scriptId;
-    script.src = `https://www.paypal.com/sdk/js?client-id=${PAYPAL_CLIENT_ID}&components=buttons&disable-funding=venmo&currency=USD&intent=capture`;
-    script.async = true;
-    script.onload = () => renderButton();
-    script.onerror = () => setPaypalError(true);
-    document.body.appendChild(script);
-  }, [profile]);
-
   useEffect(() => {
     if (!profile || giftTarget) return;
     const term = giftQuery.trim();
@@ -314,17 +188,6 @@ export default function WalletPage() {
       window.clearTimeout(timer);
     };
   }, [giftQuery, giftTarget, profile]);
-
-  useEffect(() => {
-    let price = 0;
-    if (selectedPackage) {
-      price = selectedPackage.price;
-    } else if (customNxAmount) {
-      const amount = parseInt(customNxAmount, 10);
-      if (amount >= 1000) price = Math.max(0.01, parseFloat((amount / 16000).toFixed(2)));
-    }
-    paypalCheckoutAmount = price;
-  }, [selectedPackage, customNxAmount]);
 
   const handleProofImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -382,13 +245,19 @@ export default function WalletPage() {
       setSubmittingCode(true);
       const oidUser = Number(profile.userId || profile.id);
       if (!oidUser) throw new Error('Sesión inválida. Vuelve a iniciar sesión.');
+      const recipient = giftTarget || {
+        id: oidUser,
+        username: profile.username,
+        nickname: profile.nickname || profile.username,
+      };
       await api.submitPaymentCode(
-        oidUser,
-        profile.username,
-        profile.nickname || profile.username,
+        recipient.id,
+        recipient.username,
+        recipient.nickname,
         paymentCode.trim(),
         selectedProofPackage.coins,
-        selectedProofPackage.price
+        selectedProofPackage.price,
+        giftTarget ? `Pagado por ${profile.username}` : undefined
       );
 
       setNotification({ 
@@ -498,6 +367,15 @@ export default function WalletPage() {
       ? calculateCustomPrice(customNxAmount)
       : 0;
   const canCheckout = checkoutNx >= 1000;
+
+  const startCheckout = () => {
+    if (!canCheckout) {
+      setNotification({ type: 'error', message: 'Elige un paquete o escribe un monto antes de pagar.' });
+      return;
+    }
+    setPurchasing(true);
+    window.location.href = `https://paypal.me/LBetancourthQuenguan/${checkoutPrice.toFixed(2)}`;
+  };
 
   const openPaidModal = () => {
     if (selectedPackage) {
@@ -638,17 +516,13 @@ export default function WalletPage() {
           </div>
           <p className="charge-checkout-note">
             {giftTarget
-              ? `Este pago le suma el NX a ${giftTarget.nickname}, no a tu cuenta.`
-              : 'When PayPal completes the payment, the NX is added to your account automatically. A custom amount includes a 10% bonus.'}
+              ? `Paga en PayPal y envía el código con Ya pagué. El NX de ${giftTarget.nickname} lo confirma el administrador.`
+              : 'Paga en PayPal y envía el código con Ya pagué. El administrador confirma el pago y pone el NX.'}
           </p>
           <div className="charge-actions">
-            <div id="paypal-nx-button" className="charge-paypal" />
-            {!paypalReady && !paypalError && (
-              <p className="charge-checkout-note">Loading PayPal…</p>
-            )}
-            {paypalError && (
-              <p className="charge-checkout-note">PayPal could not load. Refresh the page and try again.</p>
-            )}
+            <button type="button" className="charge-review" disabled={!canCheckout || purchasing} onClick={startCheckout}>
+              {purchasing ? 'Abriendo PayPal...' : 'Pagar con PayPal'}
+            </button>
             <button type="button" className="charge-paid" disabled={!canCheckout} onClick={openPaidModal}>
               Ya pagué
             </button>
