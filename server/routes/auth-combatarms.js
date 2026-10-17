@@ -602,6 +602,7 @@ router.get('/pin-status', async (req, res) => {
     const row = await pinRow(actor.userId);
     res.json({ hasPin: Boolean(row) });
   } catch (error) {
+    console.error('[PIN STATUS]', error);
     res.status(500).json({ error: error.message });
   }
 });
@@ -619,6 +620,7 @@ router.post('/pin-setup', async (req, res) => {
     await savePin(actor.userId, actor.username, pin);
     res.json({ success: true });
   } catch (error) {
+    console.error('[PIN SETUP]', error);
     res.status(500).json({ error: error.message });
   }
 });
@@ -635,6 +637,7 @@ router.post('/pin-verify', async (req, res) => {
     if (!ok) return res.status(401).json({ error: 'Código incorrecto' });
     res.json({ success: true });
   } catch (error) {
+    console.error('[PIN VERIFY]', error);
     res.status(500).json({ error: error.message });
   }
 });
@@ -658,6 +661,7 @@ router.post('/pin-change', async (req, res) => {
     await savePin(actor.userId, actor.username, newPin);
     res.json({ success: true });
   } catch (error) {
+    console.error('[PIN CHANGE]', error);
     res.status(500).json({ error: error.message });
   }
 });
