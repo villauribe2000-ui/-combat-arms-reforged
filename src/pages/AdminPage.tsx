@@ -89,7 +89,7 @@ const NAV: { id: Section; label: string; icon: typeof LayoutDashboard; group: st
   { id: 'shop', label: 'Shop', icon: Store, group: 'GAME CONTROL' },
   { id: 'maps', label: 'Maps & modes', icon: Map, group: 'GAME CONTROL' },
   { id: 'boosts', label: 'EXP & GP boosts', icon: Zap, group: 'EVENTS' },
-  { id: 'events', label: 'Eventos', icon: CalendarDays, group: 'EVENTS' },
+  { id: 'events', label: 'Eventos', icon: CalendarDays, group: 'EVENTS', ownerOnly: true },
   { id: 'codes', label: 'Payment codes', icon: KeyRound, group: 'OPERATIONS', ownerOnly: true },
   { id: 'payments', label: 'Recargas', icon: CreditCard, group: 'OPERATIONS', ownerOnly: true },
   { id: 'refunds', label: 'Refunds', icon: RotateCcw, group: 'OPERATIONS', ownerOnly: true },

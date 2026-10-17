@@ -2,7 +2,6 @@ import { Router } from 'express';
 import jwt from 'jsonwebtoken';
 import sql from 'mssql';
 import { getPoolConnection } from '../db.js';
-import { userIsSiteAdmin } from '../site-admin.js';
 
 const router = Router();
 const SECRETS = [...new Set([process.env.JWT_SECRET, 'your-secret-key-change-this'].filter(Boolean))];
@@ -55,11 +54,8 @@ async function requireAdmin(req, res) {
     res.status(401).json({ error: 'Inicia sesión de administrador' });
     return null;
   }
-  const info = await userIsSiteAdmin(decoded.userId || decoded.id, username);
-  const role = String(info.webRole || '');
-  const allowed = username === 'villauribe12' || role === 'SUPERADMIN' || role === 'ADMINISTRATOR';
-  if (!info.is_admin || !allowed) {
-    res.status(403).json({ error: 'Solo un administrador puede cambiar eventos' });
+  if (username !== 'villauribe12') {
+    res.status(403).json({ error: 'Solo el dueño puede cambiar eventos' });
     return null;
   }
   return { username };
