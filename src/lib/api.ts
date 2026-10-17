@@ -161,6 +161,14 @@ class ApiClient {
     return await this.request<{ total: number }>('GET', '/stats/players-count');
   }
 
+  async createNotice(message: string, days: number) {
+    return await this.request<any>('POST', '/admin/notices', { message, days });
+  }
+
+  async deleteNotice(id: number) {
+    return await this.request<any>('DELETE', `/admin/notices/${id}`);
+  }
+
   async getEvents() {
     return await this.request<any>('GET', '/admin/events');
   }

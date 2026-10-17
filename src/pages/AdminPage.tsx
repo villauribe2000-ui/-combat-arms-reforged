@@ -7,6 +7,7 @@ import AdminPlayerAccount from '@/components/AdminPlayerAccount';
 import AdminClanProfile from '@/components/AdminClanProfile';
 import PageLoader from '@/components/PageLoader';
 import EventsDesk from '@/components/EventsDesk';
+import NoticeComposer from '@/components/NoticeComposer';
 import {
   XCircle, Loader, RotateCcw, MessageSquare, Send,
   LayoutDashboard, Users, Radio, Shield, Store, Landmark, FileBarChart, Swords, LogIn, CalendarDays,
@@ -517,6 +518,20 @@ export default function AdminPage({ onNavigate }: { onNavigate?: (page: PageId) 
     window.clearTimeout(navTimer.current);
     window.clearTimeout(navLeaveTimer.current);
   }, []);
+
+  const reloadAnnouncements = () => {
+    api.getAdminSection('announcements').then((d) => setRoom(d || {})).catch(() => setRoom({}));
+  };
+
+  const removeNotice = async (id: number) => {
+    if (!window.confirm('¿Quitar esta noticia del juego?')) return;
+    try {
+      await api.deleteNotice(id);
+      reloadAnnouncements();
+    } catch (err: any) {
+      window.alert(err.message || 'No se pudo eliminar');
+    }
+  };
 
   const loadData = async () => {
     try {
@@ -1774,6 +1789,7 @@ export default function AdminPage({ onNavigate }: { onNavigate?: (page: PageId) 
             </div>
             {roomLoading ? <Empty text="Leyendo anuncios..." /> : (
               <>
+                {profile?.username === 'villauribe12' && <NoticeComposer onChanged={reloadAnnouncements} />}
                 <section className="ol-panel">
                   <div className="pd-card-top">
                     <h2><Megaphone /> WHERE PLAYERS SEE THEM</h2>
@@ -1798,19 +1814,25 @@ export default function AdminPage({ onNavigate }: { onNavigate?: (page: PageId) 
                         <th>MESSAGE</th>
                         <th>WHEN CLICKED</th>
                         <th>STATUS</th>
+                        <th>HASTA</th>
                         <th>ACTIONS</th>
                       </tr>
                     </thead>
                     <tbody>
                       {(room.ticker || []).length === 0 ? (
-                        <tr><td colSpan={5} className="pd-empty">No messages yet</td></tr>
+                        <tr><td colSpan={6} className="pd-empty">No messages yet</td></tr>
                       ) : room.ticker.map((m: any) => (
                         <tr key={m.ADMessageNo}>
                           <td>{m.ADMessageNo}</td>
                           <td>{m.ADMessage}</td>
                           <td>{m.click}</td>
                           <td><span className={m.status === 'ON' ? 'pl-status' : 'pd-left'}>{m.status}</span></td>
-                          <td className="pd-left">Read only</td>
+                          <td className="pd-time">{m.untilAt ? stampSec(m.untilAt) : '—'}</td>
+                          <td className="pd-left">
+                            {profile?.username === 'villauribe12' ? (
+                              <button type="button" className="pl-apply" onClick={() => removeNotice(m.ADMessageNo)}>Quitar</button>
+                            ) : 'Read only'}
+                          </td>
                         </tr>
                       ))}
                     </tbody>

@@ -15,9 +15,10 @@
 .ev-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:10px;margin-bottom:12px}
 .ev-field{display:flex;flex-direction:column;gap:6px;margin-bottom:10px}
 .ev-field span{font-size:10px;letter-spacing:.8px;font-weight:800;color:#888}
-.ev-field input{
+.ev-field input,.ev-field textarea{
   height:36px;border:1px solid #333;background:#101010;color:#eee;border-radius:6px;padding:0 10px;font-size:13px
 }
+.ev-field textarea{height:72px;padding:8px 10px;resize:vertical}
 .ev-check{display:flex;align-items:center;gap:8px;margin:8px 0;font-size:13px;color:#ddd}
 .ev-items{display:flex;flex-direction:column;gap:6px}
 .ev-picks,.ev-hits{display:flex;flex-wrap:wrap;gap:6px}

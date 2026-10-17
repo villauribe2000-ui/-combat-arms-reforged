@@ -17,6 +17,7 @@ import marketplaceRoutes from './routes/marketplace.js';
 import combatarmsWebRoutes from './routes/combatarms-web.js';
 import adminReadRoutes from './routes/admin-read.js';
 import eventsAdminRoutes from './routes/events-admin.js';
+import noticesAdminRoutes from './routes/notices-admin.js';
 import referralRoutes, { ensureReferralTables } from './routes/referral.js';
 // import birthdayRoutes from './routes/birthdays.js';
 
@@ -65,6 +66,7 @@ if (!process.env.VERCEL) {
 // Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/auth-combatarms', authCombatarmsRoutes);
+app.use('/api/admin', noticesAdminRoutes);
 app.use('/api/admin', eventsAdminRoutes);
 app.use('/api/admin', adminReadRoutes);
 app.use('/api', dataRoutes);

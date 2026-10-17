@@ -1090,8 +1090,16 @@ router.get('/linked', async (_req, res) => {
 
 router.get('/announcements', async (_req, res) => {
   const ticker = await ca(`
-    SELECT ADMessageNo, ADCommandID, ADMessage, ADURL, Enable
-    FROM CBT_AdvertiseMessage ORDER BY ADMessageNo`);
+    SELECT m.ADMessageNo, m.ADCommandID, m.ADMessage, m.ADURL, m.Enable,
+           CONVERT(varchar(19), x.ViewDate, 120) AS untilAt
+    FROM CBT_AdvertiseMessage m
+    OUTER APPLY (
+      SELECT TOP 1 ViewDate
+      FROM CBT_AdvertiseMessageInfo
+      WHERE MessageNo = m.ADMessageNo AND MessageType = 2 AND Enable = 1
+      ORDER BY ViewDate
+    ) x
+    ORDER BY m.ADMessageNo`);
   const scheduled = await ca(`
     SELECT MessageSetID, MessageType, MessageNo, CommandID, ViewEnable, ViewDate, Enable, Message, URL
     FROM CBT_AdvertiseMessageInfo ORDER BY ViewDate DESC`);
