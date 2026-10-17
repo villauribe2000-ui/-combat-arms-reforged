@@ -9,6 +9,7 @@ const PAYPAL_CONTAINER_ID = `paypal-container-${PAYPAL_BUTTON_ID}`;
 
 type PaypalPaid = { orderId: string; amount: number };
 const paypalPaidWaiters = new Set<(paid: PaypalPaid) => void>();
+let paypalCheckoutAmount = 0;
 
 function numberInPayload(value: unknown): number {
   if (typeof value === 'number' && value >= 0.01 && value <= 1000) return value;
@@ -47,6 +48,47 @@ function installPaypalWatcher() {
   if (win.__caevoPaypalWatch) return;
   win.__caevoPaypalWatch = true;
   const amounts = new Map<string, number>();
+
+  const note = (url: string, requestBody: string, status: number, responseText: string) => {
+    if (status < 200 || status >= 300) return;
+    const isCreate = url.includes(`/v1/checkout/links/${PAYPAL_BUTTON_ID}/create-context`);
+    const isPay = url.includes(`/v1/checkout/links/${PAYPAL_BUTTON_ID}/pay`);
+    if (!isCreate && !isPay) return;
+
+    let data: any = {};
+    try {
+      data = JSON.parse(responseText || '{}');
+    } catch {
+      data = {};
+    }
+    if (data?.details?.[0]?.issue) return;
+
+    let sentAmount = 0;
+    try {
+      sentAmount = numberInPayload(JSON.parse(requestBody || '{}'));
+    } catch {
+      sentAmount = 0;
+    }
+
+    if (isCreate) {
+      const orderId = String(data.context_id || data.id || '');
+      const amount = sentAmount || amountFromDom() || paypalCheckoutAmount;
+      if (orderId && amount > 0) amounts.set(orderId, amount);
+      return;
+    }
+
+    let orderId = '';
+    try {
+      orderId = String(JSON.parse(requestBody || '{}').context_id || '');
+    } catch {
+      orderId = '';
+    }
+    orderId = String(data.id || data.context_id || data.order_id || orderId);
+    const amount = amountFromPaypal(data) || amounts.get(orderId) || sentAmount || amountFromDom() || paypalCheckoutAmount;
+    if (!orderId || !amount) return;
+    paypalPaidWaiters.forEach(fn => fn({ orderId, amount }));
+  };
+
   const proto = XMLHttpRequest.prototype;
   const origOpen = proto.open;
   const origSend = proto.send;
@@ -56,33 +98,31 @@ function installPaypalWatcher() {
   };
   proto.send = function (this: XMLHttpRequest, body?: Document | XMLHttpRequestBodyInit | null) {
     const url = (this as XMLHttpRequest & { __ppUrl?: string }).__ppUrl || '';
+    const requestBody = typeof body === 'string' ? body : '';
     this.addEventListener('load', () => {
-      if (this.status < 200 || this.status >= 300) return;
-      try {
-        const data = JSON.parse(this.responseText || '{}');
-        if (url.includes(`/v1/checkout/links/${PAYPAL_BUTTON_ID}/create-context`)) {
-          const orderId = String(data.context_id || data.id || '');
-          const amount = numberInPayload(JSON.parse(String(body || '{}')));
-          if (orderId && amount > 0) amounts.set(orderId, amount);
-          return;
-        }
-        if (!url.includes(`/v1/checkout/links/${PAYPAL_BUTTON_ID}/pay`)) return;
-        if (data?.details?.[0]?.issue) return;
-        let orderId = '';
-        try {
-          orderId = String(JSON.parse(String(body || '{}')).context_id || '');
-        } catch {
-          orderId = '';
-        }
-        orderId = String(data.id || data.context_id || orderId);
-        const amount = amountFromPaypal(data) || amounts.get(orderId) || amountFromDom();
-        if (!orderId || !amount) return;
-        paypalPaidWaiters.forEach(fn => fn({ orderId, amount }));
-      } catch {
-        // PayPal sometimes returns an empty body before the popup closes.
-      }
+      note(url, requestBody, this.status, this.responseText || '');
     });
     return origSend.call(this, body);
+  };
+
+  const origFetch = window.fetch.bind(window);
+  window.fetch = async (input: RequestInfo | URL, init?: RequestInit) => {
+    const url = typeof input === 'string'
+      ? input
+      : input instanceof URL
+        ? input.href
+        : input.url;
+    const watched = url.includes(`/v1/checkout/links/${PAYPAL_BUTTON_ID}/`);
+    let requestBody = '';
+    if (watched && typeof init?.body === 'string') requestBody = init.body;
+    const response = await origFetch(input, init);
+    if (!watched) return response;
+    try {
+      note(url, requestBody, response.status, await response.clone().text());
+    } catch {
+      // The credit call still uses the amount selected on the page.
+    }
+    return response;
   };
 }
 
@@ -366,12 +406,6 @@ export default function WalletPage() {
   }, [profile]);
 
   useEffect(() => {
-    if (!paypalReady) return;
-    const input = document.querySelector(
-      `#paypal-form-fields-container-${PAYPAL_BUTTON_ID} #amount`
-    ) as HTMLInputElement | null;
-    if (!input) return;
-
     let price = 0;
     if (selectedPackage) {
       price = selectedPackage.price;
@@ -379,7 +413,12 @@ export default function WalletPage() {
       const amount = parseInt(customNxAmount, 10);
       if (amount >= 1000) price = Math.max(0.01, parseFloat((amount / 16000).toFixed(2)));
     }
-    if (!price) return;
+    paypalCheckoutAmount = price;
+    if (!paypalReady || !price) return;
+    const input = document.querySelector(
+      `#paypal-form-fields-container-${PAYPAL_BUTTON_ID} #amount`
+    ) as HTMLInputElement | null;
+    if (!input) return;
 
     const value = price.toFixed(2);
     if (input.value === value) return;

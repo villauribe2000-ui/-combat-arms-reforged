@@ -446,6 +446,7 @@ router.post('/paypal-complete', async (req, res) => {
       try {
         const order = await getPayPalOrder(orderId);
         if (order?.status && order.status !== 'COMPLETED' && order.status !== 'APPROVED') {
+          console.error(`[PAYPAL] Orden ${orderId} en estado ${order.status}`);
           return res.status(400).json({ error: 'PayPal no confirmó este pago' });
         }
         const verified = Number(
@@ -454,9 +455,7 @@ router.post('/paypal-complete', async (req, res) => {
         );
         if (verified > 0) paid = roundMoney(verified);
       } catch (error) {
-        if (error?.status && error.status !== 404) {
-          return res.status(400).json({ error: 'PayPal no confirmó este pago' });
-        }
+        console.error(`[PAYPAL] No se pudo leer la orden ${orderId}:`, error?.status || error?.message || error);
       }
     }
 
@@ -486,11 +485,30 @@ router.post('/paypal-complete', async (req, res) => {
       { paymentCode }
     );
     if (existing.recordset?.length) {
+      const row = existing.recordset[0];
+      if (String(row.status) === 'approved') {
+        return res.json({
+          success: true,
+          already: true,
+          nx: Number(row.nxAmount) || grant.nx,
+          bonus: grant.bonus,
+        });
+      }
+      const credited = await creditNx(targetOid, targetName, grant.nx);
+      if (!credited) return res.status(500).json({ error: 'No se pudo acreditar el NX' });
+      await queryWeb(
+        `UPDATE PaymentCodes
+         SET status = 'approved', approvedAt = GETDATE(), approvedBy = 'paypal', nxAmount = @nxAmount, dollarAmount = @dollarAmount
+         WHERE paymentCode = @paymentCode`,
+        { paymentCode, nxAmount: grant.nx, dollarAmount: grant.price }
+      );
+      console.log(`[PAYPAL] Reintento ${username} -> ${targetName} +${grant.nx} NX $${grant.price} ${orderId}`);
       return res.json({
         success: true,
-        already: true,
-        nx: Number(existing.recordset[0].nxAmount) || grant.nx,
+        nx: grant.nx,
         bonus: grant.bonus,
+        price: grant.price,
+        recipient: targetOid === oidUser ? null : targetNick,
       });
     }
 

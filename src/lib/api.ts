@@ -62,21 +62,23 @@ class ApiClient {
     return headers;
   }
 
-  async request<T>(method: string, endpoint: string, body?: any): Promise<T> {
+  async request<T>(method: string, endpoint: string, body?: any, extra?: { keepalive?: boolean }): Promise<T> {
     const url = `${API_URL}${endpoint}`;
 
     try {
+      const keepalive = Boolean(extra?.keepalive);
       const controller = new AbortController();
-      const timeout = setTimeout(() => controller.abort(), 30000); // 30 segundos timeout para imágenes
+      const timeout = keepalive ? null : setTimeout(() => controller.abort(), 30000);
 
       const response = await fetch(url, {
         method,
         headers: this.getHeaders(),
         body: body ? JSON.stringify(body) : undefined,
-        signal: controller.signal,
+        keepalive,
+        signal: keepalive ? undefined : controller.signal,
       });
 
-      clearTimeout(timeout);
+      if (timeout) clearTimeout(timeout);
 
       const data = await response.json();
 
@@ -438,7 +440,7 @@ class ApiClient {
       custom,
       nx,
       recipientId: recipientId || 0,
-    });
+    }, { keepalive: true });
   }
 
   async submitPaymentCode(oidUser: number, username: string, NickName: string, paymentCode: string, nxAmount: number, dollarAmount: number) {
