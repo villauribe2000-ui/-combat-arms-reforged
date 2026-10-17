@@ -4,28 +4,8 @@ import { api } from '@/lib/api';
 import { Crown, X, CheckCircle, AlertCircle, Gift, TrendingUp, Coins } from 'lucide-react';
 
 const PAYPAL_CLIENT_ID = 'BAASxJaQf7fBU25aaCHGJtS-7Li538YT5l5OYF9zwZo_FU3_WOxsFV1eni9vVTULMnEzAwkHShoEYOzWzE';
-const PAYPAL_BUTTON_ID = '9VVE28GCM8GXA';
-const PAYPAL_CONTAINER_ID = `paypal-container-${PAYPAL_BUTTON_ID}`;
-
-type PaypalPaid = { orderId: string; amount: number };
-const paypalPaidWaiters = new Set<(paid: PaypalPaid) => void>();
+const PAYPAL_CONTAINER_ID = 'paypal-nx-button';
 let paypalCheckoutAmount = 0;
-
-function numberInPayload(value: unknown): number {
-  if (typeof value === 'number' && value >= 0.01 && value <= 1000) return value;
-  if (typeof value === 'string' && value.trim() && !Number.isNaN(Number(value))) {
-    const amount = Number(value);
-    if (amount >= 0.01 && amount <= 1000) return amount;
-  }
-  if (value && typeof value === 'object') {
-    let best = 0;
-    for (const nested of Object.values(value as Record<string, unknown>)) {
-      best = Math.max(best, numberInPayload(nested));
-    }
-    return best;
-  }
-  return 0;
-}
 
 function amountFromPaypal(data: any): number {
   const value = data?.purchase_units?.[0]?.payments?.captures?.[0]?.amount?.value
@@ -35,103 +15,15 @@ function amountFromPaypal(data: any): number {
   return amount >= 0.01 && amount <= 1000 ? amount : 0;
 }
 
-function amountFromDom(): number {
-  const input = document.querySelector(
-    `#paypal-form-fields-container-${PAYPAL_BUTTON_ID} #amount`
-  ) as HTMLInputElement | null;
-  const amount = Number(input?.value);
-  return amount >= 0.01 && amount <= 1000 ? amount : 0;
-}
-
-function installPaypalWatcher() {
-  const win = window as Window & { __caevoPaypalWatch?: boolean };
-  if (win.__caevoPaypalWatch) return;
-  win.__caevoPaypalWatch = true;
-  const amounts = new Map<string, number>();
-
-  const note = (url: string, requestBody: string, status: number, responseText: string) => {
-    if (status < 200 || status >= 300) return;
-    const isCreate = url.includes(`/v1/checkout/links/${PAYPAL_BUTTON_ID}/create-context`);
-    const isPay = url.includes(`/v1/checkout/links/${PAYPAL_BUTTON_ID}/pay`);
-    if (!isCreate && !isPay) return;
-
-    let data: any = {};
-    try {
-      data = JSON.parse(responseText || '{}');
-    } catch {
-      data = {};
-    }
-    if (data?.details?.[0]?.issue) return;
-
-    let sentAmount = 0;
-    try {
-      sentAmount = numberInPayload(JSON.parse(requestBody || '{}'));
-    } catch {
-      sentAmount = 0;
-    }
-
-    if (isCreate) {
-      const orderId = String(data.context_id || data.id || '');
-      const amount = sentAmount || amountFromDom() || paypalCheckoutAmount;
-      if (orderId && amount > 0) amounts.set(orderId, amount);
-      return;
-    }
-
-    let orderId = '';
-    try {
-      orderId = String(JSON.parse(requestBody || '{}').context_id || '');
-    } catch {
-      orderId = '';
-    }
-    orderId = String(data.id || data.context_id || data.order_id || orderId);
-    const amount = amountFromPaypal(data) || amounts.get(orderId) || sentAmount || amountFromDom() || paypalCheckoutAmount;
-    if (!orderId || !amount) return;
-    paypalPaidWaiters.forEach(fn => fn({ orderId, amount }));
-  };
-
-  const proto = XMLHttpRequest.prototype;
-  const origOpen = proto.open;
-  const origSend = proto.send;
-  proto.open = function (this: XMLHttpRequest, ...args: unknown[]) {
-    (this as XMLHttpRequest & { __ppUrl?: string }).__ppUrl = String(args[1] ?? '');
-    return origOpen.apply(this, args as Parameters<XMLHttpRequest['open']>);
-  };
-  proto.send = function (this: XMLHttpRequest, body?: Document | XMLHttpRequestBodyInit | null) {
-    const url = (this as XMLHttpRequest & { __ppUrl?: string }).__ppUrl || '';
-    const requestBody = typeof body === 'string' ? body : '';
-    this.addEventListener('load', () => {
-      note(url, requestBody, this.status, this.responseText || '');
-    });
-    return origSend.call(this, body);
-  };
-
-  const origFetch = window.fetch.bind(window);
-  window.fetch = async (input: RequestInfo | URL, init?: RequestInit) => {
-    const url = typeof input === 'string'
-      ? input
-      : input instanceof URL
-        ? input.href
-        : input.url;
-    const watched = url.includes(`/v1/checkout/links/${PAYPAL_BUTTON_ID}/`);
-    let requestBody = '';
-    if (watched && typeof init?.body === 'string') requestBody = init.body;
-    const response = await origFetch(input, init);
-    if (!watched) return response;
-    try {
-      note(url, requestBody, response.status, await response.clone().text());
-    } catch {
-      // The credit call still uses the amount selected on the page.
-    }
-    return response;
-  };
-}
-
 declare global {
   interface Window {
     paypal?: {
-      HostedButtons: (options: { hostedButtonId: string }) => {
-        render: (selector: string) => Promise<void>;
-      };
+      Buttons?: (options: {
+        onClick?: (data: unknown, actions: { resolve: () => Promise<void>; reject: () => Promise<void> }) => Promise<void> | void;
+        createOrder: (data: unknown, actions: { order: { create: (order: unknown) => Promise<string> } }) => Promise<string>;
+        onApprove: (data: { orderID: string }, actions: { order: { capture: () => Promise<any> } }) => Promise<void>;
+        onError?: (error: unknown) => void;
+      }) => { render: (selector: string) => Promise<void> };
     };
   }
 }
@@ -304,45 +196,97 @@ export default function WalletPage() {
     return () => clearInterval(interval);
   }, [profile?.gameCoins, profile?.totalBalance, profile?.username]);
 
+  const creditPaypalRef = useRef<(orderId: string, amount: number) => Promise<void>>(async () => {});
+  creditPaypalRef.current = async (orderId: string, amount: number) => {
+    if (creditingRef.current.has(orderId)) return;
+    creditingRef.current.add(orderId);
+    const custom = !selectedPackageRef.current;
+    const nx = custom
+      ? parseInt(customNxRef.current || '0', 10)
+      : selectedPackageRef.current?.coins || 0;
+    try {
+      const result = await api.completePaypalPayment(orderId, amount, custom, nx, giftTargetRef.current?.id);
+      const bonusText = !result.already && result.bonus
+        ? ` Incluye un bono de ${result.bonus.toLocaleString()} NX.`
+        : '';
+      const who = result.recipient || giftTargetRef.current?.nickname;
+      setNotification({
+        type: 'success',
+        message: result.already
+          ? 'Ese pago de PayPal ya estaba aplicado.'
+          : who
+            ? `Listo. Se agregaron ${Number(result.nx).toLocaleString()} NX a ${who}.${bonusText}`
+            : `Listo. Se agregaron ${Number(result.nx).toLocaleString()} NX a tu cuenta.${bonusText}`,
+      });
+      if (!result.already && !who) setNxBalance(current => current + Number(result.nx || 0));
+      await refreshProfile();
+    } catch (error: any) {
+      creditingRef.current.delete(orderId);
+      setNotification({
+        type: 'error',
+        message: error?.message || 'PayPal no confirmó el pago. El NX no se agregó.',
+      });
+    }
+  };
+
   useEffect(() => {
     if (!profile) return;
-    installPaypalWatcher();
-    const onPaid = async ({ orderId, amount }: PaypalPaid) => {
-      if (creditingRef.current.has(orderId)) return;
-      creditingRef.current.add(orderId);
-      const custom = !selectedPackageRef.current;
-      const nx = custom
-        ? parseInt(customNxRef.current || '0', 10)
-        : selectedPackageRef.current?.coins || 0;
-      try {
-        const result = await api.completePaypalPayment(orderId, amount, custom, nx, giftTargetRef.current?.id);
-        const bonusText = !result.already && result.bonus
-          ? ` Incluye un bono de ${result.bonus.toLocaleString()} NX.`
-          : '';
-        const who = result.recipient || giftTargetRef.current?.nickname;
-        setNotification({
-          type: 'success',
-          message: result.already
-            ? 'Ese pago de PayPal ya estaba aplicado.'
-            : who
-              ? `Listo. Se agregaron ${Number(result.nx).toLocaleString()} NX a ${who}.${bonusText}`
-              : `Listo. Se agregaron ${Number(result.nx).toLocaleString()} NX a tu cuenta.${bonusText}`,
-        });
-        if (!result.already && !who) setNxBalance(current => current + Number(result.nx || 0));
-        await refreshProfile();
-      } catch (error: any) {
-        creditingRef.current.delete(orderId);
-        setNotification({
-          type: 'error',
-          message: error?.message || 'PayPal no confirmó el pago. El NX no se agregó.',
-        });
-      }
+
+    const renderButton = () => {
+      if (paypalRendered.current || !window.paypal?.Buttons) return;
+      if (!document.getElementById(PAYPAL_CONTAINER_ID)) return;
+      paypalRendered.current = true;
+      window.paypal.Buttons({
+        onClick: (_data, actions) => {
+          if (paypalCheckoutAmount >= 0.01) return actions.resolve();
+          setNotification({ type: 'error', message: 'Elige un paquete o escribe un monto antes de pagar.' });
+          return actions.reject();
+        },
+        createOrder: (_data, actions) => actions.order.create({
+          intent: 'CAPTURE',
+          purchase_units: [{
+            amount: {
+              currency_code: 'USD',
+              value: paypalCheckoutAmount.toFixed(2),
+            },
+            description: 'NX',
+          }],
+        }),
+        onApprove: async (data, actions) => {
+          const details = await actions.order.capture();
+          const amount = amountFromPaypal(details) || paypalCheckoutAmount;
+          await creditPaypalRef.current(data.orderID, amount);
+        },
+        onError: () => {
+          setNotification({
+            type: 'error',
+            message: 'PayPal no pudo completar el pago. El NX no se agregó.',
+          });
+        },
+      }).render(`#${PAYPAL_CONTAINER_ID}`).then(() => {
+        setPaypalReady(true);
+      }).catch(() => {
+        paypalRendered.current = false;
+        setPaypalError(true);
+      });
     };
-    paypalPaidWaiters.add(onPaid);
-    return () => {
-      paypalPaidWaiters.delete(onPaid);
-    };
-  }, [profile, refreshProfile]);
+
+    const scriptId = 'paypal-buttons-sdk';
+    const existing = document.getElementById(scriptId) as HTMLScriptElement | null;
+    if (existing) {
+      if (window.paypal?.Buttons) renderButton();
+      else existing.addEventListener('load', renderButton, { once: true });
+      return;
+    }
+
+    const script = document.createElement('script');
+    script.id = scriptId;
+    script.src = `https://www.paypal.com/sdk/js?client-id=${PAYPAL_CLIENT_ID}&components=buttons&disable-funding=venmo&currency=USD&intent=capture`;
+    script.async = true;
+    script.onload = () => renderButton();
+    script.onerror = () => setPaypalError(true);
+    document.body.appendChild(script);
+  }, [profile]);
 
   useEffect(() => {
     if (!profile || giftTarget) return;
@@ -372,40 +316,6 @@ export default function WalletPage() {
   }, [giftQuery, giftTarget, profile]);
 
   useEffect(() => {
-    if (!profile) return;
-
-    const renderButton = () => {
-      if (paypalRendered.current || !window.paypal?.HostedButtons) return;
-      if (!document.getElementById(PAYPAL_CONTAINER_ID)) return;
-      paypalRendered.current = true;
-      window.paypal.HostedButtons({
-        hostedButtonId: PAYPAL_BUTTON_ID,
-      }).render(`#${PAYPAL_CONTAINER_ID}`).then(() => {
-        setPaypalReady(true);
-      }).catch(() => {
-        paypalRendered.current = false;
-        setPaypalError(true);
-      });
-    };
-
-    const scriptId = 'paypal-hosted-sdk';
-    const existing = document.getElementById(scriptId) as HTMLScriptElement | null;
-    if (existing) {
-      if (window.paypal) renderButton();
-      else existing.addEventListener('load', renderButton, { once: true });
-      return;
-    }
-
-    const script = document.createElement('script');
-    script.id = scriptId;
-    script.src = `https://www.paypal.com/sdk/js?client-id=${PAYPAL_CLIENT_ID}&components=hosted-buttons&disable-funding=venmo&currency=USD`;
-    script.async = true;
-    script.onload = () => renderButton();
-    script.onerror = () => setPaypalError(true);
-    document.body.appendChild(script);
-  }, [profile]);
-
-  useEffect(() => {
     let price = 0;
     if (selectedPackage) {
       price = selectedPackage.price;
@@ -414,18 +324,7 @@ export default function WalletPage() {
       if (amount >= 1000) price = Math.max(0.01, parseFloat((amount / 16000).toFixed(2)));
     }
     paypalCheckoutAmount = price;
-    if (!paypalReady || !price) return;
-    const input = document.querySelector(
-      `#paypal-form-fields-container-${PAYPAL_BUTTON_ID} #amount`
-    ) as HTMLInputElement | null;
-    if (!input) return;
-
-    const value = price.toFixed(2);
-    if (input.value === value) return;
-    input.value = value;
-    input.dispatchEvent(new Event('input', { bubbles: true }));
-    input.dispatchEvent(new Event('change', { bubbles: true }));
-  }, [paypalReady, selectedPackage, customNxAmount]);
+  }, [selectedPackage, customNxAmount]);
 
   const handleProofImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -743,7 +642,7 @@ export default function WalletPage() {
               : 'When PayPal completes the payment, the NX is added to your account automatically. A custom amount includes a 10% bonus.'}
           </p>
           <div className="charge-actions">
-            <div id={PAYPAL_CONTAINER_ID} className="charge-paypal" />
+            <div id="paypal-nx-button" className="charge-paypal" />
             {!paypalReady && !paypalError && (
               <p className="charge-checkout-note">Loading PayPal…</p>
             )}
