@@ -89,10 +89,16 @@ export default function AuthPage({ mode, onNavigate }: Props) {
               <span className="auth-kicker">{isSignIn ? 'SIGN IN' : 'SIGN UP'}</span>
               <h1 id="auth-title">{isSignIn ? 'WELCOME BACK.' : 'CREATE YOUR ACCOUNT.'}</h1>
               {!isSignIn && (
-                <p className="auth-description">Create your account and start playing.</p>
+                <p className="auth-description">
+                  Crea tu cuenta y empieza a jugar. Cada IP puede crear solo 2 cuentas, y cada correo solo se puede usar en una.
+                </p>
               )}
 
-              {error && <p className="auth-field-hint" style={{ color: '#e07070' }}>{error}</p>}
+              {error && (
+                <div className="auth-status auth-request-error" role="alert">
+                  {error}
+                </div>
+              )}
 
               <form className="auth-form" onSubmit={submit} noValidate aria-busy={loading}>
                 <div className="auth-field">

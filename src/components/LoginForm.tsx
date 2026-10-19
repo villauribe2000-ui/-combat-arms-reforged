@@ -123,6 +123,9 @@ export default function LoginForm({ onSuccess }: LoginFormProps) {
                   className="w-full bg-black/40 border border-white/15 rounded-lg px-4 py-2 text-gray-100 placeholder-gray-500 focus:outline-none focus:border-[#f5a000] focus:ring-1 focus:ring-[#f5a000]"
                   required
                 />
+                <p className="text-gray-500 text-xs mt-2">
+                  Este correo solo se puede usar en una cuenta. Máximo 2 cuentas por IP.
+                </p>
               </div>
             </>
           )}

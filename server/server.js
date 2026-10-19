@@ -7,7 +7,7 @@ import { fileURLToPath } from 'url';
 import { getPoolConnection, disconnect, query, queryVisms } from './db.js';
 import { authMiddleware } from './auth.js';
 import authRoutes from './routes/auth.js';
-import authCombatarmsRoutes from './routes/auth-combatarms.js';
+import authCombatarmsRoutes, { ensureRegistrationTable } from './routes/auth-combatarms.js';
 import dataRoutes from './routes/data.js';
 import walletRoutes from './routes/wallet.js';
 import paymentsRoutes from './routes/payments.js';
@@ -187,6 +187,12 @@ async function start() {
         console.log('[REFERRAL] Tablas listas');
       } catch (referralError) {
         console.warn('[REFERRAL] No se pudieron preparar las tablas:', referralError.message);
+      }
+      try {
+        await ensureRegistrationTable();
+        console.log('[REGISTER] Límite de cuentas listo');
+      } catch (registrationError) {
+        console.warn('[REGISTER] No se pudo preparar el límite de cuentas:', registrationError.message);
       }
     } catch (dbError) {
       console.warn('⚠️ Advertencia: No se pudo conectar a la BD');
