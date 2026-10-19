@@ -22,6 +22,8 @@ interface Player {
   rank?: number;
   rankName?: string;
   isGM?: boolean;
+  UserType?: number;
+  rankMark?: string | null;
 }
 
 interface Clan {
@@ -48,7 +50,9 @@ const TABS: { id: TabId; label: string; icon: typeof Award }[] = [
 ];
 
 function playerName(p: Player) {
-  return p.NickName || p.nickname || p.username;
+  const base = p.NickName || p.nickname || p.username;
+  if (p.rankMark === 'FM' && Number(p.UserType) !== 1 && !p.isGM) return `[FM]${base}`;
+  return base;
 }
 
 function playerExp(p: Player) {
@@ -58,7 +62,7 @@ function playerExp(p: Player) {
 }
 
 function playerRankSrc(p: Player) {
-  return rankIcon({ rank: p.rank, exp: playerExp(p), isGM: p.isGM });
+  return rankIcon({ rank: p.rank, exp: playerExp(p), isGM: p.isGM, UserType: p.UserType, rankMark: p.rankMark });
 }
 
 function playerKd(p: Player) {

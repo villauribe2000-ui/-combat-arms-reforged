@@ -71,6 +71,8 @@ export default function AdminPlayerAccount({ id, onBack }: { id: number; onBack:
   const [giftBusy, setGiftBusy] = useState(false);
   const [giftQuota, setGiftQuota] = useState<any>(null);
   const [giftLog, setGiftLog] = useState<any[]>([]);
+  const [markBusy, setMarkBusy] = useState(false);
+  const [markError, setMarkError] = useState('');
 
   useEffect(() => {
     let live = true;
@@ -117,7 +119,8 @@ export default function AdminPlayerAccount({ id, onBack }: { id: number; onBack:
 
   const u = data.user;
   const code = flagCode(u.countryCode || u.NationCode);
-  const nick = u.isGM ? `[GM]${u.NickName || u.username}` : (u.NickName || u.username);
+  const nick = u.isGM ? `[GM]${u.NickName || u.username}` : (u.rankMark === 'FM' ? `[FM]${u.NickName || u.username}` : (u.NickName || u.username));
+  const owner = profile?.username === 'villauribe12';
   const panelRole = u.superAdmin ? 'Superadmin' : (u.webRole ? String(u.webRole) : 'Player');
   const rankLevel = u.rank || rankFromExp(u.Exp || 0);
   const rankLabel = `${String(u.rankName || 'TRAINEE').toUpperCase()} (${rankLevel})`;
@@ -127,7 +130,7 @@ export default function AdminPlayerAccount({ id, onBack }: { id: number; onBack:
       <button className="pd-back" onClick={onBack}><ArrowLeft /> Players</button>
 
       <div className="pd-hero">
-        <img src={rankIcon({ rank: rankLevel, exp: u.Exp })} alt="" onError={(e) => { e.currentTarget.src = '/ranks/RANK_0.png'; }} />
+        <img src={rankIcon({ rank: rankLevel, exp: u.Exp, UserType: u.UserType, rankMark: u.rankMark })} alt="" onError={(e) => { e.currentTarget.src = '/ranks/RANK_0.png'; }} />
         <div className="pd-hero-copy">
           <p className="eyebrow">PLAYER ACCOUNT / #{u.id}</p>
           <h1>{nick}</h1>
@@ -136,6 +139,7 @@ export default function AdminPlayerAccount({ id, onBack }: { id: number; onBack:
             {u.superAdmin && <span className="pl-pill pl-pill-super">SUPERADMIN</span>}
             {u.webRole && !u.superAdmin && <span className="pl-pill pl-pill-admin">{String(u.webRole).toUpperCase()}</span>}
             {(u.isGM || u.webGm) && String(u.webRole || '').toLowerCase() !== 'gm' && <span className="pl-pill pl-pill-gm">GM</span>}
+            {u.rankMark === 'FM' && <span className="pl-pill pl-pill-fm">FM</span>}
             <span className={u.accountStatus === 'banned' ? 'pl-status-ban' : 'pl-status'}>{u.accountStatus === 'banned' ? 'BANNED' : 'ACTIVE'}</span>
             <span className="pl-pill pl-pill-player">{u.twofa ? '2FA ON' : '2FA OFF'}</span>
           </div>
@@ -182,6 +186,35 @@ export default function AdminPlayerAccount({ id, onBack }: { id: number; onBack:
                     {!(data.grades || []).length && <option value={rankLevel}>{rankLabel}</option>}
                   </select>
                   <small>Confirmation required. Seals EXP to this rank minimum. Read only.</small>
+                </div>
+                <div>
+                  <p>LOGO PERMANENTE</p>
+                  {owner ? (
+                    <select
+                      value={u.rankMark === 'FM' ? 'FM' : ''}
+                      disabled={markBusy}
+                      onChange={async (e) => {
+                        const mark = e.target.value;
+                        setMarkBusy(true);
+                        setMarkError('');
+                        try {
+                          const saved = await api.setAdminRankMark(u.id, mark);
+                          setData((prev: any) => (prev ? { ...prev, user: { ...prev.user, rankMark: saved.rankMark } } : prev));
+                        } catch (err: any) {
+                          setMarkError(err?.message || 'No se pudo guardar el logo');
+                        } finally {
+                          setMarkBusy(false);
+                        }
+                      }}
+                    >
+                      <option value="">Sin logo</option>
+                      <option value="FM">FM</option>
+                    </select>
+                  ) : (
+                    <b>{u.rankMark === 'FM' ? 'FM' : 'Sin logo'}</b>
+                  )}
+                  <small>No cambia con la EXP. Solo el dueño puede asignarlo.</small>
+                  {markError ? <small>{markError}</small> : null}
                 </div>
                 <div>
                   <p>FLAG</p>

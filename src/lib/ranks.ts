@@ -97,7 +97,10 @@ export function rankTitle(level: number, apiName?: string | null) {
   return CIC_TITLES[level] || `Rank ${level}`;
 }
 
-export function rankIcon(opts: { rank?: number | string | null; exp?: number; isGM?: boolean; UserType?: number }) {
+export function rankIcon(opts: { rank?: number | string | null; exp?: number; isGM?: boolean; UserType?: number; rankMark?: string | null }) {
+  const gameGm = Number(opts.UserType) === 1 || (opts.isGM === true && opts.UserType == null);
+  if (gameGm) return '/ranks/RANK_GM.png';
+  if (String(opts.rankMark || '').toUpperCase() === 'FM') return '/ranks/RANK_FM.png';
   const fromApi = Number(opts.rank);
   const n = Number.isFinite(fromApi) && fromApi > 0 ? fromApi : rankFromExp(opts.exp ?? 0);
   const clamped = Math.max(0, Math.min(65, Math.floor(n)));

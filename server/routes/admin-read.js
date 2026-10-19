@@ -2,6 +2,7 @@ import { Router } from 'express';
 import jwt from 'jsonwebtoken';
 import { query, queryGuildDB, queryLog, queryVisms, queryWeb } from '../db.js';
 import { ensureStaffTables, roleFlags, mapDbRole, userIsSiteAdmin } from '../site-admin.js';
+import { ensureRankMarkTable, rankMarksFor } from '../rank-mark.js';
 
 const JWT_SECRETS = [...new Set([
   process.env.JWT_SECRET,
@@ -184,6 +185,7 @@ router.get('/players', async (req, res) => {
     ORDER BY u.oidUser DESC
     OFFSET @offset ROWS FETCH NEXT @limit ROWS ONLY`, params);
 
+  const marks = await rankMarksFor(list.map((p) => p.id));
   const data = list.map((p) => {
     const banned = p.Status === 2 || (p.StatusEndDate && new Date(p.StatusEndDate) > new Date()) || (p.BlockEndDate && new Date(p.BlockEndDate) > new Date());
     const flags = roleFlags(adminMap[p.id]);
@@ -195,6 +197,7 @@ router.get('/players', async (req, res) => {
       siteAdmin: flags.siteAdmin || superAdmin,
       superAdmin,
       isGM: p.UserType === 1 || flags.webGm,
+      rankMark: marks[Number(p.id)] || null,
       accountStatus: banned ? 'banned' : 'active',
     };
   });
@@ -358,6 +361,7 @@ router.get('/players/:id', async (req, res) => {
   const muted = user.SilenceEndDate && new Date(user.SilenceEndDate) > now;
   const flags = roleFlags(admins[0]);
   const superAdmin = user.username === 'villauribe12' || String(flags.role || '').toLowerCase() === 'superadmin';
+  const marks = await rankMarksFor([id]);
 
   res.json({
     user: {
@@ -368,6 +372,7 @@ router.get('/players/:id', async (req, res) => {
       webGm: flags.webGm,
       siteAdmin: flags.siteAdmin || superAdmin,
       isGM: user.UserType === 1 || flags.webGm,
+      rankMark: marks[id] || null,
       superAdmin,
       accountStatus: banned ? 'banned' : 'active',
       muted: Boolean(muted),
@@ -1454,6 +1459,7 @@ router.get('/staff/search', async (req, res) => {
       }
     }
   }
+  const marks = await rankMarksFor(list.map((p) => p.id));
   res.json({
     data: list.map((p) => {
       const flags = roleFlags(adminMap[p.id]);
@@ -1464,9 +1470,41 @@ router.get('/staff/search', async (req, res) => {
         webGm: flags.webGm,
         siteAdmin: flags.siteAdmin,
         isGM: p.UserType === 1 || flags.webGm,
+        rankMark: marks[Number(p.id)] || null,
       };
     }),
   });
+});
+
+router.post('/players/:id/rank-mark', async (req, res) => {
+  const verified = decodeStaffToken(readAuthToken(req));
+  if (!verified || verified.username !== STAFF_OWNER) {
+    return res.status(403).json({ error: 'Solo el dueño puede asignar el logo FM.' });
+  }
+  const id = parseInt(req.params.id, 10);
+  if (!Number.isFinite(id)) return res.status(400).json({ error: 'invalid id' });
+  const mark = String(req.body?.mark || '').trim().toUpperCase();
+  if (mark && mark !== 'FM') {
+    return res.status(400).json({ error: 'El único logo permanente es FM.' });
+  }
+  const exists = await ca(`SELECT oidUser as id FROM CBT_User WHERE oidUser = @id`, { id });
+  if (!exists.length) return res.status(404).json({ error: 'not found' });
+  try {
+    await ensureRankMarkTable();
+    if (!mark) {
+      await queryWeb(`DELETE FROM dbo.WebRankMarks WHERE oidUser = @id`, { id });
+    } else {
+      await queryWeb(`
+        IF EXISTS (SELECT 1 FROM dbo.WebRankMarks WHERE oidUser = @id)
+          UPDATE dbo.WebRankMarks SET mark = 'FM', assignedBy = @by, assignedAt = GETDATE() WHERE oidUser = @id
+        ELSE
+          INSERT INTO dbo.WebRankMarks (oidUser, mark, assignedBy) VALUES (@id, 'FM', @by)
+      `, { id, by: verified.username });
+    }
+    res.json({ ok: true, rankMark: mark || null });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
 });
 
 router.get('/staff/me', async (req, res) => {

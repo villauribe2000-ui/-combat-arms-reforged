@@ -67,7 +67,7 @@ export default function AccountPage({ onNavigate }: { onNavigate: (page: PageId)
   const exp = Number(game?.Exp ?? game?.experience ?? profile?.experience ?? 0);
   const rankLevel = Number(game?.rank) > 0 ? Number(game.rank) : rankFromExp(exp);
   const displayRank = rankTitle(rankLevel, game?.rankName);
-  const rankSrc = rankIcon({ rank: rankLevel, exp });
+  const rankSrc = rankIcon({ rank: rankLevel, exp, UserType: game?.UserType, isGM: game?.isGM, rankMark: game?.rankMark });
   const kd = game?.deaths > 0 ? (game.kills / game.deaths).toFixed(2) : (game?.kills || 0).toFixed(2);
 
   useEffect(() => {

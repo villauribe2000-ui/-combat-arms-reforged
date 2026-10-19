@@ -195,6 +195,10 @@ class ApiClient {
     return await this.request<any>('GET', `/admin/players/${id}`);
   }
 
+  async setAdminRankMark(id: number, mark: string) {
+    return await this.request<{ ok: boolean; rankMark: string | null }>('POST', `/admin/players/${id}/rank-mark`, { mark });
+  }
+
   async getAdminMatchRoom(key: number) {
     return await this.request<any>('GET', `/admin/matches/room/${key}`);
   }

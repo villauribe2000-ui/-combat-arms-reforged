@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import jwt from 'jsonwebtoken';
 import { query, queryGuildDB, queryVisms, queryWeb, getUserOidByUsername } from '../db.js';
+import { rankMarksFor } from '../rank-mark.js';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-change-this';
 const RANK_EXP = [0, 550, 1200, 2500, 5000, 8700, 15000, 22000, 30500, 40500, 52000, 65000, 81000, 99000, 119000, 141000, 166000, 194000, 225000, 259000, 296000, 336000, 379000, 425000, 474000, 526000, 580000, 638000, 699000, 763000, 830000, 900000, 983000, 1074000, 1173000, 1280000, 1400000, 1533000, 1679000, 1838000, 2010000, 2200000, 2408000, 2634000, 2878000, 3140000, 3420000, 3718000, 4034000, 4368000, 4720000, 5100000, 5500000, 6000000, 6800000, 8000000, 9200000, 10400000, 11600000, 12800000, 14000000];
@@ -43,6 +44,7 @@ router.get('/players/top', async (req, res) => {
       { limit: parseInt(limit) }
     );
 
+    const marks = await rankMarksFor(result.recordset.map((player) => player.id));
     // Obtener información de rangos para cada jugador
     const playersWithRanks = await Promise.all(
       result.recordset.map(async (player) => {
@@ -76,7 +78,8 @@ router.get('/players/top', async (req, res) => {
           ...player,
           rank,
           rankName,
-          isGM
+          isGM,
+          rankMark: marks[Number(player.id)] || null,
         };
       })
     );

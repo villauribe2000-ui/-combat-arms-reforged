@@ -1109,9 +1109,9 @@ export default function AdminPage({ onNavigate }: { onNavigate?: (page: PageId) 
                       <tr key={p.id} className="pl-row" onClick={() => setPlayerId(p.id)}>
                         <td>
                           <div className="pl-player">
-                            <img src={rankIcon({ exp: p.Exp, UserType: p.UserType })} alt="" onError={(e) => { e.currentTarget.src = '/ranks/RANK_0.png'; }} />
+                            <img src={rankIcon({ exp: p.Exp, UserType: p.UserType, rankMark: p.rankMark })} alt="" onError={(e) => { e.currentTarget.src = '/ranks/RANK_0.png'; }} />
                             <div>
-                              <b>{p.isGM ? `[GM]${p.NickName || p.username}` : (p.NickName || p.username)}</b>
+                              <b>{p.isGM ? `[GM]${p.NickName || p.username}` : (p.rankMark === 'FM' ? `[FM]${p.NickName || p.username}` : (p.NickName || p.username))}</b>
                               <small>{p.username}_ #{p.id}</small>
                             </div>
                           </div>
@@ -1122,6 +1122,7 @@ export default function AdminPage({ onNavigate }: { onNavigate?: (page: PageId) 
                             {superAdmin && <span className="pl-pill pl-pill-super">SUPERADMIN</span>}
                             {showRole && <span className="pl-pill pl-pill-admin">{roleLabel.toUpperCase()}</span>}
                             {showGm && <span className="pl-pill pl-pill-gm">GM</span>}
+                            {p.rankMark === 'FM' && <span className="pl-pill pl-pill-fm">FM</span>}
                             {!superAdmin && !showRole && !p.isGM && !p.webGm && <span className="pl-pill pl-pill-player">PLAYER</span>}
                           </div>
                         </td>
@@ -1218,9 +1219,9 @@ export default function AdminPage({ onNavigate }: { onNavigate?: (page: PageId) 
                         >
                           <td>
                             <div className="pl-player">
-                              <img src={rankIcon({ exp: p.Exp, UserType: p.UserType })} alt="" onError={(e) => { e.currentTarget.src = '/ranks/RANK_0.png'; }} />
+                              <img src={rankIcon({ exp: p.Exp, UserType: p.UserType, rankMark: p.rankMark })} alt="" onError={(e) => { e.currentTarget.src = '/ranks/RANK_0.png'; }} />
                               <div>
-                                <b>{p.isGM ? `[GM]${p.NickName || p.username}` : (p.NickName || p.username)}</b>
+                                <b>{p.isGM ? `[GM]${p.NickName || p.username}` : (p.rankMark === 'FM' ? `[FM]${p.NickName || p.username}` : (p.NickName || p.username))}</b>
                                 <small>#{p.id}</small>
                               </div>
                             </div>
@@ -2092,9 +2093,9 @@ export default function AdminPage({ onNavigate }: { onNavigate?: (page: PageId) 
                 {staffHits.map((p: any) => (
                   <article key={p.id} className="staff-card">
                     <div className="pl-player">
-                      <img src={rankIcon({ exp: p.Exp, UserType: p.UserType })} alt="" onError={(e) => { e.currentTarget.src = '/ranks/RANK_0.png'; }} />
+                      <img src={rankIcon({ exp: p.Exp, UserType: p.UserType, rankMark: p.rankMark })} alt="" onError={(e) => { e.currentTarget.src = '/ranks/RANK_0.png'; }} />
                       <div>
-                        <b>{p.NickName || p.username}</b>
+                        <b>{p.rankMark === 'FM' && !p.isGM ? `[FM]${p.NickName || p.username}` : (p.NickName || p.username)}</b>
                         <small>{p.username} · #{p.id}</small>
                       </div>
                     </div>

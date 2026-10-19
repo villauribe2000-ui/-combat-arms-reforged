@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import { query, queryGuildDB, queryVisms } from '../db.js';
+import { rankMarksFor } from '../rank-mark.js';
 import { generateToken, hashPassword, verifyPassword } from '../auth.js';
 import jwt from 'jsonwebtoken';
 
@@ -471,6 +472,7 @@ router.get('/profile/:username', async (req, res) => {
       clan = null;
     }
 
+    const marks = await rankMarksFor([user.id]);
     res.json({
       id: user.id,
       username: user.username,
@@ -486,6 +488,7 @@ router.get('/profile/:username', async (req, res) => {
       rank,
       rankName,
       isGM: user.UserType === 1,
+      rankMark: marks[Number(user.id)] || null,
       clan
     });
   } catch (error) {

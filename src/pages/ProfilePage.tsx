@@ -41,7 +41,7 @@ export default function ProfilePage({ onNavigate }: { onNavigate: (page: PageId)
   const exp = Number(game?.Exp ?? game?.experience ?? profile?.experience ?? 0);
   const rankLevel = Number(game?.rank) > 0 ? Number(game.rank) : rankFromExp(exp);
   const displayRank = rankTitle(rankLevel, game?.rankName);
-  const rankSrc = rankIcon({ rank: rankLevel, exp });
+  const rankSrc = rankIcon({ rank: rankLevel, exp, UserType: game?.UserType, isGM: game?.isGM, rankMark: game?.rankMark });
   const wins = Number(game?.wins || 0);
   const losses = Number(game?.losses || 0);
   const winRate = wins + losses > 0 ? ((wins / (wins + losses)) * 100).toFixed(1) : '0.0';
@@ -72,7 +72,7 @@ export default function ProfilePage({ onNavigate }: { onNavigate: (page: PageId)
             <div className="player-identity-copy">
               <p className="player-identity-label">COMBAT RECORD</p>
               <h2>
-                {name}
+                {Number(game?.UserType) === 1 ? `[GM]${name}` : (game?.rankMark === 'FM' ? `[FM]${name}` : name)}
                 <span className="player-level">LEVEL {rankLevel}</span>
               </h2>
               <p>{displayRank}</p>

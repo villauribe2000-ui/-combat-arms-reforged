@@ -8,6 +8,7 @@ import { getPoolConnection, disconnect, query, queryVisms } from './db.js';
 import { authMiddleware } from './auth.js';
 import authRoutes from './routes/auth.js';
 import authCombatarmsRoutes, { ensureRegistrationTable } from './routes/auth-combatarms.js';
+import { ensureRankMarkTable } from './rank-mark.js';
 import dataRoutes from './routes/data.js';
 import walletRoutes from './routes/wallet.js';
 import paymentsRoutes from './routes/payments.js';
@@ -193,6 +194,12 @@ async function start() {
         console.log('[REGISTER] Límite de cuentas listo');
       } catch (registrationError) {
         console.warn('[REGISTER] No se pudo preparar el límite de cuentas:', registrationError.message);
+      }
+      try {
+        await ensureRankMarkTable();
+        console.log('[RANK MARK] Logo FM listo');
+      } catch (rankMarkError) {
+        console.warn('[RANK MARK] No se pudo preparar el logo FM:', rankMarkError.message);
       }
     } catch (dbError) {
       console.warn('⚠️ Advertencia: No se pudo conectar a la BD');
