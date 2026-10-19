@@ -1,6 +1,6 @@
 import crypto from 'crypto';
 import express from 'express';
-import { queryWeb, queryVisms } from '../db.js';
+import { query, queryWeb, queryVisms } from '../db.js';
 
 const router = express.Router();
 const NX_REWARD = 20000;
@@ -8,15 +8,26 @@ const ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
 
 let tablesReady = null;
 
-export function clientIp(req) {
-  const forwarded = req.headers['x-forwarded-for'];
-  let ip = typeof forwarded === 'string' && forwarded.trim()
-    ? forwarded.split(',')[0].trim()
-    : (req.ip || req.socket?.remoteAddress || '');
+function cleanIp(value) {
+  let ip = String(value || '').split(',')[0].trim();
   if (ip.startsWith('::ffff:')) ip = ip.slice(7);
   if (ip === '::1') ip = '127.0.0.1';
-  if (!ip || ip === '0.0.0.0') return '';
-  return String(ip).slice(0, 45);
+  if (!ip || ip === '0.0.0.0' || ip.toLowerCase() === 'unknown') return '';
+  return ip.slice(0, 45);
+}
+
+export function clientIp(req) {
+  const realHeader = req.headers['x-real-ip'];
+  const real = Array.isArray(realHeader) ? realHeader[0] : realHeader;
+  const trustedReal = cleanIp(real);
+  if (trustedReal) return trustedReal;
+
+  const forwarded = req.headers['x-forwarded-for'];
+  if (typeof forwarded === 'string' && forwarded.trim()) {
+    const hops = forwarded.split(',').map((part) => cleanIp(part)).filter(Boolean);
+    if (hops.length) return hops[hops.length - 1];
+  }
+  return cleanIp(req.ip || req.socket?.remoteAddress || '');
 }
 
 function makeCode() {
@@ -131,6 +142,40 @@ export async function noteReferralVisit(oidUser, username, ip) {
   await ensureCode(id, username);
 }
 
+async function accountsShareIp(referrerOid, guestOid, ip) {
+  const seen = await queryWeb(
+    `SELECT TOP 1 owner.ip
+     FROM ReferralIps owner
+     INNER JOIN ReferralIps guest ON guest.ip = owner.ip
+     WHERE owner.oidUser = @referrerOid AND guest.oidUser = @guestOid`,
+    { referrerOid, guestOid }
+  );
+  if (seen.recordset[0]) return true;
+
+  try {
+    const registered = await queryWeb(
+      `SELECT oidUser, ip FROM WebRegistrations WHERE oidUser IN (@referrerOid, @guestOid)`,
+      { referrerOid, guestOid }
+    );
+    const ownerRegs = registered.recordset.filter((row) => Number(row.oidUser) === Number(referrerOid)).map((row) => cleanIp(row.ip));
+    const guestRegs = registered.recordset.filter((row) => Number(row.oidUser) === Number(guestOid)).map((row) => cleanIp(row.ip));
+    if (ownerRegs.some((ownerIp) => ownerIp && (ownerIp === ip || guestRegs.includes(ownerIp)))) return true;
+  } catch (error) {
+    console.warn('[REFERRAL] registro IP', error.message);
+  }
+
+  const logins = await query(
+    `SELECT oidUser, strLastLoginIP
+     FROM COMBATARMS.dbo.CBT_UserAuth
+     WHERE oidUser IN (@referrerOid, @guestOid)`,
+    { referrerOid, guestOid }
+  ).catch(() => ({ recordset: [] }));
+  const ownerLogin = cleanIp(logins.recordset.find((row) => Number(row.oidUser) === Number(referrerOid))?.strLastLoginIP);
+  const guestLogin = cleanIp(logins.recordset.find((row) => Number(row.oidUser) === Number(guestOid))?.strLastLoginIP);
+  if (ownerLogin && (ownerLogin === ip || ownerLogin === guestLogin)) return true;
+  return false;
+}
+
 function userFromRequest(req) {
   const oidUser = Number(req.user?.id || req.user?.userId);
   const username = String(req.user?.username || '').slice(0, 50);
@@ -218,16 +263,10 @@ router.post('/redeem', async (req, res) => {
       return res.status(400).json({ error: 'Esta cuenta ya canjeó un código. Solo se puede usar una vez.' });
     }
 
-    const sameOwnerIp = await queryWeb(
-      `SELECT TOP 1 owner.ip
-       FROM ReferralIps owner
-       INNER JOIN ReferralIps guest ON guest.ip = owner.ip
-       WHERE owner.oidUser = @referrerOid AND guest.oidUser = @oidUser`,
-      { referrerOid: referrer.oidUser, oidUser: user.oidUser }
-    );
-    if (sameOwnerIp.recordset[0]) {
+    const sameIp = await accountsShareIp(referrer.oidUser, user.oidUser, ip);
+    if (sameIp) {
       return res.status(400).json({
-        error: 'Este código no se puede canjear desde la misma IP de la cuenta que lo compartió.',
+        error: 'No puedes canjear un código entre cuentas de la misma IP, aunque el correo sea distinto.',
       });
     }
 

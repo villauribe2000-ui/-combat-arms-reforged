@@ -9,7 +9,7 @@ import crypto from 'crypto';
 import jwt from 'jsonwebtoken';
 import { userIsSiteAdmin } from '../site-admin.js';
 import { actorFromReq, pinFromBody, pinRow, savePin, checkPin, ensurePinTable } from '../login-pin.js';
-import { noteReferralVisit } from './referral.js';
+import { noteReferralVisit, clientIp } from './referral.js';
 
 const router = express.Router();
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-change-this';
@@ -17,12 +17,6 @@ const MAX_ACCOUNTS_PER_IP = 2;
 const EMAIL_RE = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
 
 let registrationTableReady = null;
-
-function normalizeIp(value) {
-  let ip = String(value || '').split(',')[0].trim();
-  if (ip.startsWith('::ffff:')) ip = ip.slice(7);
-  return ip.slice(0, 45);
-}
 
 function normalizeEmail(value) {
   return String(value || '').trim().toLowerCase();
@@ -81,11 +75,7 @@ export function ensureRegistrationTable() {
 
 // Helper: Obtener IP del cliente
 function getClientIP(req) {
-  const forwarded = req.headers['x-forwarded-for'];
-  const raw = (typeof forwarded === 'string' && forwarded.trim())
-    ? forwarded
-    : (req.headers['x-real-ip'] || req.ip || req.socket?.remoteAddress || req.connection?.remoteAddress || '0.0.0.0');
-  return normalizeIp(raw) || '0.0.0.0';
+  return clientIp(req) || '0.0.0.0';
 }
 
 // Helper: Generar JWT

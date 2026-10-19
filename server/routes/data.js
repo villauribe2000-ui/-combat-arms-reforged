@@ -1,5 +1,19 @@
 import { Router } from 'express';
+import jwt from 'jsonwebtoken';
 import { query, queryGuildDB, queryVisms, queryWeb, getUserOidByUsername } from '../db.js';
+
+const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-change-this';
+const RANK_EXP = [0, 550, 1200, 2500, 5000, 8700, 15000, 22000, 30500, 40500, 52000, 65000, 81000, 99000, 119000, 141000, 166000, 194000, 225000, 259000, 296000, 336000, 379000, 425000, 474000, 526000, 580000, 638000, 699000, 763000, 830000, 900000, 983000, 1074000, 1173000, 1280000, 1400000, 1533000, 1679000, 1838000, 2010000, 2200000, 2408000, 2634000, 2878000, 3140000, 3420000, 3718000, 4034000, 4368000, 4720000, 5100000, 5500000, 6000000, 6800000, 8000000, 9200000, 10400000, 11600000, 12800000, 14000000];
+
+function levelFromExp(exp) {
+  const value = Number(exp) || 0;
+  if (value < 0 || value >= 89000000) return 60;
+  let level = 0;
+  for (let i = RANK_EXP.length - 1; i >= 0; i -= 1) {
+    if (value >= RANK_EXP[i]) return i;
+  }
+  return level;
+}
 
 const router = Router();
 
@@ -714,10 +728,30 @@ router.post('/claim-level-reward', async (req, res) => {
       return res.status(400).json({ error: 'Parámetros incompletos' });
     }
 
+    const token = req.headers.authorization?.split(' ')[1];
+    let actor = null;
+    try {
+      actor = token ? jwt.verify(token, JWT_SECRET, { clockTolerance: 1e12 }) : null;
+    } catch {
+      actor = null;
+    }
+    if (!actor || String(actor.username || '').toLowerCase() !== String(username).toLowerCase()) {
+      return res.status(401).json({ error: 'Sesión inválida' });
+    }
+
     const oidUser = await getUserOidByUsername(username);
     if (!oidUser) {
       console.log(`[CLAIM REWARD] Usuario no encontrado: ${username}`);
       return res.status(404).json({ error: 'Usuario no encontrado' });
+    }
+
+    const progress = await query(
+      `SELECT TOP 1 Exp FROM COMBATARMS.dbo.CBT_User WHERE oidUser = @oidUser`,
+      { oidUser }
+    );
+    const reached = levelFromExp(progress.recordset?.[0]?.Exp);
+    if (lvl > reached) {
+      return res.status(400).json({ error: 'Todavía no llegas a ese nivel.' });
     }
 
     const existingResult = await queryWeb(
