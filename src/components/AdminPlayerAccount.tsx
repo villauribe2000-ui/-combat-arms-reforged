@@ -213,7 +213,7 @@ export default function AdminPlayerAccount({ id, onBack }: { id: number; onBack:
                   ) : (
                     <b>{u.rankMark === 'FM' ? 'FM' : 'Sin logo'}</b>
                   )}
-                  <small>No cambia con la EXP. Solo el dueño puede asignarlo.</small>
+                  <small>En el juego queda el logo FM. La cuenta tiene que entrar de nuevo. Solo el dueño puede asignarlo.</small>
                   {markError ? <small>{markError}</small> : null}
                 </div>
                 <div>

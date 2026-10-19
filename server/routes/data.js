@@ -79,7 +79,7 @@ router.get('/players/top', async (req, res) => {
           rank,
           rankName,
           isGM,
-          rankMark: marks[Number(player.id)] || null,
+          rankMark: marks[Number(player.id)] || (Number(player.UserType) === 3 ? 'FM' : null),
         };
       })
     );

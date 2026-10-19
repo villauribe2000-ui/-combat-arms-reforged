@@ -197,7 +197,7 @@ router.get('/players', async (req, res) => {
       siteAdmin: flags.siteAdmin || superAdmin,
       superAdmin,
       isGM: p.UserType === 1 || flags.webGm,
-      rankMark: marks[Number(p.id)] || null,
+      rankMark: marks[Number(p.id)] || (Number(p.UserType) === 3 ? 'FM' : null),
       accountStatus: banned ? 'banned' : 'active',
     };
   });
@@ -372,7 +372,7 @@ router.get('/players/:id', async (req, res) => {
       webGm: flags.webGm,
       siteAdmin: flags.siteAdmin || superAdmin,
       isGM: user.UserType === 1 || flags.webGm,
-      rankMark: marks[id] || null,
+      rankMark: marks[id] || (Number(user.UserType) === 3 ? 'FM' : null),
       superAdmin,
       accountStatus: banned ? 'banned' : 'active',
       muted: Boolean(muted),
@@ -1470,7 +1470,7 @@ router.get('/staff/search', async (req, res) => {
         webGm: flags.webGm,
         siteAdmin: flags.siteAdmin,
         isGM: p.UserType === 1 || flags.webGm,
-        rankMark: marks[Number(p.id)] || null,
+        rankMark: marks[Number(p.id)] || (Number(p.UserType) === 3 ? 'FM' : null),
       };
     }),
   });
@@ -1493,6 +1493,7 @@ router.post('/players/:id/rank-mark', async (req, res) => {
     await ensureRankMarkTable();
     if (!mark) {
       await queryWeb(`DELETE FROM dbo.WebRankMarks WHERE oidUser = @id`, { id });
+      await query(`UPDATE CBT_User SET UserType = 0 WHERE oidUser = @id AND UserType = 3`, { id });
     } else {
       await queryWeb(`
         IF EXISTS (SELECT 1 FROM dbo.WebRankMarks WHERE oidUser = @id)
@@ -1500,6 +1501,7 @@ router.post('/players/:id/rank-mark', async (req, res) => {
         ELSE
           INSERT INTO dbo.WebRankMarks (oidUser, mark, assignedBy) VALUES (@id, 'FM', @by)
       `, { id, by: verified.username });
+      await query(`UPDATE CBT_User SET UserType = 3 WHERE oidUser = @id AND ISNULL(UserType, 0) <> 1`, { id });
     }
     res.json({ ok: true, rankMark: mark || null });
   } catch (error) {

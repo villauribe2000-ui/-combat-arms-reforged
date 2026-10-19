@@ -488,7 +488,7 @@ router.get('/profile/:username', async (req, res) => {
       rank,
       rankName,
       isGM: user.UserType === 1,
-      rankMark: marks[Number(user.id)] || null,
+      rankMark: marks[Number(user.id)] || (Number(user.UserType) === 3 ? 'FM' : null),
       clan
     });
   } catch (error) {
