@@ -7,11 +7,12 @@ import AdminPlayerAccount from '@/components/AdminPlayerAccount';
 import AdminClanProfile from '@/components/AdminClanProfile';
 import PageLoader from '@/components/PageLoader';
 import EventsDesk from '@/components/EventsDesk';
+import CouponCodesDesk from '@/components/CouponCodesDesk';
 import NoticeComposer from '@/components/NoticeComposer';
 import {
   XCircle, Loader, RotateCcw, MessageSquare, Send,
   LayoutDashboard, Users, Radio, Shield, Store, Landmark, FileBarChart, Swords, LogIn, CalendarDays,
-  Link2, Megaphone, Map, Zap, ArrowLeft, Ticket, KeyRound, CreditCard, ExternalLink, ChevronRight, Search, Activity, TrendingUp, Wallet, ShoppingBag, Coins, Flag, Check, Star, UserCog, Crown, History, X
+  Link2, Megaphone, Map, Zap, ArrowLeft, Ticket, KeyRound, CreditCard, ExternalLink, ChevronRight, Search, Activity, TrendingUp, Wallet, ShoppingBag, Coins, Flag, Check, Star, UserCog, Crown, History, X, Gift
 } from 'lucide-react';
 
 interface PaymentCode {
@@ -74,7 +75,7 @@ interface TicketMessage {
 type Section =
   | 'overview' | 'players' | 'online' | 'clans' | 'shop' | 'economy' | 'reports'
   | 'matches' | 'logins' | 'linked' | 'announcements' | 'maps' | 'boosts'
-  | 'codes' | 'payments' | 'refunds' | 'tickets' | 'staff' | 'gm' | 'history' | 'events';
+  | 'codes' | 'coupons' | 'payments' | 'refunds' | 'tickets' | 'staff' | 'gm' | 'history' | 'events';
 
 const NAV: { id: Section; label: string; icon: typeof LayoutDashboard; group: string; ownerOnly?: boolean }[] = [
   { id: 'overview', label: 'Overview', icon: LayoutDashboard, group: 'CONTROL ROOM' },
@@ -91,6 +92,7 @@ const NAV: { id: Section; label: string; icon: typeof LayoutDashboard; group: st
   { id: 'maps', label: 'Maps & modes', icon: Map, group: 'GAME CONTROL' },
   { id: 'boosts', label: 'EXP & GP boosts', icon: Zap, group: 'EVENTS' },
   { id: 'events', label: 'Eventos', icon: CalendarDays, group: 'EVENTS', ownerOnly: true },
+  { id: 'coupons', label: 'Códigos promo', icon: Gift, group: 'EVENTS', ownerOnly: true },
   { id: 'codes', label: 'Payment codes', icon: KeyRound, group: 'OPERATIONS', ownerOnly: true },
   { id: 'payments', label: 'Recargas', icon: CreditCard, group: 'OPERATIONS', ownerOnly: true },
   { id: 'refunds', label: 'Refunds', icon: RotateCcw, group: 'OPERATIONS', ownerOnly: true },
@@ -1930,6 +1932,7 @@ export default function AdminPage({ onNavigate }: { onNavigate?: (page: PageId) 
         )}
 
         {section === 'events' && <EventsDesk />}
+        {section === 'coupons' && <CouponCodesDesk />}
 
         {section === 'boosts' && (
           <>

@@ -6,8 +6,81 @@
 }
 .redeem-grid {
   display: grid;
-  grid-template-columns: minmax(0, 560px);
+  grid-template-columns: minmax(0, 720px);
   gap: 14px;
+}
+.redeem-modal {
+  max-width: 720px;
+  background: linear-gradient(180deg, #1c1c1c 0%, #141414 100%);
+  border: 1px solid #3a3a3a;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.04);
+}
+.redeem-modal-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 18px;
+  color: #f2f2f2;
+}
+.redeem-modal-head strong {
+  font-size: 18px;
+  letter-spacing: 1px;
+  font-family: var(--font-heading), Impact, sans-serif;
+}
+.redeem-modal-head svg { color: #df8104; }
+.redeem-modal-label {
+  color: #c8c8c8;
+  font-size: 14px;
+  margin-bottom: 14px;
+}
+.redeem-segments {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 8px;
+}
+.redeem-segments input {
+  height: 48px;
+  width: 100%;
+  text-align: center;
+  letter-spacing: 2px;
+  font-size: 16px;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: #fff;
+  background: #0d0d0d;
+  border: 1px solid #454545;
+  border-radius: 2px;
+  padding: 0 4px;
+}
+.redeem-segments input:focus {
+  outline: 1px solid #df8104;
+  border-color: #df8104;
+}
+.redeem-modal-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 18px;
+}
+.redeem-modal-actions .invite-cta,
+.redeem-cancel {
+  min-width: 110px;
+}
+.redeem-cancel {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 46px;
+  padding: 0 18px;
+  border: 1px solid #454545;
+  background: #222;
+  color: #ddd;
+  font-size: 14px;
+  font-weight: 800;
+}
+.redeem-cancel:hover { background: #2a2a2a; }
+.coupon-list { display: flex; flex-direction: column; gap: 8px; }
+@media (max-width: 700px) {
+  .redeem-segments { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 }
 .invite-card {
   background: #171717;

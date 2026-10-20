@@ -379,6 +379,47 @@ class ApiClient {
     return await this.request<{ success: boolean; message: string; reward: number }>('POST', '/referral/redeem', { code });
   }
 
+  async redeemPromo(code: string) {
+    return await this.request<{
+      success: boolean;
+      message: string;
+      displayCode: string;
+      rewards: { productId: number; name: string }[];
+    }>('POST', '/promo/redeem', { code });
+  }
+
+  async getPromoCodesAdmin() {
+    return await this.request<{
+      codes: {
+        code: string;
+        displayCode: string;
+        used: boolean;
+        usedAt: string | null;
+        usedBy: { oidUser: number; username: string; nick: string } | null;
+        rewards: { productId: number; name: string; message?: string; fallback?: boolean }[];
+      }[];
+    }>('GET', '/promo/admin');
+  }
+
+  async createPromoCode(body: {
+    code?: string;
+    rewards: { productId: number; message?: string }[];
+  }) {
+    return await this.request<{ success: boolean; code: any }>('POST', '/promo/admin', body);
+  }
+
+  async updatePromoCode(code: string, body: {
+    code?: string;
+    rewards?: { productId: number; message?: string }[];
+    reset?: boolean;
+  }) {
+    return await this.request<{ success: boolean; code: any }>('PUT', `/promo/admin/${encodeURIComponent(code)}`, body);
+  }
+
+  async deletePromoCode(code: string) {
+    return await this.request<{ success: boolean }>('DELETE', `/promo/admin/${encodeURIComponent(code)}`);
+  }
+
   async claimBirthdayReward(username: string) {
     return await this.request<{ success: boolean; message: string; nxAmount: number }>('POST', '/birthday/claim', {
       username,
@@ -445,6 +486,33 @@ class ApiClient {
       nx,
       recipientId: recipientId || 0,
     }, { keepalive: true });
+  }
+
+  async createWompiCheckout(payload: {
+    amount: number;
+    amountInCents: number;
+    custom: boolean;
+    nx: number;
+    recipientId?: number;
+  }) {
+    return await this.request<{
+      success: boolean;
+      publicKey: string;
+      currency: string;
+      reference: string;
+      amountInCents: number;
+      integrity: string;
+      nx: number;
+      bonus: number;
+      price: number;
+      recipient: string | null;
+    }>('POST', '/payments/wompi/create', {
+      amount: payload.amount,
+      amountInCents: payload.amountInCents,
+      custom: payload.custom,
+      nx: payload.nx,
+      recipientId: payload.recipientId || 0,
+    });
   }
 
   async submitPaymentCode(oidUser: number, username: string, NickName: string, paymentCode: string, nxAmount: number, dollarAmount: number, note?: string) {

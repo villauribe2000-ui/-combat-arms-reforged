@@ -20,6 +20,7 @@ import adminReadRoutes from './routes/admin-read.js';
 import eventsAdminRoutes from './routes/events-admin.js';
 import noticesAdminRoutes from './routes/notices-admin.js';
 import referralRoutes, { ensureReferralTables } from './routes/referral.js';
+import promoRoutes, { ensurePromoTables } from './routes/promo.js';
 // import birthdayRoutes from './routes/birthdays.js';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -78,6 +79,7 @@ app.use('/api/support', supportRoutes);
 app.use('/api/marketplace', marketplaceRoutes);
 app.use('/api/combatarms-web', combatarmsWebRoutes);
 app.use('/api/referral', authMiddleware, referralRoutes);
+app.use('/api/promo', authMiddleware, promoRoutes);
 app.use('/api/protected', authMiddleware, dataRoutes);
 
 if (!process.env.VERCEL) {
@@ -188,6 +190,12 @@ async function start() {
         console.log('[REFERRAL] Tablas listas');
       } catch (referralError) {
         console.warn('[REFERRAL] No se pudieron preparar las tablas:', referralError.message);
+      }
+      try {
+        await ensurePromoTables();
+        console.log('[PROMO] Tablas listas');
+      } catch (promoError) {
+        console.warn('[PROMO] No se pudieron preparar las tablas:', promoError.message);
       }
       try {
         await ensureRegistrationTable();
