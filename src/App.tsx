@@ -18,6 +18,7 @@ import PurchaseHistoryPage from '@/pages/PurchaseHistoryPage';
 import LevelRewardsPage from '@/pages/LevelRewardsPage';
 import BirthdayPage from '@/pages/BirthdayPage';
 import InvitePage from '@/pages/InvitePage';
+import RedeemCodePage from '@/pages/RedeemCodePage';
 
 function AppContent() {
   const { profile, pinReady } = useAuth();
@@ -66,6 +67,7 @@ function AppContent() {
       case 'level-rewards': return <LevelRewardsPage />;
       case 'birthday': return <BirthdayPage />;
       case 'invite': return <InvitePage />;
+      case 'redeem': return <RedeemCodePage />;
       default: return <HomePage onNavigate={navigate} />;
     }
   };
