@@ -92,8 +92,8 @@ export default function RedeemCodePage() {
           <p className="eyebrow"><span className="tiny-square" /> PROMO</p>
           <h1>CANJEAR CÓDIGO.</h1>
           <p className="page-heading-description">
-            Es el mismo código que en el juego (ENTER CODE). Sin guiones al escribir;
-            los bloques son solo para separar. Los ítems llegan a tu bandeja de entrada.
+            Es el mismo código que en el juego (ENTER CODE). Cada cuenta solo puede
+            canjear cada código una vez. Los ítems llegan a tu bandeja de entrada.
           </p>
         </div>
       </header>

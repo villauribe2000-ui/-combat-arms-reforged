@@ -78,7 +78,38 @@
   font-weight: 800;
 }
 .redeem-cancel:hover { background: #2a2a2a; }
-.coupon-list { display: flex; flex-direction: column; gap: 8px; }
+.coupon-list { display: flex; flex-direction: column; gap: 10px; }
+.coupon-card {
+  background: #171717;
+  border: 1px solid #303030;
+  border-radius: 4px;
+  padding: 16px 18px;
+}
+.coupon-history {
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px solid #2b2b2b;
+}
+.coupon-history-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+.coupon-history-table th,
+.coupon-history-table td {
+  text-align: left;
+  padding: 8px 10px;
+  border-bottom: 1px solid #2b2b2b;
+  color: #d7d7d7;
+}
+.coupon-history-table th {
+  color: #888;
+  font-size: 10px;
+  letter-spacing: 1px;
+  font-weight: 800;
+}
+.coupon-history-table td:nth-child(1),
+.coupon-history-table td:nth-child(4) { color: #888; }
 @media (max-width: 700px) {
   .redeem-segments { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 }

@@ -396,6 +396,8 @@ class ApiClient {
         used: boolean;
         usedAt: string | null;
         usedBy: { oidUser: number; username: string; nick: string } | null;
+        redeemCount?: number;
+        recentRedeemers?: { oidUser: number; username: string; nick?: string; at: string }[];
         rewards: { productId: number; name: string; message?: string; fallback?: boolean }[];
       }[];
     }>('GET', '/promo/admin');

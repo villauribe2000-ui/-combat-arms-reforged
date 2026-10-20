@@ -9,6 +9,8 @@ type PromoCode = {
   used: boolean;
   usedAt: string | null;
   usedBy: { oidUser: number; username: string; nick: string } | null;
+  redeemCount?: number;
+  recentRedeemers?: { oidUser: number; username: string; nick?: string; at: string }[];
   rewards: (Reward & { sortOrder?: number; fallback?: boolean })[];
 };
 
@@ -33,6 +35,7 @@ export default function CouponCodesDesk() {
   const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState<{ type: 'ok' | 'error'; text: string } | null>(null);
   const [editing, setEditing] = useState<string | null>(null);
+  const [historyOpen, setHistoryOpen] = useState<string | null>(null);
   const [codeInput, setCodeInput] = useState('');
   const [rewards, setRewards] = useState<Reward[]>([]);
   const [q, setQ] = useState('');
@@ -128,7 +131,7 @@ export default function CouponCodesDesk() {
   };
 
   const resetUse = async (code: string) => {
-    if (!window.confirm('¿Liberar este código para que se pueda canjear otra vez?')) return;
+    if (!window.confirm('¿Borrar el historial de canjes de este código? Todas las cuentas podrían volver a canjearlo.')) return;
     try {
       setBusy(true);
       await api.updatePromoCode(code, { code, reset: true } as any);
@@ -163,7 +166,7 @@ export default function CouponCodesDesk() {
         <div>
           <p className="eyebrow">OPERATIONS / PROMO</p>
           <h1>CÓDIGOS PROMO</h1>
-          <p>Códigos del juego (ENTER CODE / CBT_CouponRegister). Crea, edita recompensas o elimínalos. Solo el dueño.</p>
+          <p>Códigos del juego (ENTER CODE). Crea, edita recompensas, mira el historial de quién canjeó y elimínalos. Solo el dueño.</p>
         </div>
       </div>
 
@@ -245,31 +248,76 @@ export default function CouponCodesDesk() {
         <div className="pd-empty">No hay códigos promo todavía.</div>
       ) : (
         <div className="coupon-list">
-          {codes.map((row) => (
-            <article className="admin-row" key={row.code}>
-              <div>
-                <b>{row.displayCode}</b>
-                <span>
-                  {row.used
-                    ? `Usado · ${row.usedBy?.username || row.usedBy?.oidUser || '?'} · ${when(row.usedAt)}`
-                    : 'Disponible'}
-                  {' · '}
-                  {row.rewards.filter((r) => !r.fallback).length
-                    ? row.rewards.filter((r) => !r.fallback).map((r) => r.name).join(', ')
-                    : `Fallback ${row.rewards.map((r) => r.productId).join(', ')}`}
-                </span>
-              </div>
-              <div className="admin-actions">
-                <button type="button" className="admin-ok" disabled={busy} onClick={() => startEdit(row)}>Editar</button>
-                {row.used && (
-                  <button type="button" className="staff-btn" disabled={busy} onClick={() => resetUse(row.code)}>Liberar</button>
+          {codes.map((row) => {
+            const history = row.recentRedeemers || [];
+            const open = historyOpen === row.code;
+            return (
+              <article className="coupon-card" key={row.code}>
+                <div className="admin-row" style={{ border: 0, margin: 0, padding: 0 }}>
+                  <div>
+                    <b>{row.displayCode}</b>
+                    <span>
+                      {Number(row.redeemCount || 0) > 0
+                        ? `${row.redeemCount} cuenta(s) · última ${when(row.usedAt)}`
+                        : 'Sin canjes aún'}
+                      {' · 1 vez por cuenta · '}
+                      {row.rewards.filter((r) => !r.fallback).length
+                        ? row.rewards.filter((r) => !r.fallback).map((r) => r.name).join(', ')
+                        : `Fallback ${row.rewards.map((r) => r.productId).join(', ')}`}
+                    </span>
+                  </div>
+                  <div className="admin-actions">
+                    <button
+                      type="button"
+                      className="staff-btn"
+                      disabled={!history.length}
+                      onClick={() => setHistoryOpen(open ? null : row.code)}
+                    >
+                      {open ? 'Ocultar historial' : `Historial (${history.length})`}
+                    </button>
+                    <button type="button" className="admin-ok" disabled={busy} onClick={() => startEdit(row)}>Editar</button>
+                    {Number(row.redeemCount || 0) > 0 && (
+                      <button type="button" className="staff-btn" disabled={busy} onClick={() => resetUse(row.code)}>Liberar canjes</button>
+                    )}
+                    <button type="button" className="admin-no" disabled={busy} onClick={() => remove(row.code)}>
+                      <Trash2 size={14} /> Eliminar
+                    </button>
+                  </div>
+                </div>
+                {open && (
+                  <div className="coupon-history">
+                    <p className="invite-kicker" style={{ marginBottom: 8 }}>Quién ya canjeó</p>
+                    {history.length === 0 ? (
+                      <p className="sub">Nadie ha canjeado este código todavía.</p>
+                    ) : (
+                      <table className="coupon-history-table">
+                        <thead>
+                          <tr>
+                            <th>#</th>
+                            <th>Cuenta</th>
+                            <th>Nick</th>
+                            <th>OID</th>
+                            <th>Fecha</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {history.map((entry, index) => (
+                            <tr key={`${entry.oidUser}-${entry.at}`}>
+                              <td>{index + 1}</td>
+                              <td>{entry.username}</td>
+                              <td>{entry.nick || '—'}</td>
+                              <td>{entry.oidUser}</td>
+                              <td>{when(entry.at)}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    )}
+                  </div>
                 )}
-                <button type="button" className="admin-no" disabled={busy} onClick={() => remove(row.code)}>
-                  <Trash2 size={14} /> Eliminar
-                </button>
-              </div>
-            </article>
-          ))}
+              </article>
+            );
+          })}
         </div>
       )}
     </div>

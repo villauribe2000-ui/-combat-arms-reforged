@@ -64,6 +64,35 @@ async function ensureRewardTable() {
       );
       CREATE INDEX idx_coupon_reward_code ON CBT_CouponReward(CouponNo);
     END
+
+    IF OBJECT_ID('CBT_CouponUserRedeem', 'U') IS NULL
+    BEGIN
+      CREATE TABLE CBT_CouponUserRedeem (
+        CouponNo NVARCHAR(50) NOT NULL,
+        oidUser INT NOT NULL,
+        username NVARCHAR(50) NULL,
+        createdAt DATETIME NOT NULL CONSTRAINT DF_CBT_CouponUserRedeem_created DEFAULT (GETDATE()),
+        CONSTRAINT PK_CBT_CouponUserRedeem PRIMARY KEY (CouponNo, oidUser)
+      );
+      CREATE INDEX idx_coupon_user_redeem_user ON CBT_CouponUserRedeem(oidUser);
+    END
+  `);
+
+  // Migrate old single-use flags into per-account history, then reopen the code for others
+  await query(`
+    INSERT INTO CBT_CouponUserRedeem (CouponNo, oidUser, username, createdAt)
+    SELECT r.CouponNo, r.oiduser, ISNULL(u.strNexonID, CAST(r.oiduser AS NVARCHAR(50))), ISNULL(r.RegDate, GETDATE())
+    FROM CBT_CouponRegister r
+    LEFT JOIN CBT_User u ON u.oidUser = r.oiduser
+    WHERE r.oiduser > 0 AND r.RegDate IS NOT NULL
+      AND NOT EXISTS (
+        SELECT 1 FROM CBT_CouponUserRedeem x
+        WHERE x.CouponNo = r.CouponNo AND x.oidUser = r.oiduser
+      );
+
+    UPDATE CBT_CouponRegister
+    SET oiduser = 0, RegDate = NULL
+    WHERE oiduser > 0 OR RegDate IS NOT NULL;
   `);
 }
 
@@ -78,27 +107,46 @@ async function ensureCouponProcedure() {
       SET NOCOUNT ON;
       SET XACT_ABORT OFF;
 
-      DECLARE @cnt int, @usedate datetime, @productid int, @out_userInboxElementId int, @msg nvarchar(150)
+      DECLARE @cnt int, @productid int, @out_userInboxElementId int, @msg nvarchar(150), @matched nvarchar(50)
 
       SET @couponno = UPPER(REPLACE(REPLACE(LTRIM(RTRIM(@couponno)), N'-', N''), N' ', N''))
-      SELECT @cnt = 0, @outputerror = 0
+      SELECT @cnt = 0, @outputerror = 0, @matched = NULL
       SET @out_userInboxElementId = -1
 
       BEGIN TRY
         BEGIN TRAN
 
-        SELECT @cnt = COUNT(*), @usedate = MAX(RegDate)
+        SELECT @cnt = COUNT(*), @matched = MAX(CouponNo)
         FROM CBT_CouponRegister WITH (UPDLOCK, HOLDLOCK)
         WHERE CouponNo = @couponno
+           OR (LEN(@couponno) >= 16 AND CouponNo LIKE @couponno + N'%')
            OR (LEN(@couponno) = 16 AND LEFT(CouponNo, 16) = @couponno)
 
-        IF (@cnt = 0 OR @cnt > 1)
+        IF (@cnt = 0)
         BEGIN
           SET @outputerror = 1
           GOTO FAIL
         END
+        IF (@cnt > 1)
+        BEGIN
+          SELECT TOP 1 @matched = CouponNo
+          FROM CBT_CouponRegister WITH (UPDLOCK, HOLDLOCK)
+          WHERE CouponNo = @couponno
+          ORDER BY CouponNo
+          IF (@matched IS NULL)
+          BEGIN
+            SET @outputerror = 1
+            GOTO FAIL
+          END
+        END
 
-        IF (@usedate IS NOT NULL)
+        SET @couponno = @matched
+
+        -- One redeem per account per code
+        IF EXISTS (
+          SELECT 1 FROM CBT_CouponUserRedeem WITH (UPDLOCK, HOLDLOCK)
+          WHERE CouponNo = @couponno AND oidUser = @oiduser
+        )
         BEGIN
           SET @outputerror = 2
           GOTO FAIL
@@ -168,19 +216,12 @@ async function ensureCouponProcedure() {
           END
         END
 
-        UPDATE CBT_CouponRegister
-        SET oiduser = @oiduser, RegDate = GETDATE()
-        WHERE RegDate IS NULL
-          AND (
-            CouponNo = @couponno
-            OR (LEN(@couponno) = 16 AND LEFT(CouponNo, 16) = @couponno)
-          )
+        INSERT INTO CBT_CouponUserRedeem (CouponNo, oidUser, username, createdAt)
+        VALUES (@couponno, @oiduser, NULL, GETDATE())
 
-        IF (@@ROWCOUNT <> 1)
-        BEGIN
-          SET @outputerror = 2
-          GOTO FAIL
-        END
+        UPDATE CBT_CouponRegister
+        SET oiduser = 0, RegDate = NULL
+        WHERE CouponNo = @couponno
 
         COMMIT TRAN
         RETURN 0
@@ -191,6 +232,11 @@ async function ensureCouponProcedure() {
       END TRY
       BEGIN CATCH
         IF @@TRANCOUNT > 0 ROLLBACK TRAN
+        IF ERROR_NUMBER() IN (2601, 2627)
+        BEGIN
+          SET @outputerror = 2
+          RETURN -1
+        END
         SET @outputerror = 5
         RETURN -1
       END CATCH
@@ -231,26 +277,33 @@ async function rewardsFor(code) {
 async function mapCode(row) {
   const code = String(row.CouponNo || '');
   const rewards = await rewardsFor(code);
-  const usedByOid = Number(row.oiduser || 0);
-  let usedBy = null;
-  if (usedByOid > 0) {
-    const user = await query(
-      `SELECT TOP 1 strNexonID AS username, NickName
-       FROM CBT_User WHERE oidUser = @oid`,
-      { oid: usedByOid }
-    );
-    usedBy = {
-      oidUser: usedByOid,
-      username: user.recordset[0]?.username || String(usedByOid),
-      nick: user.recordset[0]?.NickName || '',
-    };
-  }
+  const stats = await query(
+    `SELECT COUNT(*) AS uses, MAX(createdAt) AS lastAt
+     FROM CBT_CouponUserRedeem WHERE CouponNo = @code`,
+    { code }
+  );
+  const recent = await query(
+    `SELECT TOP 200 r.oidUser, r.username, r.createdAt, u.strNexonID, u.NickName
+     FROM CBT_CouponUserRedeem r
+     LEFT JOIN CBT_User u ON u.oidUser = r.oidUser
+     WHERE r.CouponNo = @code
+     ORDER BY r.createdAt DESC`,
+    { code }
+  );
+  const uses = Number(stats.recordset[0]?.uses || 0);
   return {
     code,
     displayCode: formatPromoCode(code),
-    used: Boolean(row.RegDate),
-    usedAt: row.RegDate || null,
-    usedBy,
+    used: uses > 0,
+    usedAt: stats.recordset[0]?.lastAt || null,
+    usedBy: null,
+    redeemCount: uses,
+    recentRedeemers: recent.recordset.map((r) => ({
+      oidUser: Number(r.oidUser),
+      username: r.strNexonID || r.username || String(r.oidUser),
+      nick: r.NickName || '',
+      at: r.createdAt,
+    })),
     rewards: rewards.length ? rewards : DEFAULT_REWARDS.map((productId, sortOrder) => ({
       productId,
       name: `Producto ${productId}`,
@@ -279,7 +332,7 @@ async function replaceRewards(code, rewards) {
 function redeemErrorMessage(code) {
   switch (Number(code)) {
     case 1: return 'Este código no es válido.';
-    case 2: return 'Este código ya fue usado.';
+    case 2: return 'Esta cuenta ya canjeó este código. Solo se puede una vez por cuenta.';
     case 3: return 'No se pudieron entregar los ítems. Entra al juego una vez (crea personaje) y vuelve a intentar.';
     case 5: return 'Error del servidor al canjear. Intenta de nuevo.';
     default: return 'No se pudo canjear el código.';
@@ -426,6 +479,7 @@ router.put('/admin/:code', async (req, res) => {
     }
 
     if (req.body?.reset === true) {
+      await query(`DELETE FROM CBT_CouponUserRedeem WHERE CouponNo = @code`, { code: nextCode });
       await query(
         `UPDATE CBT_CouponRegister SET oiduser = 0, RegDate = NULL WHERE CouponNo = @code`,
         { code: nextCode }
@@ -450,6 +504,7 @@ router.delete('/admin/:code', async (req, res) => {
     await ensurePromoTables();
     const code = normalizePromoCode(req.params.code);
     if (!code) return res.status(400).json({ error: 'Código inválido' });
+    await query(`DELETE FROM CBT_CouponUserRedeem WHERE CouponNo = @code`, { code });
     await query(`DELETE FROM CBT_CouponReward WHERE CouponNo = @code`, { code });
     const deleted = await query(`DELETE FROM CBT_CouponRegister WHERE CouponNo = @code`, { code });
     if (!(deleted.rowsAffected?.[0] > 0)) {
