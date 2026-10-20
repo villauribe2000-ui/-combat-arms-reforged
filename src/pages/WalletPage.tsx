@@ -6,6 +6,8 @@ import { Crown, X, CheckCircle, AlertCircle, Gift, TrendingUp, Coins } from 'luc
 const PAYPAL_CLIENT_ID = 'BAASxJaQf7fBU25aaCHGJtS-7Li538YT5l5OYF9zwZo_FU3_WOxsFV1eni9vVTULMnEzAwkHShoEYOzWzE';
 const PAYPAL_BUTTON_ID = '9VVE28GCM8GXA';
 const PAYPAL_CONTAINER_ID = `paypal-container-${PAYPAL_BUTTON_ID}`;
+const NEQUI_NUMBER = '3148487432';
+const USD_TO_COP_FALLBACK = 4100;
 
 declare global {
   interface Window {
@@ -16,6 +18,8 @@ declare global {
     };
   }
 }
+
+type PaymentMethod = 'paypal' | 'nequi';
 
 interface GcoinPackage {
   id: number;
@@ -46,6 +50,9 @@ export default function WalletPage() {
   const [giftResults, setGiftResults] = useState<{ id: number; username: string; nickname: string }[]>([]);
   const [giftTarget, setGiftTarget] = useState<{ id: number; username: string; nickname: string } | null>(null);
   const [giftSearching, setGiftSearching] = useState(false);
+  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('paypal');
+  const [usdToCop, setUsdToCop] = useState(USD_TO_COP_FALLBACK);
+  const [nequiCopied, setNequiCopied] = useState(false);
 
   const packages: GcoinPackage[] = [
     { id: 1, coins: 15000, price: 1.00 },
@@ -206,7 +213,29 @@ export default function WalletPage() {
   }, [giftQuery, giftTarget, profile]);
 
   useEffect(() => {
-    if (!profile) return;
+    let alive = true;
+    (async () => {
+      try {
+        const res = await fetch('https://open.er-api.com/v6/latest/USD');
+        if (!res.ok) return;
+        const data = await res.json();
+        const rate = Number(data?.rates?.COP);
+        if (alive && rate > 0) setUsdToCop(rate);
+      } catch {
+        /* keep fallback */
+      }
+    })();
+    return () => { alive = false; };
+  }, []);
+
+  useEffect(() => {
+    if (!profile || paymentMethod !== 'paypal') {
+      if (paymentMethod !== 'paypal') {
+        paypalRendered.current = false;
+        setPaypalReady(false);
+      }
+      return;
+    }
 
     const renderButton = () => {
       if (paypalRendered.current || !window.paypal?.HostedButtons) return;
@@ -237,7 +266,7 @@ export default function WalletPage() {
     script.onload = () => renderButton();
     script.onerror = () => setPaypalError(true);
     document.body.appendChild(script);
-  }, [profile]);
+  }, [profile, paymentMethod]);
 
   useEffect(() => {
     if (!paypalReady) return;
@@ -331,6 +360,12 @@ export default function WalletPage() {
         username: profile.username,
         nickname: profile.nickname || profile.username,
       };
+      const methodNote = paymentMethod === 'nequi'
+        ? `Nequi ${NEQUI_NUMBER} · $${selectedProofPackage.price.toFixed(2)} USD ≈ $${Math.round(selectedProofPackage.price * usdToCop).toLocaleString('es-CO')} COP`
+        : undefined;
+      const giftNote = giftTarget ? `Pagado por ${profile.username}` : undefined;
+      const note = [methodNote, giftNote].filter(Boolean).join(' · ') || undefined;
+
       await api.submitPaymentCode(
         recipient.id,
         recipient.username,
@@ -338,7 +373,7 @@ export default function WalletPage() {
         paymentCode.trim(),
         selectedProofPackage.coins,
         selectedProofPackage.price,
-        giftTarget ? `Pagado por ${profile.username}` : undefined
+        note
       );
 
       setNotification({ 
@@ -437,28 +472,49 @@ export default function WalletPage() {
     return null;
   }
 
-  const checkoutNx = selectedPackage
+  const baseNx = selectedPackage
     ? selectedPackage.coins
     : customNxAmount
-      ? parseInt(customNxAmount)
+      ? parseInt(customNxAmount, 10)
       : 0;
+  const packageBonus = selectedPackage ? Math.floor(selectedPackage.coins * 0.1) : 0;
+  const checkoutBonus = paymentMethod === 'nequi'
+    ? (selectedPackage ? packageBonus : customNxBonus)
+    : (selectedPackage ? 0 : customNxBonus);
+  const checkoutNx = baseNx;
+  const totalNx = baseNx + checkoutBonus;
   const checkoutPrice = selectedPackage
     ? selectedPackage.price
     : customNxAmount
       ? calculateCustomPrice(customNxAmount)
       : 0;
+  const checkoutCop = Math.round(checkoutPrice * usdToCop);
   const canCheckout = checkoutNx >= 1000;
+
+  const copyNequiNumber = async () => {
+    try {
+      await navigator.clipboard.writeText(NEQUI_NUMBER);
+      setNequiCopied(true);
+      window.setTimeout(() => setNequiCopied(false), 1600);
+    } catch {
+      setNotification({ type: 'error', message: 'No se pudo copiar. Copia el número a mano.' });
+      setTimeout(() => setNotification(null), 3000);
+    }
+  };
 
   const openPaidModal = () => {
     if (selectedPackage) {
-      setSelectedProofPackage(selectedPackage);
+      setSelectedProofPackage({
+        ...selectedPackage,
+        coins: selectedPackage.coins + (paymentMethod === 'nequi' ? packageBonus : 0),
+      });
       setShowProofModal(true);
       return;
     }
     if (customNxAmount) {
       setSelectedProofPackage({
         id: 0,
-        coins: parseInt(customNxAmount) + customNxBonus,
+        coins: parseInt(customNxAmount, 10) + customNxBonus,
         price: checkoutPrice,
       });
       setShowProofModal(true);
@@ -536,18 +592,52 @@ export default function WalletPage() {
         <aside className="charge-checkout">
           <p>CHECKOUT</p>
           <h2>Your order</h2>
+
+          <div className="charge-methods" role="tablist" aria-label="Método de pago">
+            <button
+              type="button"
+              role="tab"
+              aria-selected={paymentMethod === 'paypal'}
+              className={paymentMethod === 'paypal' ? 'charge-method-active' : undefined}
+              onClick={() => setPaymentMethod('paypal')}
+            >
+              PayPal
+            </button>
+            <button
+              type="button"
+              role="tab"
+              aria-selected={paymentMethod === 'nequi'}
+              className={paymentMethod === 'nequi' ? 'charge-method-active' : undefined}
+              onClick={() => setPaymentMethod('nequi')}
+            >
+              Nequi Colombia
+            </button>
+          </div>
+
           <div className="charge-checkout-row">
             <span>NX</span>
             <strong>{checkoutNx ? checkoutNx.toLocaleString() : '—'}</strong>
           </div>
+          {(paymentMethod === 'nequi' || (customNxAmount && !selectedPackage)) && checkoutBonus > 0 && (
+            <div className="charge-checkout-row">
+              <span>BONUS 10%</span>
+              <strong>+{checkoutBonus.toLocaleString()} NX</strong>
+            </div>
+          )}
+          {checkoutNx > 0 && (paymentMethod === 'nequi' || customNxBonus > 0) && (
+            <div className="charge-checkout-row">
+              <span>TOTAL NX</span>
+              <strong>{totalNx.toLocaleString()} NX</strong>
+            </div>
+          )}
           <div className="charge-checkout-row">
             <span>PRICE</span>
             <strong>{checkoutNx ? `${checkoutPrice.toFixed(2)} USD` : '—'}</strong>
           </div>
-          {customNxAmount && !selectedPackage && (
+          {paymentMethod === 'nequi' && checkoutNx > 0 && (
             <div className="charge-checkout-row">
-              <span>BONUS 10%</span>
-              <strong>+{customNxBonus.toLocaleString()} NX</strong>
+              <span>EN PESOS (COP)</span>
+              <strong>${checkoutCop.toLocaleString('es-CO')} COP</strong>
             </div>
           )}
           <div className="charge-gift">
@@ -586,18 +676,54 @@ export default function WalletPage() {
               </>
             )}
           </div>
-          <p className="charge-checkout-note">
-            {giftTarget
-              ? `El botón pone solo el valor. Paga y envía el código con Ya pagué. El NX de ${giftTarget.nickname} lo confirma el administrador.`
-              : 'El botón pone solo el valor del paquete. Paga y envía el código con Ya pagué. El administrador confirma y pone el NX.'}
-          </p>
+
+          {paymentMethod === 'nequi' ? (
+            <>
+              <div className="charge-nequi">
+                <p className="charge-kicker">PAGO NEQUI · COLOMBIA</p>
+                <div className="charge-nequi-number">
+                  <span>
+                    <small>Número Nequi</small>
+                    <strong>{NEQUI_NUMBER}</strong>
+                  </span>
+                  <button type="button" onClick={copyNequiNumber}>
+                    {nequiCopied ? 'Copiado' : 'Copiar'}
+                  </button>
+                </div>
+                {canCheckout && (
+                  <p className="charge-nequi-hint">
+                    Transfiere <b>${checkoutCop.toLocaleString('es-CO')} COP</b>
+                    {' '}({checkoutPrice.toFixed(2)} USD) y recibirás{' '}
+                    <b>{totalNx.toLocaleString()} NX</b>
+                    {checkoutBonus > 0 ? ` (incluye +${checkoutBonus.toLocaleString()} de bono 10%)` : ''}.
+                  </p>
+                )}
+              </div>
+              <p className="charge-checkout-note">
+                {giftTarget
+                  ? `Envía el valor exacto a Nequi ${NEQUI_NUMBER}. Cuando pagues, pulsa Ya pagué y envía el comprobante o referencia. El NX de ${giftTarget.nickname} lo confirma el administrador.`
+                  : `Envía el valor exacto a Nequi ${NEQUI_NUMBER}. Cuando pagues, pulsa Ya pagué y envía el comprobante o referencia. El administrador confirma y acredita el NX.`}
+              </p>
+            </>
+          ) : (
+            <p className="charge-checkout-note">
+              {giftTarget
+                ? `El botón pone solo el valor. Paga y envía el código con Ya pagué. El NX de ${giftTarget.nickname} lo confirma el administrador.`
+                : 'El botón pone solo el valor del paquete. Paga y envía el código con Ya pagué. El administrador confirma y pone el NX.'}
+            </p>
+          )}
+
           <div className="charge-actions">
-            <div id={PAYPAL_CONTAINER_ID} className="charge-paypal" />
-            {!paypalReady && !paypalError && (
-              <p className="charge-checkout-note">Cargando tarjeta de PayPal…</p>
-            )}
-            {paypalError && (
-              <p className="charge-checkout-note">PayPal no cargó. Recarga la página e intenta de nuevo.</p>
+            {paymentMethod === 'paypal' && (
+              <>
+                <div id={PAYPAL_CONTAINER_ID} className="charge-paypal" />
+                {!paypalReady && !paypalError && (
+                  <p className="charge-checkout-note">Cargando tarjeta de PayPal…</p>
+                )}
+                {paypalError && (
+                  <p className="charge-checkout-note">PayPal no cargó. Recarga la página e intenta de nuevo.</p>
+                )}
+              </>
             )}
             <button type="button" className="charge-paid" disabled={!canCheckout} onClick={openPaidModal}>
               Ya pagué
@@ -734,20 +860,30 @@ export default function WalletPage() {
             </div>
             {selectedProofPackage && (
               <div className="charge-reward-bonus mb-4">
-                <b>{selectedProofPackage.coins.toLocaleString()} NX</b> por ${selectedProofPackage.price.toFixed(2)}
+                <b>{selectedProofPackage.coins.toLocaleString()} NX</b>
+                {' '}por ${selectedProofPackage.price.toFixed(2)} USD
+                {paymentMethod === 'nequi' && (
+                  <> ≈ ${Math.round(selectedProofPackage.price * usdToCop).toLocaleString('es-CO')} COP</>
+                )}
               </div>
             )}
             <label>
-              <span className="charge-kicker">CÓDIGO DE TRANSACCIÓN</span>
+              <span className="charge-kicker">
+                {paymentMethod === 'nequi' ? 'REFERENCIA / COMPROBANTE NEQUI' : 'CÓDIGO DE TRANSACCIÓN'}
+              </span>
               <input
                 type="text"
-                placeholder="Ej: TXN-ABC123XYZ"
+                placeholder={paymentMethod === 'nequi' ? 'Ej: referencia o ID del pago Nequi' : 'Ej: TXN-ABC123XYZ'}
                 value={paymentCode}
                 onChange={e => setPaymentCode(e.target.value)}
                 maxLength={100}
               />
             </label>
-            <p className="mt-2 mb-4 text-xs text-[#888]">Ingresa el código que recibiste de PayPal</p>
+            <p className="mt-2 mb-4 text-xs text-[#888]">
+              {paymentMethod === 'nequi'
+                ? `Paga a Nequi ${NEQUI_NUMBER} el valor en pesos y luego envía la referencia del comprobante.`
+                : 'Ingresa el código que recibiste de PayPal'}
+            </p>
             <div className="charge-actions">
               <button
                 type="button"
