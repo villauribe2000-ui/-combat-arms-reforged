@@ -121,7 +121,7 @@ router.post('/create-order', maintenanceCheck, async (req, res) => {
     // Retornar el link de PayPal.me con el monto
     res.json({
       orderId: `order-${Date.now()}`,
-      approveUrl: `https://paypal.me/LBetancourthQuenguan/${package_.price}`,
+      approveUrl: `https://www.paypal.com/paypalme/LBetancourthQuenguan/${package_.price}`,
       packageId: packageId,
       amount: package_.price,
       coins: package_.coins,

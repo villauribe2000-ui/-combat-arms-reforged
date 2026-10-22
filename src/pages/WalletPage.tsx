@@ -1,23 +1,11 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { api } from '@/lib/api';
 import { Crown, X, CheckCircle, AlertCircle, Gift, TrendingUp, Coins } from 'lucide-react';
 
-const PAYPAL_CLIENT_ID = 'BAASxJaQf7fBU25aaCHGJtS-7Li538YT5l5OYF9zwZo_FU3_WOxsFV1eni9vVTULMnEzAwkHShoEYOzWzE';
-const PAYPAL_BUTTON_ID = '9VVE28GCM8GXA';
-const PAYPAL_CONTAINER_ID = `paypal-container-${PAYPAL_BUTTON_ID}`;
+const PAYPAL_ME_BASE = 'https://www.paypal.com/paypalme/LBetancourthQuenguan';
 const NEQUI_NUMBER = '3148487432';
 const USD_TO_COP_FALLBACK = 4100;
-
-declare global {
-  interface Window {
-    paypal?: {
-      HostedButtons?: (options: { hostedButtonId: string }) => {
-        render: (selector: string) => Promise<void>;
-      };
-    };
-  }
-}
 
 type PaymentMethod = 'paypal' | 'nequi';
 
@@ -32,9 +20,6 @@ export default function WalletPage() {
   const [nxBalance, setNxBalance] = useState(0);
   const [gpBalance, setGpBalance] = useState(0);
   const [selectedPackage, setSelectedPackage] = useState<GcoinPackage | null>(null);
-  const [paypalReady, setPaypalReady] = useState(false);
-  const [paypalError, setPaypalError] = useState(false);
-  const paypalRendered = useRef(false);
   const [showProofModal, setShowProofModal] = useState(false);
   const [selectedProofPackage, setSelectedProofPackage] = useState<GcoinPackage | null>(null);
   const [paymentCode, setPaymentCode] = useState<string>('');
@@ -228,77 +213,6 @@ export default function WalletPage() {
     return () => { alive = false; };
   }, []);
 
-  useEffect(() => {
-    if (!profile || paymentMethod !== 'paypal') {
-      if (paymentMethod !== 'paypal') {
-        paypalRendered.current = false;
-        setPaypalReady(false);
-      }
-      return;
-    }
-
-    const renderButton = () => {
-      if (paypalRendered.current || !window.paypal?.HostedButtons) return;
-      if (!document.getElementById(PAYPAL_CONTAINER_ID)) return;
-      paypalRendered.current = true;
-      window.paypal.HostedButtons({
-        hostedButtonId: PAYPAL_BUTTON_ID,
-      }).render(`#${PAYPAL_CONTAINER_ID}`).then(() => {
-        setPaypalReady(true);
-      }).catch(() => {
-        paypalRendered.current = false;
-        setPaypalError(true);
-      });
-    };
-
-    const scriptId = 'paypal-hosted-sdk';
-    const existing = document.getElementById(scriptId) as HTMLScriptElement | null;
-    if (existing) {
-      if (window.paypal?.HostedButtons) renderButton();
-      else existing.addEventListener('load', renderButton, { once: true });
-      return;
-    }
-
-    const script = document.createElement('script');
-    script.id = scriptId;
-    script.src = `https://www.paypal.com/sdk/js?client-id=${PAYPAL_CLIENT_ID}&components=hosted-buttons&disable-funding=venmo&currency=USD`;
-    script.async = true;
-    script.onload = () => renderButton();
-    script.onerror = () => setPaypalError(true);
-    document.body.appendChild(script);
-  }, [profile, paymentMethod]);
-
-  useEffect(() => {
-    if (!paypalReady) return;
-
-    const fillAmount = () => {
-      const input = document.querySelector(
-        `#paypal-form-fields-container-${PAYPAL_BUTTON_ID} #amount`
-      ) as HTMLInputElement | null;
-      if (!input) return false;
-
-      let price = 0;
-      if (selectedPackage) price = selectedPackage.price;
-      else if (customNxAmount) {
-        const amount = parseInt(customNxAmount, 10);
-        if (amount >= 1000) price = Math.max(0.01, parseFloat((amount / 16000).toFixed(2)));
-      }
-      if (!price) return false;
-
-      const value = price.toFixed(2);
-      if (input.value !== value) {
-        input.value = value;
-        input.dispatchEvent(new Event('input', { bubbles: true }));
-        input.dispatchEvent(new Event('change', { bubbles: true }));
-      }
-      return true;
-    };
-
-    fillAmount();
-    const timer = window.setInterval(fillAmount, 400);
-    return () => window.clearInterval(timer);
-  }, [paypalReady, selectedPackage, customNxAmount]);
-
   const handleProofImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -362,7 +276,9 @@ export default function WalletPage() {
       };
       const methodNote = paymentMethod === 'nequi'
         ? `Nequi ${NEQUI_NUMBER} · $${selectedProofPackage.price.toFixed(2)} USD ≈ $${Math.round(selectedProofPackage.price * usdToCop).toLocaleString('es-CO')} COP`
-        : undefined;
+        : paymentMethod === 'paypal'
+          ? `PayPal.me LBetancourthQuenguan · $${selectedProofPackage.price.toFixed(2)} USD`
+          : undefined;
       const giftNote = giftTarget ? `Pagado por ${profile.username}` : undefined;
       const note = [methodNote, giftNote].filter(Boolean).join(' · ') || undefined;
 
@@ -500,6 +416,12 @@ export default function WalletPage() {
       setNotification({ type: 'error', message: 'No se pudo copiar. Copia el número a mano.' });
       setTimeout(() => setNotification(null), 3000);
     }
+  };
+
+  const openPaypalMe = () => {
+    if (!canCheckout || checkoutPrice <= 0) return;
+    const url = `${PAYPAL_ME_BASE}/${checkoutPrice.toFixed(2)}`;
+    window.open(url, '_blank', 'noopener,noreferrer');
   };
 
   const openPaidModal = () => {
@@ -708,22 +630,23 @@ export default function WalletPage() {
           ) : (
             <p className="charge-checkout-note">
               {giftTarget
-                ? `El botón pone solo el valor. Paga y envía el código con Ya pagué. El NX de ${giftTarget.nickname} lo confirma el administrador.`
-                : 'El botón pone solo el valor del paquete. Paga y envía el código con Ya pagué. El administrador confirma y pone el NX.'}
+                ? `Abre PayPal.me con el valor del paquete, paga y envía el código con Ya pagué. El NX de ${giftTarget.nickname} lo confirma el administrador.`
+                : 'Abre PayPal.me con el valor del paquete, paga y envía el código con Ya pagué. El administrador confirma y pone el NX.'}
             </p>
           )}
 
           <div className="charge-actions">
             {paymentMethod === 'paypal' && (
-              <>
-                <div id={PAYPAL_CONTAINER_ID} className="charge-paypal" />
-                {!paypalReady && !paypalError && (
-                  <p className="charge-checkout-note">Cargando tarjeta de PayPal…</p>
-                )}
-                {paypalError && (
-                  <p className="charge-checkout-note">PayPal no cargó. Recarga la página e intenta de nuevo.</p>
-                )}
-              </>
+              <button
+                type="button"
+                className="charge-review"
+                disabled={!canCheckout}
+                onClick={openPaypalMe}
+              >
+                {canCheckout
+                  ? `Pagar $${checkoutPrice.toFixed(2)} USD con PayPal`
+                  : 'Pagar con PayPal'}
+              </button>
             )}
             <button type="button" className="charge-paid" disabled={!canCheckout} onClick={openPaidModal}>
               Ya pagué
