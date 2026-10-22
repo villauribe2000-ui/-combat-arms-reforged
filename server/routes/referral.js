@@ -5,6 +5,12 @@ import { query, queryWeb, queryVisms } from '../db.js';
 const router = express.Router();
 const NX_REWARD = 20000;
 const ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+/** New accounts must wait before redeeming — blocks instant VPN alt farms. */
+const MIN_ACCOUNT_AGE_HOURS = 24;
+/** Hard cap per invite code so one farmer cannot mint unlimited NX. */
+const MAX_REDEEMS_PER_CODE = 5;
+/** Soft rate limit: max successful invites credited to one referrer per day. */
+const MAX_REFERRER_REDEEMS_PER_DAY = 3;
 
 let tablesReady = null;
 
@@ -231,17 +237,27 @@ async function accountsShareIp(referrerOid, guestOid, ip) {
   return false;
 }
 
-async function getRegistrationIp(guestOid) {
+async function getRegistrationRow(guestOid) {
   try {
     const row = await queryWeb(
-      `SELECT TOP 1 ip FROM WebRegistrations WHERE oidUser = @guestOid ORDER BY createdAt ASC`,
+      `SELECT TOP 1 ip, createdAt FROM WebRegistrations WHERE oidUser = @guestOid ORDER BY createdAt ASC`,
       { guestOid }
     );
-    return cleanIp(row.recordset[0]?.ip);
+    return row.recordset[0] || null;
   } catch (error) {
     console.warn('[REFERRAL] WebRegistrations', error.message);
-    return '';
+    return null;
   }
+}
+
+async function getRegistrationIp(guestOid) {
+  return cleanIp((await getRegistrationRow(guestOid))?.ip);
+}
+
+function accountAgeHours(createdAt) {
+  if (!createdAt) return 0;
+  const ms = Date.now() - new Date(createdAt).getTime();
+  return ms / (1000 * 60 * 60);
 }
 
 /**
@@ -414,15 +430,55 @@ router.post('/redeem', async (req, res) => {
       return res.status(400).json({ error: 'Esta cuenta ya canjeó un código. Solo se puede usar una vez.' });
     }
 
-    const registrationIp = await getRegistrationIp(user.oidUser);
+    const registration = await getRegistrationRow(user.oidUser);
+    const registrationIp = cleanIp(registration?.ip);
     if (!registrationIp) {
       return res.status(400).json({
         error: 'Solo cuentas creadas desde la web pueden canjear un código de invitación.',
       });
     }
 
+    const ageHours = accountAgeHours(registration?.createdAt);
+    if (ageHours < MIN_ACCOUNT_AGE_HOURS) {
+      const left = Math.max(1, Math.ceil(MIN_ACCOUNT_AGE_HOURS - ageHours));
+      return res.status(400).json({
+        error: `Tu cuenta es muy nueva. Espera ${left} hora(s) más antes de canjear un código (anti-VPN).`,
+      });
+    }
+
+    // Must redeem from the same IP used at registration — stops home-register / VPN-claim hops.
+    if (ip !== registrationIp) {
+      console.warn('[REFERRAL] redeem IP mismatch', { guest: user.oidUser, ip, registrationIp });
+      return res.status(400).json({
+        error: 'Debes canjear el código desde la misma conexión con la que creaste la cuenta.',
+      });
+    }
+
+    const codeUses = await queryWeb(
+      `SELECT COUNT(*) AS uses FROM ReferralRedemptions WHERE referrerOid = @referrerOid`,
+      { referrerOid: referrer.oidUser }
+    );
+    if (Number(codeUses.recordset[0]?.uses || 0) >= MAX_REDEEMS_PER_CODE) {
+      return res.status(400).json({
+        error: `Este código ya alcanzó el máximo de ${MAX_REDEEMS_PER_CODE} canjes.`,
+      });
+    }
+
+    const dayUses = await queryWeb(
+      `SELECT COUNT(*) AS uses
+       FROM ReferralRedemptions
+       WHERE referrerOid = @referrerOid
+         AND createdAt >= DATEADD(day, -1, GETDATE())`,
+      { referrerOid: referrer.oidUser }
+    );
+    if (Number(dayUses.recordset[0]?.uses || 0) >= MAX_REFERRER_REDEEMS_PER_DAY) {
+      return res.status(400).json({
+        error: `Este código ya recibió ${MAX_REFERRER_REDEEMS_PER_DAY} invitados hoy. Intenta mañana.`,
+      });
+    }
+
     const sameIp = await accountsShareIp(referrer.oidUser, user.oidUser, ip);
-    if (sameIp || registrationIp && await accountsShareIp(referrer.oidUser, user.oidUser, registrationIp)) {
+    if (sameIp || (registrationIp && await accountsShareIp(referrer.oidUser, user.oidUser, registrationIp))) {
       return res.status(400).json({
         error: 'No puedes canjear un código entre cuentas de la misma IP, aunque el correo sea distinto.',
       });
