@@ -5,12 +5,7 @@ import { query, queryWeb, queryVisms } from '../db.js';
 const router = express.Router();
 const NX_REWARD = 20000;
 const ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
-/** New accounts must wait before redeeming — blocks instant VPN alt farms. */
-const MIN_ACCOUNT_AGE_HOURS = 24;
-/** Hard cap per invite code so one farmer cannot mint unlimited NX. */
-const MAX_REDEEMS_PER_CODE = 5;
-/** Soft rate limit: max successful invites credited to one referrer per day. */
-const MAX_REFERRER_REDEEMS_PER_DAY = 3;
+const STAFF_OWNER = 'villauribe12';
 
 let tablesReady = null;
 
@@ -81,6 +76,27 @@ export function ensureReferralTables() {
           createdAt DATETIME NOT NULL DEFAULT GETDATE()
         );
         CREATE INDEX idx_referral_referrer ON ReferralRedemptions(referrerOid);
+      END
+      IF OBJECT_ID('ReferralRedeemRequests', 'U') IS NULL
+      BEGIN
+        CREATE TABLE ReferralRedeemRequests (
+          id INT IDENTITY(1,1) PRIMARY KEY,
+          referrerOid INT NOT NULL,
+          referrerUsername NVARCHAR(50) NOT NULL,
+          referredOid INT NOT NULL,
+          referredUsername NVARCHAR(50) NOT NULL,
+          code NVARCHAR(12) NOT NULL,
+          referredIp NVARCHAR(45) NOT NULL,
+          registrationIp NVARCHAR(45) NULL,
+          referrerIp NVARCHAR(45) NULL,
+          nxEach INT NOT NULL,
+          status NVARCHAR(20) NOT NULL DEFAULT 'pending',
+          createdAt DATETIME NOT NULL DEFAULT GETDATE(),
+          reviewedAt DATETIME NULL,
+          reviewedBy NVARCHAR(50) NULL
+        );
+        CREATE INDEX idx_referral_req_status ON ReferralRedeemRequests(status, id DESC);
+        CREATE INDEX idx_referral_req_user ON ReferralRedeemRequests(referredOid, status);
       END
     `).catch((error) => {
       tablesReady = null;
@@ -350,6 +366,35 @@ function userFromRequest(req) {
   return { oidUser, username };
 }
 
+function requireOwner(req, res) {
+  const user = userFromRequest(req);
+  if (!user) {
+    res.status(401).json({ error: 'Sesión inválida' });
+    return null;
+  }
+  if (user.username !== STAFF_OWNER) {
+    res.status(403).json({ error: 'Solo el dueño puede revisar solicitudes de invitación' });
+    return null;
+  }
+  return user;
+}
+
+async function getKnownIp(oidUser) {
+  const reg = cleanIp((await getRegistrationRow(oidUser))?.ip);
+  if (reg) return reg;
+  const ref = await queryWeb(
+    `SELECT TOP 1 ip FROM ReferralIps WHERE oidUser = @oidUser ORDER BY lastSeen DESC`,
+    { oidUser }
+  ).catch(() => ({ recordset: [] }));
+  const fromRef = cleanIp(ref.recordset[0]?.ip);
+  if (fromRef) return fromRef;
+  const login = await query(
+    `SELECT TOP 1 strLastLoginIP FROM COMBATARMS.dbo.CBT_UserAuth WHERE oidUser = @oidUser`,
+    { oidUser }
+  ).catch(() => ({ recordset: [] }));
+  return cleanIp(login.recordset[0]?.strLastLoginIP);
+}
+
 router.get('/me', async (req, res) => {
   try {
     const user = userFromRequest(req);
@@ -359,6 +404,13 @@ router.get('/me', async (req, res) => {
 
     const redeemed = await queryWeb(
       `SELECT TOP 1 code, createdAt FROM ReferralRedemptions WHERE referredOid = @oidUser`,
+      { oidUser: user.oidUser }
+    );
+    const pending = await queryWeb(
+      `SELECT TOP 1 id, code, status, createdAt
+       FROM ReferralRedeemRequests
+       WHERE referredOid = @oidUser AND status = 'pending'
+       ORDER BY id DESC`,
       { oidUser: user.oidUser }
     );
     const stats = await queryWeb(
@@ -383,6 +435,8 @@ router.get('/me', async (req, res) => {
       reward: NX_REWARD,
       redeemed: Boolean(redeemed.recordset[0]),
       redeemedCode: redeemed.recordset[0]?.code || null,
+      pending: Boolean(pending.recordset[0]),
+      pendingCode: pending.recordset[0]?.code || null,
       uses: Number(stats.recordset[0]?.uses || 0),
       earned: Number(stats.recordset[0]?.earned || 0),
       recent: recent.recordset.map((row) => ({
@@ -430,98 +484,42 @@ router.post('/redeem', async (req, res) => {
       return res.status(400).json({ error: 'Esta cuenta ya canjeó un código. Solo se puede usar una vez.' });
     }
 
-    const registration = await getRegistrationRow(user.oidUser);
-    const registrationIp = cleanIp(registration?.ip);
-    if (!registrationIp) {
-      return res.status(400).json({
-        error: 'Solo cuentas creadas desde la web pueden canjear un código de invitación.',
-      });
-    }
-
-    const ageHours = accountAgeHours(registration?.createdAt);
-    if (ageHours < MIN_ACCOUNT_AGE_HOURS) {
-      const left = Math.max(1, Math.ceil(MIN_ACCOUNT_AGE_HOURS - ageHours));
-      return res.status(400).json({
-        error: `Tu cuenta es muy nueva. Espera ${left} hora(s) más antes de canjear un código (anti-VPN).`,
-      });
-    }
-
-    // Must redeem from the same IP used at registration — stops home-register / VPN-claim hops.
-    if (ip !== registrationIp) {
-      console.warn('[REFERRAL] redeem IP mismatch', { guest: user.oidUser, ip, registrationIp });
-      return res.status(400).json({
-        error: 'Debes canjear el código desde la misma conexión con la que creaste la cuenta.',
-      });
-    }
-
-    const codeUses = await queryWeb(
-      `SELECT COUNT(*) AS uses FROM ReferralRedemptions WHERE referrerOid = @referrerOid`,
-      { referrerOid: referrer.oidUser }
+    const pending = await queryWeb(
+      `SELECT TOP 1 id, code FROM ReferralRedeemRequests
+       WHERE referredOid = @oidUser AND status = 'pending'`,
+      { oidUser: user.oidUser }
     );
-    if (Number(codeUses.recordset[0]?.uses || 0) >= MAX_REDEEMS_PER_CODE) {
+    if (pending.recordset[0]) {
       return res.status(400).json({
-        error: `Este código ya alcanzó el máximo de ${MAX_REDEEMS_PER_CODE} canjes.`,
+        error: `Ya tienes una solicitud pendiente con el código ${pending.recordset[0].code}. Espera la revisión del admin.`,
       });
     }
 
-    const dayUses = await queryWeb(
-      `SELECT COUNT(*) AS uses
-       FROM ReferralRedemptions
-       WHERE referrerOid = @referrerOid
-         AND createdAt >= DATEADD(day, -1, GETDATE())`,
-      { referrerOid: referrer.oidUser }
-    );
-    if (Number(dayUses.recordset[0]?.uses || 0) >= MAX_REFERRER_REDEEMS_PER_DAY) {
-      return res.status(400).json({
-        error: `Este código ya recibió ${MAX_REFERRER_REDEEMS_PER_DAY} invitados hoy. Intenta mañana.`,
-      });
-    }
-
-    const sameIp = await accountsShareIp(referrer.oidUser, user.oidUser, ip);
-    if (sameIp || (registrationIp && await accountsShareIp(referrer.oidUser, user.oidUser, registrationIp))) {
-      return res.status(400).json({
-        error: 'No puedes canjear un código entre cuentas de la misma IP, aunque el correo sea distinto.',
-      });
-    }
-
-    const household = await householdAlreadyRedeemed(user.oidUser, ip, registrationIp);
-    if (household.blocked) {
-      console.warn('[REFERRAL] redeem blocked', {
-        guest: user.oidUser,
-        ip,
-        registrationIp,
-        reason: household.reason,
-        xff: req.headers['x-forwarded-for'] || null,
-        realIp: req.headers['x-real-ip'] || null,
-        reqIp: req.ip || null,
-      });
-      return res.status(400).json({
-        error: 'Esta conexión o una cuenta de la misma red ya recibió el premio de invitación. Solo una vez por IP/hogar.',
-      });
-    }
-
-    // Prefer storing the stable registration IP so VPN hops cannot mint unique referredIp rows.
-    const redeemIp = registrationIp || ip;
+    const registrationIp = cleanIp((await getRegistrationRow(user.oidUser))?.ip) || ip;
+    const referrerIp = await getKnownIp(referrer.oidUser);
 
     let inserted = false;
     try {
       const insert = await queryWeb(
-        `INSERT INTO ReferralRedemptions (referrerOid, referredOid, referredUsername, code, referredIp, nxEach)
-         SELECT @referrerOid, @referredOid, @referredUsername, @code, @ip, @nx
-         WHERE NOT EXISTS (SELECT 1 FROM ReferralRedemptions WHERE referredOid = @referredOid)
-           AND NOT EXISTS (SELECT 1 FROM ReferralRedemptions WHERE referredIp = @ip)
-           AND NOT EXISTS (
-             SELECT 1 FROM ReferralRedemptions r
-             INNER JOIN WebRegistrations w ON w.oidUser = r.referredOid
-             WHERE w.ip = @registrationIp
-           )`,
+        `INSERT INTO ReferralRedeemRequests
+          (referrerOid, referrerUsername, referredOid, referredUsername, code, referredIp, registrationIp, referrerIp, nxEach, status)
+         SELECT @referrerOid, @referrerUsername, @referredOid, @referredUsername, @code, @referredIp, @registrationIp, @referrerIp, @nx, 'pending'
+         WHERE NOT EXISTS (
+           SELECT 1 FROM ReferralRedeemRequests
+           WHERE referredOid = @referredOid AND status = 'pending'
+         )
+         AND NOT EXISTS (
+           SELECT 1 FROM ReferralRedemptions WHERE referredOid = @referredOid
+         )`,
         {
           referrerOid: referrer.oidUser,
+          referrerUsername: String(referrer.username || '').slice(0, 50),
           referredOid: user.oidUser,
           referredUsername: user.username,
           code,
-          ip: redeemIp,
+          referredIp: ip,
           registrationIp,
+          referrerIp: referrerIp || '',
           nx: NX_REWARD,
         }
       );
@@ -530,30 +528,194 @@ router.post('/redeem', async (req, res) => {
       if (error?.number === 2601 || error?.number === 2627) inserted = false;
       else throw error;
     }
+
     if (!inserted) {
       return res.status(400).json({
-        error: 'Esta cuenta o esta IP ya canjeó un código. El premio es solo una vez por persona y por conexión.',
-      });
-    }
-
-    const referredPaid = await addNx(user.oidUser, NX_REWARD);
-    const referrerPaid = referredPaid ? await addNx(referrer.oidUser, NX_REWARD) : false;
-    if (!referredPaid || !referrerPaid) {
-      if (referredPaid) await addNx(user.oidUser, -NX_REWARD);
-      await queryWeb(`DELETE FROM ReferralRedemptions WHERE referredOid = @referredOid`, { referredOid: user.oidUser });
-      return res.status(500).json({
-        error: 'No se pudo entregar el NX. Entra al juego una vez y vuelve a intentar.',
+        error: 'No se pudo crear la solicitud. Puede que ya exista una pendiente o un canje aprobado.',
       });
     }
 
     res.json({
       success: true,
-      message: `Listo. Tú y ${referrer.username} recibieron ${NX_REWARD.toLocaleString('es-CO')} NX.`,
+      pending: true,
+      message: `Solicitud enviada. El admin revisará el canje de ${code}. Cuando la apruebe, tú y ${referrer.username} recibirán ${NX_REWARD.toLocaleString('es-CO')} NX.`,
       reward: NX_REWARD,
     });
   } catch (error) {
-    console.error('[REFERRAL] redeem', error.message);
-    res.status(500).json({ error: 'No se pudo canjear el código' });
+    console.error('[REFERRAL] redeem request', error.message);
+    res.status(500).json({ error: 'No se pudo enviar la solicitud de canje' });
+  }
+});
+
+router.get('/admin/requests', async (req, res) => {
+  const owner = requireOwner(req, res);
+  if (!owner) return;
+  try {
+    await ensureReferralTables();
+    const status = String(req.query?.status || 'pending').toLowerCase();
+    const filter = ['pending', 'approved', 'rejected', 'all'].includes(status) ? status : 'pending';
+    const rows = await queryWeb(
+      filter === 'all'
+        ? `SELECT TOP 200 * FROM ReferralRedeemRequests ORDER BY
+             CASE status WHEN 'pending' THEN 0 WHEN 'approved' THEN 1 ELSE 2 END,
+             id DESC`
+        : `SELECT TOP 200 * FROM ReferralRedeemRequests WHERE status = @status ORDER BY id DESC`,
+      filter === 'all' ? {} : { status: filter }
+    );
+    res.json({
+      requests: rows.recordset.map((row) => ({
+        id: row.id,
+        code: row.code,
+        status: row.status,
+        nxEach: row.nxEach,
+        createdAt: row.createdAt,
+        reviewedAt: row.reviewedAt,
+        reviewedBy: row.reviewedBy,
+        referrer: { oidUser: row.referrerOid, username: row.referrerUsername, ip: row.referrerIp || '' },
+        referred: {
+          oidUser: row.referredOid,
+          username: row.referredUsername,
+          ip: row.referredIp || '',
+          registrationIp: row.registrationIp || '',
+        },
+        sameIp: Boolean(
+          row.referredIp
+          && row.referrerIp
+          && cleanIp(row.referredIp) === cleanIp(row.referrerIp)
+        ),
+      })),
+    });
+  } catch (error) {
+    console.error('[REFERRAL] admin list', error.message);
+    res.status(500).json({ error: 'No se pudieron cargar las solicitudes' });
+  }
+});
+
+router.post('/admin/requests/:id/approve', async (req, res) => {
+  const owner = requireOwner(req, res);
+  if (!owner) return;
+  const id = Number(req.params.id);
+  if (!id) return res.status(400).json({ error: 'Solicitud inválida' });
+
+  try {
+    await ensureReferralTables();
+    const found = await queryWeb(
+      `SELECT TOP 1 * FROM ReferralRedeemRequests WHERE id = @id`,
+      { id }
+    );
+    const row = found.recordset[0];
+    if (!row) return res.status(404).json({ error: 'Solicitud no encontrada' });
+    if (row.status !== 'pending') {
+      return res.status(400).json({ error: `Esta solicitud ya está ${row.status}` });
+    }
+
+    const already = await queryWeb(
+      `SELECT TOP 1 id FROM ReferralRedemptions WHERE referredOid = @referredOid`,
+      { referredOid: row.referredOid }
+    );
+    if (already.recordset[0]) {
+      await queryWeb(
+        `UPDATE ReferralRedeemRequests
+         SET status = 'rejected', reviewedAt = GETDATE(), reviewedBy = @by
+         WHERE id = @id AND status = 'pending'`,
+        { id, by: owner.username }
+      );
+      return res.status(400).json({ error: 'Esa cuenta ya tiene un canje aprobado. Solicitud marcada como rechazada.' });
+    }
+
+    const redeemIp = cleanIp(row.registrationIp) || cleanIp(row.referredIp) || '0.0.0.0';
+    let inserted = false;
+    try {
+      const insert = await queryWeb(
+        `INSERT INTO ReferralRedemptions (referrerOid, referredOid, referredUsername, code, referredIp, nxEach)
+         SELECT @referrerOid, @referredOid, @referredUsername, @code, @ip, @nx
+         WHERE NOT EXISTS (SELECT 1 FROM ReferralRedemptions WHERE referredOid = @referredOid)`,
+        {
+          referrerOid: row.referrerOid,
+          referredOid: row.referredOid,
+          referredUsername: row.referredUsername,
+          code: row.code,
+          ip: redeemIp,
+          nx: row.nxEach || NX_REWARD,
+        }
+      );
+      inserted = (insert.rowsAffected?.[0] || 0) > 0;
+    } catch (error) {
+      if (error?.number === 2601 || error?.number === 2627) {
+        // referredIp unique collision — retry with unique suffix marker
+        const altIp = `${redeemIp}#${row.referredOid}`.slice(0, 45);
+        const insert2 = await queryWeb(
+          `INSERT INTO ReferralRedemptions (referrerOid, referredOid, referredUsername, code, referredIp, nxEach)
+           SELECT @referrerOid, @referredOid, @referredUsername, @code, @ip, @nx
+           WHERE NOT EXISTS (SELECT 1 FROM ReferralRedemptions WHERE referredOid = @referredOid)`,
+          {
+            referrerOid: row.referrerOid,
+            referredOid: row.referredOid,
+            referredUsername: row.referredUsername,
+            code: row.code,
+            ip: altIp,
+            nx: row.nxEach || NX_REWARD,
+          }
+        );
+        inserted = (insert2.rowsAffected?.[0] || 0) > 0;
+      } else throw error;
+    }
+
+    if (!inserted) {
+      return res.status(400).json({ error: 'No se pudo registrar el canje aprobado' });
+    }
+
+    const amount = Number(row.nxEach || NX_REWARD);
+    const referredPaid = await addNx(row.referredOid, amount);
+    const referrerPaid = referredPaid ? await addNx(row.referrerOid, amount) : false;
+    if (!referredPaid || !referrerPaid) {
+      if (referredPaid) await addNx(row.referredOid, -amount);
+      await queryWeb(`DELETE FROM ReferralRedemptions WHERE referredOid = @referredOid`, {
+        referredOid: row.referredOid,
+      });
+      return res.status(500).json({
+        error: 'No se pudo entregar el NX. El jugador debe entrar al juego una vez (VISMS) y reintentas aprobar.',
+      });
+    }
+
+    await queryWeb(
+      `UPDATE ReferralRedeemRequests
+       SET status = 'approved', reviewedAt = GETDATE(), reviewedBy = @by
+       WHERE id = @id AND status = 'pending'`,
+      { id, by: owner.username }
+    );
+
+    res.json({
+      success: true,
+      message: `Aprobado. ${row.referredUsername} y ${row.referrerUsername} recibieron ${amount.toLocaleString('es-CO')} NX.`,
+    });
+  } catch (error) {
+    console.error('[REFERRAL] approve', error.message);
+    res.status(500).json({ error: 'No se pudo aprobar la solicitud' });
+  }
+});
+
+router.post('/admin/requests/:id/reject', async (req, res) => {
+  const owner = requireOwner(req, res);
+  if (!owner) return;
+  const id = Number(req.params.id);
+  if (!id) return res.status(400).json({ error: 'Solicitud inválida' });
+
+  try {
+    await ensureReferralTables();
+    const result = await queryWeb(
+      `UPDATE ReferralRedeemRequests
+       SET status = 'rejected', reviewedAt = GETDATE(), reviewedBy = @by
+       WHERE id = @id AND status = 'pending'`,
+      { id, by: owner.username }
+    );
+    if (!(result.rowsAffected?.[0] > 0)) {
+      return res.status(400).json({ error: 'No hay solicitud pendiente con ese id' });
+    }
+    res.json({ success: true, message: 'Solicitud rechazada. No se entregó NX.' });
+  } catch (error) {
+    console.error('[REFERRAL] reject', error.message);
+    res.status(500).json({ error: 'No se pudo rechazar la solicitud' });
   }
 });
 

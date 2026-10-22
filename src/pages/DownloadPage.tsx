@@ -1,11 +1,20 @@
-import { useState } from 'react';
 import {
   ArrowDownToLine, ArrowRight, Check, ChevronRight, Cpu, Download, HardDrive, Info, Monitor, Package, Play, Settings2, ShieldCheck, Wifi,
 } from 'lucide-react';
-import EvolutionGuard from '@/components/EvolutionGuard';
-import { CLIENT_DOWNLOAD_URL } from '@/lib/client';
+import { CLIENT_DOWNLOAD_URL, CLIENT_PROTOCOL } from '@/lib/client';
 
 export { CLIENT_DOWNLOAD_URL };
+
+function launchClient() {
+  try {
+    window.location.href = CLIENT_PROTOCOL;
+  } catch {
+    /* ignore */
+  }
+  window.setTimeout(() => {
+    window.open(CLIENT_DOWNLOAD_URL, '_blank', 'noopener,noreferrer');
+  }, 700);
+}
 
 const SPECS = [
   { icon: Cpu, name: 'Processor', sub: 'CPU', min: 'Intel Pentium III · 1 GHz+', rec: 'Intel Pentium 4 · 2.4 GHz+' },
@@ -18,8 +27,6 @@ const SPECS = [
 ];
 
 export default function DownloadPage() {
-  const [guardOpen, setGuardOpen] = useState(false);
-
   return (
     <div className="inner-page page-width download-page">
       <header className="page-heading">
@@ -53,7 +60,7 @@ export default function DownloadPage() {
             <span>.EXE</span>
           </div>
           <div className="download-buttons">
-            <button type="button" className="btn-evo btn-evo-primary" onClick={() => setGuardOpen(true)}>
+            <button type="button" className="btn-evo btn-evo-primary" onClick={launchClient}>
               <Play size={18} /> START GAME
             </button>
             <a className="btn-evo btn-evo-outline" href={CLIENT_DOWNLOAD_URL} target="_blank" rel="noopener noreferrer">
@@ -65,7 +72,7 @@ export default function DownloadPage() {
           </div>
           <span className="download-availability" role="status">
             <Info size={15} />
-            Start Game runs CA Evolution Guard checks, then launches the client.
+            Start Game launches the installed client (or opens the download if needed).
           </span>
           <details className="download-integrity">
             <summary>
@@ -103,7 +110,7 @@ export default function DownloadPage() {
           <span className="download-step-num">03</span>
           <div>
             <h3>JOIN THE FIGHT</h3>
-            <p>Use Start Game — Guard scans, then the client opens.</p>
+            <p>Use Start Game to open the installed client.</p>
           </div>
           <Check size={18} />
         </div>
@@ -168,7 +175,6 @@ export default function DownloadPage() {
         </div>
       </div>
 
-      <EvolutionGuard open={guardOpen} onClose={() => setGuardOpen(false)} />
     </div>
   );
 }

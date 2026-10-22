@@ -8,6 +8,8 @@ type InviteInfo = {
   reward: number;
   redeemed: boolean;
   redeemedCode: string | null;
+  pending: boolean;
+  pendingCode: string | null;
   uses: number;
   earned: number;
   recent: { username: string; at: string }[];
@@ -71,9 +73,9 @@ export default function InvitePage() {
       setNotice({ type: 'ok', text: result.message });
       setCode('');
       await load();
-      await refreshProfile();
+      if (!result.pending) await refreshProfile();
     } catch (error: any) {
-      setNotice({ type: 'error', text: error?.message || 'No se pudo canjear el código' });
+      setNotice({ type: 'error', text: error?.message || 'No se pudo enviar la solicitud' });
     } finally {
       setBusy(false);
     }
@@ -99,8 +101,8 @@ export default function InvitePage() {
           <p className="eyebrow"><span className="tiny-square" /> INVITACIONES</p>
           <h1>INVITA Y GANA.</h1>
           <p className="page-heading-description">
-            Comparte tu código. Quien lo canjea recibe {reward.toLocaleString('es-CO')} NX y tú también.
-            Cada cuenta puede canjear un código una sola vez.
+            Comparte tu código. Quien lo envía genera una solicitud: cuando el admin la apruebe,
+            ambos reciben {reward.toLocaleString('es-CO')} NX. Cada cuenta solo puede canjear una vez.
           </p>
         </div>
       </header>
@@ -115,7 +117,7 @@ export default function InvitePage() {
               {copied ? 'Copiado' : 'Copiar'}
             </button>
           </div>
-          <p className="invite-note">Sirve para varias personas. Cada una que lo canjee te da {reward.toLocaleString('es-CO')} NX.</p>
+          <p className="invite-note">Sirve para varias personas. Cada canje aprobado te da {reward.toLocaleString('es-CO')} NX.</p>
           <div className="invite-stats">
             <div>
               <span>Personas</span>
@@ -138,6 +140,17 @@ export default function InvitePage() {
                 <p>Usaste {info.redeemedCode}. Esta cuenta no puede canjear otro. Comparte el tuyo.</p>
               </div>
             </div>
+          ) : info?.pending ? (
+            <div className="invite-done">
+              <Ticket size={22} />
+              <div>
+                <strong>Solicitud en revisión</strong>
+                <p>
+                  Enviaste el código {info.pendingCode}. El admin debe aprobarla para que ambos reciban el NX.
+                  Mientras tanto no puedes enviar otra.
+                </p>
+              </div>
+            </div>
           ) : (
             <form onSubmit={redeem}>
               <label htmlFor="invite-code">Código de otra persona</label>
@@ -151,7 +164,7 @@ export default function InvitePage() {
                 spellCheck={false}
               />
               <button type="submit" className="invite-cta" disabled={busy || code.trim().length < 6}>
-                {busy ? 'Canjeando…' : `Canjear y recibir ${reward.toLocaleString('es-CO')} NX`}
+                {busy ? 'Enviando…' : 'Enviar solicitud de canje'}
               </button>
             </form>
           )}
@@ -163,8 +176,8 @@ export default function InvitePage() {
         <h2><Users size={18} /> Cómo funciona</h2>
         <ol>
           <li>Una cuenta que ya existe recibe su código al entrar aquí.</li>
-          <li>Una cuenta que todavía no ha canjeado escribe ese código y los dos reciben {reward.toLocaleString('es-CO')} NX.</li>
-          <li>Después de canjear, esa cuenta ya no puede poner otro código. El suyo sigue disponible para invitar a más gente.</li>
+          <li>Una cuenta que todavía no ha canjeado escribe ese código y queda una solicitud para el admin.</li>
+          <li>Si el admin aprueba, ambos reciben {reward.toLocaleString('es-CO')} NX. Si rechaza, no se entrega nada.</li>
         </ol>
         {info?.recent?.length ? (
           <ul className="invite-recent">

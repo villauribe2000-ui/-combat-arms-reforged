@@ -369,6 +369,8 @@ class ApiClient {
       reward: number;
       redeemed: boolean;
       redeemedCode: string | null;
+      pending: boolean;
+      pendingCode: string | null;
       uses: number;
       earned: number;
       recent: { username: string; at: string }[];
@@ -376,7 +378,45 @@ class ApiClient {
   }
 
   async redeemReferral(code: string) {
-    return await this.request<{ success: boolean; message: string; reward: number }>('POST', '/referral/redeem', { code });
+    return await this.request<{
+      success: boolean;
+      pending?: boolean;
+      message: string;
+      reward: number;
+    }>('POST', '/referral/redeem', { code });
+  }
+
+  async getReferralRequestsAdmin(status: 'pending' | 'approved' | 'rejected' | 'all' = 'pending') {
+    return await this.request<{
+      requests: {
+        id: number;
+        code: string;
+        status: string;
+        nxEach: number;
+        createdAt: string;
+        reviewedAt?: string | null;
+        reviewedBy?: string | null;
+        sameIp: boolean;
+        referrer: { oidUser: number; username: string; ip: string };
+        referred: { oidUser: number; username: string; ip: string; registrationIp: string };
+      }[];
+    }>('GET', `/referral/admin/requests?status=${encodeURIComponent(status)}`);
+  }
+
+  async approveReferralRequest(id: number) {
+    return await this.request<{ success: boolean; message: string }>(
+      'POST',
+      `/referral/admin/requests/${id}/approve`,
+      {}
+    );
+  }
+
+  async rejectReferralRequest(id: number) {
+    return await this.request<{ success: boolean; message: string }>(
+      'POST',
+      `/referral/admin/requests/${id}/reject`,
+      {}
+    );
   }
 
   async redeemPromo(code: string) {
