@@ -1000,7 +1000,10 @@ export default function AdminPage({ onNavigate }: { onNavigate?: (page: PageId) 
                 <div className="admin-hero-btns">
                   <button className="primary" onClick={() => goSection('players')}>Manage players</button>
                   {profile?.username === 'villauribe12' && (
-                    <button onClick={() => goSection('codes')}>Payment codes</button>
+                    <>
+                      <button onClick={() => goSection('invites')}>Invitaciones</button>
+                      <button onClick={() => goSection('codes')}>Payment codes</button>
+                    </>
                   )}
                 </div>
               </div>
@@ -1038,6 +1041,7 @@ export default function AdminPage({ onNavigate }: { onNavigate?: (page: PageId) 
                 <p className="sub">Jump to working panels</p>
                 {profile?.username === 'villauribe12' && (
                   <>
+                    <button onClick={() => goSection('invites')}><div><strong>Invitaciones</strong><small>Aprobar / rechazar canjes</small></div><span>→</span></button>
                     <button onClick={() => goSection('codes')}><div><strong>Payment codes</strong><small>{pendingCodes.length} pending</small></div><span>→</span></button>
                     <button onClick={() => goSection('payments')}><div><strong>Recargas</strong><small>{pendingCount} pending</small></div><span>→</span></button>
                     <button onClick={() => goSection('refunds')}><div><strong>Refunds</strong><small>{pendingRefunds.length} pending</small></div><span>→</span></button>
