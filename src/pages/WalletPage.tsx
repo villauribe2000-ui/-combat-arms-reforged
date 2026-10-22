@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { api } from '@/lib/api';
-import { Crown, X, CheckCircle, AlertCircle, Gift, TrendingUp, Coins } from 'lucide-react';
+import { Crown, X, CheckCircle, AlertCircle, Gift, TrendingUp, Coins, ImagePlus } from 'lucide-react';
 
 const PAYPAL_ME_BASE = 'https://www.paypal.com/paypalme/LBetancourthQuenguan';
 const NEQUI_NUMBER = '3148487432';
@@ -23,6 +23,8 @@ export default function WalletPage() {
   const [showProofModal, setShowProofModal] = useState(false);
   const [selectedProofPackage, setSelectedProofPackage] = useState<GcoinPackage | null>(null);
   const [paymentCode, setPaymentCode] = useState<string>('');
+  const [proofImage, setProofImage] = useState<string | null>(null);
+  const [proofBusy, setProofBusy] = useState(false);
   const [submittingCode, setSubmittingCode] = useState(false);
   const [notification, setNotification] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
   const [nxPurchases, setNxPurchases] = useState<{ packageId: number; coins: number; date: string; amount: number }[]>([]);
@@ -213,46 +215,67 @@ export default function WalletPage() {
     return () => { alive = false; };
   }, []);
 
+  const resetProofModal = () => {
+    setShowProofModal(false);
+    setPaymentCode('');
+    setProofImage(null);
+    setSelectedProofPackage(null);
+  };
+
   const handleProofImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
+    e.target.value = '';
     if (!file) return;
 
-    if (file.size > 2 * 1024 * 1024) {
-      setNotification({ type: 'error', message: 'La imagen es muy grande. Máximo 2MB.' });
+    if (!file.type.startsWith('image/')) {
+      setNotification({ type: 'error', message: 'Solo se permiten imágenes (JPG, PNG o WEBP).' });
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      setNotification({ type: 'error', message: 'La imagen es muy grande. Máximo 5MB.' });
       return;
     }
 
+    setProofBusy(true);
     const reader = new FileReader();
+    reader.onerror = () => {
+      setProofBusy(false);
+      setNotification({ type: 'error', message: 'No se pudo leer la imagen.' });
+    };
     reader.onload = (event) => {
       const img = new Image();
+      img.onerror = () => {
+        setProofBusy(false);
+        setNotification({ type: 'error', message: 'Imagen inválida.' });
+      };
       img.onload = () => {
         const canvas = document.createElement('canvas');
-        const maxWidth = 800;
-        const maxHeight = 600;
+        const maxWidth = 1000;
+        const maxHeight = 1000;
         let width = img.width;
         let height = img.height;
 
-        if (width > height) {
-          if (width > maxWidth) {
-            height = Math.round((height * maxWidth) / width);
-            width = maxWidth;
-          }
-        } else {
-          if (height > maxHeight) {
-            width = Math.round((width * maxHeight) / height);
-            height = maxHeight;
-          }
+        if (width > maxWidth) {
+          height = Math.round((height * maxWidth) / width);
+          width = maxWidth;
+        }
+        if (height > maxHeight) {
+          width = Math.round((width * maxHeight) / height);
+          height = maxHeight;
         }
 
         canvas.width = width;
         canvas.height = height;
         const ctx = canvas.getContext('2d');
-        if (ctx) {
-          ctx.drawImage(img, 0, 0, width, height);
+        if (!ctx) {
+          setProofBusy(false);
+          setNotification({ type: 'error', message: 'No se pudo procesar la imagen.' });
+          return;
         }
-
-        const compressedBase64 = canvas.toDataURL('image/jpeg', 0.7);
-        // Unused - keeping for backwards compatibility
+        ctx.drawImage(img, 0, 0, width, height);
+        const compressedBase64 = canvas.toDataURL('image/jpeg', 0.72);
+        setProofImage(compressedBase64);
+        setProofBusy(false);
       };
       img.src = event.target?.result as string;
     };
@@ -262,6 +285,10 @@ export default function WalletPage() {
   const handleSubmitPaymentCode = async () => {
     if (!profile || !selectedProofPackage || !paymentCode.trim()) {
       setNotification({ type: 'error', message: 'Por favor ingresa un código' });
+      return;
+    }
+    if (!proofImage) {
+      setNotification({ type: 'error', message: 'Sube una foto del comprobante de pago' });
       return;
     }
 
@@ -289,25 +316,24 @@ export default function WalletPage() {
         paymentCode.trim(),
         selectedProofPackage.coins,
         selectedProofPackage.price,
-        note
+        note,
+        proofImage,
       );
 
-      setNotification({ 
-        type: 'success', 
-        message: 'Código recibido. El administrador lo revisará pronto.' 
+      setNotification({
+        type: 'success',
+        message: 'Solicitud enviada con comprobante. El admin la revisará pronto.',
       });
-      
+
       setTimeout(() => {
-        setShowProofModal(false);
-        setPaymentCode('');
-        setSelectedProofPackage(null);
+        resetProofModal();
         setNotification(null);
       }, 3000);
     } catch (error: any) {
       console.error('Error:', error);
-      setNotification({ 
-        type: 'error', 
-        message: error.message || 'Error al enviar código. Intenta de nuevo.' 
+      setNotification({
+        type: 'error',
+        message: error.message || 'Error al enviar código. Intenta de nuevo.',
       });
     } finally {
       setSubmittingCode(false);
@@ -769,15 +795,7 @@ export default function WalletPage() {
           <div className="charge-modal">
             <div className="mb-4 flex items-center justify-between">
               <h2>Confirmar Pago</h2>
-              <button
-                type="button"
-                className="charge-paid"
-                onClick={() => {
-                  setShowProofModal(false);
-                  setPaymentCode('');
-                  setSelectedProofPackage(null);
-                }}
-              >
+              <button type="button" className="charge-paid" onClick={resetProofModal}>
                 <X className="h-5 w-5" />
               </button>
             </div>
@@ -802,28 +820,58 @@ export default function WalletPage() {
                 maxLength={100}
               />
             </label>
-            <p className="mt-2 mb-4 text-xs text-[#888]">
+            <p className="mt-2 mb-3 text-xs text-[#888]">
               {paymentMethod === 'nequi'
                 ? `Paga a Nequi ${NEQUI_NUMBER} el valor en pesos y luego envía la referencia del comprobante.`
                 : 'Ingresa el código que recibiste de PayPal'}
             </p>
+
+            <label className="block mb-4">
+              <span className="charge-kicker">FOTO DEL COMPROBANTE</span>
+              <div className="mt-2 rounded border border-[#3a3a3a] bg-[#0f0f0f] p-3">
+                {proofImage ? (
+                  <div className="space-y-2">
+                    <img
+                      src={proofImage}
+                      alt="Comprobante"
+                      className="max-h-48 w-full rounded object-contain bg-black"
+                    />
+                    <div className="flex gap-2">
+                      <label className="charge-paid cursor-pointer px-3 py-2 text-xs">
+                        Cambiar imagen
+                        <input type="file" accept="image/*" className="hidden" onChange={handleProofImageChange} />
+                      </label>
+                      <button type="button" className="charge-paid px-3 py-2 text-xs" onClick={() => setProofImage(null)}>
+                        Quitar
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <label className="flex cursor-pointer flex-col items-center gap-2 py-4 text-[#aaa]">
+                    <ImagePlus className="h-8 w-8 text-[#df8104]" />
+                    <span className="text-sm">{proofBusy ? 'Procesando…' : 'Subir captura del pago'}</span>
+                    <span className="text-xs text-[#666]">JPG / PNG · máx. 5MB</span>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      disabled={proofBusy}
+                      onChange={handleProofImageChange}
+                    />
+                  </label>
+                )}
+              </div>
+            </label>
+
             <div className="charge-actions">
-              <button
-                type="button"
-                className="charge-paid"
-                onClick={() => {
-                  setShowProofModal(false);
-                  setPaymentCode('');
-                  setSelectedProofPackage(null);
-                }}
-              >
+              <button type="button" className="charge-paid" onClick={resetProofModal}>
                 Cancelar
               </button>
               <button
                 type="button"
                 className="charge-review"
                 onClick={handleSubmitPaymentCode}
-                disabled={!paymentCode.trim() || submittingCode}
+                disabled={!paymentCode.trim() || !proofImage || proofBusy || submittingCode}
               >
                 {submittingCode ? 'Enviando...' : 'Enviar Código'}
               </button>

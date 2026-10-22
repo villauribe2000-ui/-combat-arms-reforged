@@ -557,7 +557,16 @@ class ApiClient {
     });
   }
 
-  async submitPaymentCode(oidUser: number, username: string, NickName: string, paymentCode: string, nxAmount: number, dollarAmount: number, note?: string) {
+  async submitPaymentCode(
+    oidUser: number,
+    username: string,
+    NickName: string,
+    paymentCode: string,
+    nxAmount: number,
+    dollarAmount: number,
+    note?: string,
+    proofImage?: string | null,
+  ) {
     return await this.request<{ success: boolean; message: string }>('POST', '/payments/submit-payment-code', {
       oidUser,
       username,
@@ -566,6 +575,7 @@ class ApiClient {
       nxAmount,
       dollarAmount,
       note,
+      proofImage: proofImage || undefined,
     });
   }
 

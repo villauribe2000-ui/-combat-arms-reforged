@@ -25,7 +25,20 @@ async function ensurePaymentCodes() {
       );
     END
     IF COL_LENGTH('PaymentCodes', 'note') IS NULL ALTER TABLE PaymentCodes ADD note NVARCHAR(300) NULL;
+    IF COL_LENGTH('PaymentCodes', 'proofImage') IS NULL ALTER TABLE PaymentCodes ADD proofImage NVARCHAR(MAX) NULL;
   `);
+}
+
+function normalizeProofImage(value) {
+  const raw = String(value || '').trim();
+  if (!raw) return null;
+  if (!/^data:image\/(jpeg|jpg|png|webp);base64,/i.test(raw)) {
+    throw Object.assign(new Error('La imagen debe ser JPG, PNG o WEBP'), { status: 400 });
+  }
+  if (raw.length > 1_800_000) {
+    throw Object.assign(new Error('La imagen es demasiado grande. Usa una más liviana.'), { status: 400 });
+  }
+  return raw;
 }
 
 // Crear solicitud de pago (cuando usuario paga en PayPal)
@@ -48,7 +61,7 @@ router.get('/pending', async (req, res) => {
   try {
     await ensurePaymentCodes();
     const result = await queryWeb(
-      `SELECT id, oidUser, username, NickName, paymentCode, nxAmount, dollarAmount, status, createdAt
+      `SELECT id, oidUser, username, NickName, paymentCode, nxAmount, dollarAmount, note, proofImage, status, createdAt
        FROM PaymentCodes WHERE status = 'pending' ORDER BY createdAt DESC`
     );
     res.json(result.recordset || []);
@@ -119,7 +132,7 @@ router.post('/reject/:paymentId', async (req, res) => {
 // Enviar código de pago (nuevo sistema)
 router.post('/submit-payment-code', async (req, res) => {
   try {
-    const { oidUser, username, NickName, paymentCode, nxAmount, dollarAmount, note } = req.body;
+    const { oidUser, username, NickName, paymentCode, nxAmount, dollarAmount, note, proofImage } = req.body;
 
     if (!oidUser || !username || !paymentCode || !nxAmount || !dollarAmount) {
       return res.status(400).json({ error: 'Datos incompletos' });
@@ -130,12 +143,19 @@ router.post('/submit-payment-code', async (req, res) => {
       return res.status(400).json({ error: 'El código debe tener al menos 3 caracteres' });
     }
 
-    console.log(`[PAYMENT CODE] Nueva solicitud - ${username} envió código: ${paymentCode} para ${nxAmount} NX`);
+    let proof = null;
+    try {
+      proof = normalizeProofImage(proofImage);
+    } catch (error) {
+      return res.status(error.status || 400).json({ error: error.message });
+    }
+
+    console.log(`[PAYMENT CODE] Nueva solicitud - ${username} envió código: ${paymentCode} para ${nxAmount} NX${proof ? ' + imagen' : ''}`);
 
     await ensurePaymentCodes();
     await queryWeb(
-      `INSERT INTO PaymentCodes (oidUser, username, NickName, paymentCode, nxAmount, dollarAmount, status, note)
-       VALUES (@oidUser, @username, @NickName, @paymentCode, @nxAmount, @dollarAmount, 'pending', @note)`,
+      `INSERT INTO PaymentCodes (oidUser, username, NickName, paymentCode, nxAmount, dollarAmount, status, note, proofImage)
+       VALUES (@oidUser, @username, @NickName, @paymentCode, @nxAmount, @dollarAmount, 'pending', @note, @proofImage)`,
       {
         oidUser: oidUser,
         username: username,
@@ -144,6 +164,7 @@ router.post('/submit-payment-code', async (req, res) => {
         nxAmount: nxAmount,
         dollarAmount: dollarAmount,
         note: note ? String(note).slice(0, 300) : null,
+        proofImage: proof,
       }
     );
 
@@ -168,7 +189,8 @@ router.get('/payment-codes/pending', async (req, res) => {
     console.log('[PAYMENT CODE] Obteniendo códigos pendientes');
     await ensurePaymentCodes();
     const result = await queryWeb(
-      'SELECT id, oidUser, username, NickName, paymentCode, nxAmount, dollarAmount, createdAt FROM PaymentCodes WHERE status = @status ORDER BY createdAt DESC',
+      `SELECT id, oidUser, username, NickName, paymentCode, nxAmount, dollarAmount, note, proofImage, createdAt
+       FROM PaymentCodes WHERE status = @status ORDER BY createdAt DESC`,
       { status: 'pending' }
     );
 
@@ -183,9 +205,12 @@ router.get('/payment-codes/pending', async (req, res) => {
 router.get('/payment-codes/all', async (req, res) => {
   try {
     console.log('[PAYMENT CODE] Obteniendo todos los códigos');
-    
+    await ensurePaymentCodes();
+
     const result = await queryWeb(
-      'SELECT id, oidUser, username, NickName, paymentCode, nxAmount, dollarAmount, status, createdAt, approvedAt, rejectedAt, approvedBy FROM PaymentCodes ORDER BY createdAt DESC'
+      `SELECT id, oidUser, username, NickName, paymentCode, nxAmount, dollarAmount, note, proofImage,
+              status, createdAt, approvedAt, rejectedAt, approvedBy
+       FROM PaymentCodes ORDER BY createdAt DESC`
     );
 
     res.json(result.recordset || []);

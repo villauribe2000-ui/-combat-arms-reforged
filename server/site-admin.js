@@ -70,6 +70,7 @@ export async function ensureStaffTables() {
     IF COL_LENGTH('staff_nx_quota', 'username') IS NULL ALTER TABLE staff_nx_quota ADD username NVARCHAR(64) NULL;
     IF COL_LENGTH('staff_nx_gifts', 'message') IS NULL ALTER TABLE staff_nx_gifts ADD message NVARCHAR(300) NULL;
     IF OBJECT_ID('PaymentCodes', 'U') IS NOT NULL AND COL_LENGTH('PaymentCodes', 'note') IS NULL ALTER TABLE PaymentCodes ADD note NVARCHAR(300) NULL;
+    IF OBJECT_ID('PaymentCodes', 'U') IS NOT NULL AND COL_LENGTH('PaymentCodes', 'proofImage') IS NULL ALTER TABLE PaymentCodes ADD proofImage NVARCHAR(MAX) NULL;
   `);
   const roles = await queryWeb(`SELECT COUNT(*) as n FROM staff_roles`);
   if (!Number(roles.recordset?.[0]?.n)) {

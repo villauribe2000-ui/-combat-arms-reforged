@@ -26,6 +26,8 @@ interface PaymentCode {
   dollarAmount: number;
   status: 'pending' | 'approved' | 'rejected';
   createdAt: string;
+  note?: string | null;
+  proofImage?: string | null;
 }
 
 interface PaymentRequest {
@@ -2002,10 +2004,23 @@ export default function AdminPage({ onNavigate }: { onNavigate?: (page: PageId) 
               <article><p>MONEY</p><strong>${totalCodesDollars.toFixed(2)}</strong></article>
             </div>
             {loading ? <Empty text="Loading..." /> : pendingCodes.length === 0 ? <Empty text="No hay códigos de pago pendientes" /> : pendingCodes.map(code => (
-              <div className="admin-row" key={code.id}>
-                <div>
+              <div className="admin-row" key={code.id} style={{ alignItems: 'flex-start', flexWrap: 'wrap', gap: 12 }}>
+                <div style={{ flex: 1, minWidth: 220 }}>
                   <b>{code.NickName}</b>
                   <span>{code.username} · {code.paymentCode} · {code.nxAmount.toLocaleString()} NX · ${code.dollarAmount.toFixed(2)}</span>
+                  {code.note ? <div style={{ color: '#888', fontSize: 12, marginTop: 4 }}>{code.note}</div> : null}
+                  {code.proofImage ? (
+                    <a href={code.proofImage} target="_blank" rel="noreferrer" style={{ display: 'inline-block', marginTop: 8 }}>
+                      <img
+                        src={code.proofImage}
+                        alt={`Comprobante ${code.username}`}
+                        style={{ maxWidth: 220, maxHeight: 160, objectFit: 'contain', border: '1px solid #333', borderRadius: 6, background: '#000' }}
+                      />
+                      <div style={{ fontSize: 11, color: '#c49a5c', marginTop: 4 }}>Ver comprobante</div>
+                    </a>
+                  ) : (
+                    <div style={{ fontSize: 12, color: '#777', marginTop: 6 }}>Sin imagen</div>
+                  )}
                 </div>
                 <div className="admin-actions">
                   <button className="admin-ok" disabled={approvingCode === code.id} onClick={() => handleApproveCode(code.id)}>
@@ -2028,10 +2043,23 @@ export default function AdminPage({ onNavigate }: { onNavigate?: (page: PageId) 
               <article><p>MONEY</p><strong>${totalDollars.toFixed(2)}</strong></article>
             </div>
             {loading ? <Empty text="Loading..." /> : pendingCodes.length === 0 ? <Empty text="No hay solicitudes pendientes" /> : pendingCodes.map((code) => (
-              <div className="admin-row" key={code.id}>
-                <div>
+              <div className="admin-row" key={code.id} style={{ alignItems: 'flex-start', flexWrap: 'wrap', gap: 12 }}>
+                <div style={{ flex: 1, minWidth: 220 }}>
                   <b>{code.NickName || code.username}</b>
                   <span>{code.username} · {code.paymentCode} · {Number(code.nxAmount).toLocaleString()} NX · ${Number(code.dollarAmount).toFixed(2)}</span>
+                  {code.note ? <div style={{ color: '#888', fontSize: 12, marginTop: 4 }}>{code.note}</div> : null}
+                  {code.proofImage ? (
+                    <a href={code.proofImage} target="_blank" rel="noreferrer" style={{ display: 'inline-block', marginTop: 8 }}>
+                      <img
+                        src={code.proofImage}
+                        alt={`Comprobante ${code.username}`}
+                        style={{ maxWidth: 220, maxHeight: 160, objectFit: 'contain', border: '1px solid #333', borderRadius: 6, background: '#000' }}
+                      />
+                      <div style={{ fontSize: 11, color: '#c49a5c', marginTop: 4 }}>Ver comprobante</div>
+                    </a>
+                  ) : (
+                    <div style={{ fontSize: 12, color: '#777', marginTop: 6 }}>Sin imagen</div>
+                  )}
                 </div>
                 <div className="admin-actions">
                   <button className="admin-ok" disabled={approvingCode === code.id} onClick={() => handleApproveCode(code.id)}>
