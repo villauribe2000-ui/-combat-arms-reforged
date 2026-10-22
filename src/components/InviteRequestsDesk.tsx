@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { api } from '@/lib/api';
-import { Check, Loader, ShieldAlert, Ticket, X } from 'lucide-react';
+import { Check, Loader, ShieldAlert, ShieldCheck, Ticket, X } from 'lucide-react';
 
 type InviteRequest = {
   id: number;
@@ -20,6 +20,15 @@ function when(value?: string | null) {
   const d = new Date(value);
   if (Number.isNaN(d.getTime())) return String(value);
   return d.toLocaleString('es-CO');
+}
+
+function IpBlock({ label, value, warn }: { label: string; value?: string; warn?: boolean }) {
+  return (
+    <div style={{ marginTop: 4 }}>
+      <div style={{ color: '#777', fontSize: 10, letterSpacing: 0.6, textTransform: 'uppercase' }}>{label}</div>
+      <code style={{ color: warn ? '#f87171' : '#e5e5e5', fontSize: 13 }}>{value || '—'}</code>
+    </div>
+  );
 }
 
 export default function InviteRequestsDesk() {
@@ -73,7 +82,7 @@ export default function InviteRequestsDesk() {
         <div>
           <p className="eyebrow">OPERATIONS / INVITES</p>
           <h1>SOLICITUDES DE INVITACIÓN</h1>
-          <p>Quién canjeó, de quién es el código y las IP. Solo al aprobar se entrega el NX; si rechazas, no se paga nada.</p>
+          <p>Compara la IP de quien canjeó con la del dueño del código. Si son iguales, suele ser la misma persona.</p>
         </div>
       </div>
 
@@ -106,9 +115,8 @@ export default function InviteRequestsDesk() {
             <thead>
               <tr>
                 <th>Quién canjeó</th>
-                <th>Código / dueño</th>
-                <th>IP canje</th>
-                <th>IP dueño</th>
+                <th>Dueño del código</th>
+                <th>Comparar IP</th>
                 <th>NX</th>
                 <th>Estado</th>
                 <th>Fecha</th>
@@ -117,28 +125,36 @@ export default function InviteRequestsDesk() {
             </thead>
             <tbody>
               {rows.map((row) => (
-                <tr key={row.id}>
+                <tr key={row.id} style={row.sameIp ? { background: '#3f1d1d55' } : undefined}>
                   <td>
                     <b>{row.referred.username}</b>
                     <div style={{ color: '#888', fontSize: 12 }}>oid {row.referred.oidUser}</div>
-                    {row.referred.registrationIp ? (
-                      <div style={{ color: '#888', fontSize: 11 }}>reg {row.referred.registrationIp}</div>
+                    <IpBlock label="IP al canjear" value={row.referred.ip} warn={row.sameIp} />
+                    {row.referred.registrationIp && row.referred.registrationIp !== row.referred.ip ? (
+                      <IpBlock label="IP registro" value={row.referred.registrationIp} warn={row.sameIp} />
                     ) : null}
                   </td>
                   <td>
                     <code>{row.code}</code>
                     <div><b>{row.referrer.username}</b></div>
                     <div style={{ color: '#888', fontSize: 12 }}>oid {row.referrer.oidUser}</div>
+                    <IpBlock label="IP dueño" value={row.referrer.ip} warn={row.sameIp} />
                   </td>
                   <td>
-                    <code>{row.referred.ip || '—'}</code>
                     {row.sameIp ? (
-                      <div style={{ color: '#f87171', fontSize: 11, display: 'flex', gap: 4, alignItems: 'center', marginTop: 4 }}>
-                        <ShieldAlert size={12} /> Misma IP
+                      <div style={{ color: '#f87171', fontWeight: 700, display: 'flex', gap: 6, alignItems: 'center' }}>
+                        <ShieldAlert size={16} /> Misma IP
                       </div>
-                    ) : null}
+                    ) : (
+                      <div style={{ color: '#34d399', fontWeight: 700, display: 'flex', gap: 6, alignItems: 'center' }}>
+                        <ShieldCheck size={16} /> IP distintas
+                      </div>
+                    )}
+                    <div style={{ marginTop: 8, fontSize: 12, color: '#aaa', lineHeight: 1.5 }}>
+                      <div>Canje: <code>{row.referred.ip || '—'}</code></div>
+                      <div>Dueño: <code>{row.referrer.ip || '—'}</code></div>
+                    </div>
                   </td>
-                  <td><code>{row.referrer.ip || '—'}</code></td>
                   <td>{Number(row.nxEach || 0).toLocaleString('es-CO')}</td>
                   <td>
                     <span style={{

@@ -496,7 +496,10 @@ router.post('/redeem', async (req, res) => {
     }
 
     const registrationIp = cleanIp((await getRegistrationRow(user.oidUser))?.ip) || ip;
+    const referredKnownIp = (await getKnownIp(user.oidUser)) || ip;
     const referrerIp = await getKnownIp(referrer.oidUser);
+    // Prefer the redeem request IP for the guest; fall back to registration / known.
+    const referredIp = ip || referredKnownIp || registrationIp || '';
 
     let inserted = false;
     try {
@@ -517,7 +520,7 @@ router.post('/redeem', async (req, res) => {
           referredOid: user.oidUser,
           referredUsername: user.username,
           code,
-          referredIp: ip,
+          referredIp,
           registrationIp,
           referrerIp: referrerIp || '',
           nx: NX_REWARD,
@@ -562,8 +565,18 @@ router.get('/admin/requests', async (req, res) => {
         : `SELECT TOP 200 * FROM ReferralRedeemRequests WHERE status = @status ORDER BY id DESC`,
       filter === 'all' ? {} : { status: filter }
     );
-    res.json({
-      requests: rows.recordset.map((row) => ({
+    const requests = [];
+    for (const row of rows.recordset) {
+      let referrerIp = cleanIp(row.referrerIp);
+      let referredIp = cleanIp(row.referredIp);
+      const registrationIp = cleanIp(row.registrationIp);
+      if (!referrerIp) referrerIp = (await getKnownIp(row.referrerOid)) || '';
+      if (!referredIp) referredIp = registrationIp || (await getKnownIp(row.referredOid)) || '';
+
+      const sameAsRedeem = Boolean(referredIp && referrerIp && referredIp === referrerIp);
+      const sameAsReg = Boolean(registrationIp && referrerIp && registrationIp === referrerIp);
+
+      requests.push({
         id: row.id,
         code: row.code,
         status: row.status,
@@ -571,20 +584,17 @@ router.get('/admin/requests', async (req, res) => {
         createdAt: row.createdAt,
         reviewedAt: row.reviewedAt,
         reviewedBy: row.reviewedBy,
-        referrer: { oidUser: row.referrerOid, username: row.referrerUsername, ip: row.referrerIp || '' },
+        referrer: { oidUser: row.referrerOid, username: row.referrerUsername, ip: referrerIp },
         referred: {
           oidUser: row.referredOid,
           username: row.referredUsername,
-          ip: row.referredIp || '',
-          registrationIp: row.registrationIp || '',
+          ip: referredIp,
+          registrationIp,
         },
-        sameIp: Boolean(
-          row.referredIp
-          && row.referrerIp
-          && cleanIp(row.referredIp) === cleanIp(row.referrerIp)
-        ),
-      })),
-    });
+        sameIp: sameAsRedeem || sameAsReg,
+      });
+    }
+    res.json({ requests });
   } catch (error) {
     console.error('[REFERRAL] admin list', error.message);
     res.status(500).json({ error: 'No se pudieron cargar las solicitudes' });
