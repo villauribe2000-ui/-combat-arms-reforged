@@ -16,18 +16,22 @@ function cleanIp(value) {
   return ip.slice(0, 45);
 }
 
+/**
+ * Prefer Express req.ip (respects trust proxy). Do not trust client-sent
+ * X-Real-Ip / trailing X-Forwarded-For hops — those are spoofable and were
+ * used to bypass one-redeem-per-IP.
+ */
 export function clientIp(req) {
-  const realHeader = req.headers['x-real-ip'];
-  const real = Array.isArray(realHeader) ? realHeader[0] : realHeader;
-  const trustedReal = cleanIp(real);
-  if (trustedReal) return trustedReal;
+  const fromExpress = cleanIp(req.ip || req.socket?.remoteAddress || '');
+  if (fromExpress) return fromExpress;
 
   const forwarded = req.headers['x-forwarded-for'];
   if (typeof forwarded === 'string' && forwarded.trim()) {
     const hops = forwarded.split(',').map((part) => cleanIp(part)).filter(Boolean);
-    if (hops.length) return hops[hops.length - 1];
+    // Leftmost hop is the original client when the proxy appends.
+    if (hops.length) return hops[0];
   }
-  return cleanIp(req.ip || req.socket?.remoteAddress || '');
+  return '';
 }
 
 function makeCode() {
@@ -122,12 +126,57 @@ async function ensureCode(oidUser, username) {
 async function addNx(oidUser, amount) {
   const result = await queryVisms(
     `UPDATE VISMS_UserList
-     SET RealBalance = ISNULL(RealBalance, 0) + @amount,
-         TotalBalance = ISNULL(TotalBalance, 0) + @amount
+     SET RealBalance = CASE
+           WHEN ISNULL(RealBalance, 0) + @amount < 0 THEN 0
+           ELSE ISNULL(RealBalance, 0) + @amount
+         END,
+         TotalBalance = CASE
+           WHEN ISNULL(TotalBalance, 0) + @amount < 0 THEN 0
+           ELSE ISNULL(TotalBalance, 0) + @amount
+         END
      WHERE oid = @oidUser`,
     { oidUser, amount }
   );
   return (result.rowsAffected?.[0] || 0) > 0;
+}
+
+/**
+ * When several referred accounts later share one IP, keep the oldest
+ * redemption and claw back the rest (VPN claim → home login farm).
+ */
+async function clawbackExtraHouseholdRedemptions(ip) {
+  const clean = cleanIp(ip);
+  if (!clean) return 0;
+
+  const rows = await queryWeb(
+    `SELECT r.id, r.referrerOid, r.referredOid, r.referredUsername, r.nxEach, r.createdAt
+     FROM ReferralRedemptions r
+     WHERE r.referredOid IN (
+       SELECT oidUser FROM ReferralIps WHERE ip = @ip
+       UNION
+       SELECT oidUser FROM WebRegistrations WHERE ip = @ip
+     )
+        OR r.referredIp = @ip
+     ORDER BY r.createdAt ASC, r.id ASC`,
+    { ip: clean }
+  );
+  if (rows.recordset.length <= 1) return 0;
+
+  let removed = 0;
+  for (const row of rows.recordset.slice(1)) {
+    await addNx(row.referredOid, -Number(row.nxEach || NX_REWARD));
+    await addNx(row.referrerOid, -Number(row.nxEach || NX_REWARD));
+    await queryWeb(`DELETE FROM ReferralRedemptions WHERE id = @id`, { id: row.id });
+    removed += 1;
+    console.warn('[REFERRAL] clawback household duplicate', {
+      ip: clean,
+      id: row.id,
+      referred: row.referredUsername,
+      referredOid: row.referredOid,
+      referrerOid: row.referrerOid,
+    });
+  }
+  return removed;
 }
 
 export async function noteReferralVisit(oidUser, username, ip) {
@@ -140,6 +189,11 @@ export async function noteReferralVisit(oidUser, username, ip) {
   await ensureReferralTables();
   await rememberIp(id, clean.slice(0, 45));
   await ensureCode(id, username);
+  try {
+    await clawbackExtraHouseholdRedemptions(clean);
+  } catch (error) {
+    console.warn('[REFERRAL] clawback', error.message);
+  }
 }
 
 async function accountsShareIp(referrerOid, guestOid, ip) {
@@ -173,7 +227,104 @@ async function accountsShareIp(referrerOid, guestOid, ip) {
   const ownerLogin = cleanIp(logins.recordset.find((row) => Number(row.oidUser) === Number(referrerOid))?.strLastLoginIP);
   const guestLogin = cleanIp(logins.recordset.find((row) => Number(row.oidUser) === Number(guestOid))?.strLastLoginIP);
   if (ownerLogin && (ownerLogin === ip || ownerLogin === guestLogin)) return true;
+  if (guestLogin && guestLogin === ip && ownerLogin && ownerLogin === guestLogin) return true;
   return false;
+}
+
+async function getRegistrationIp(guestOid) {
+  try {
+    const row = await queryWeb(
+      `SELECT TOP 1 ip FROM WebRegistrations WHERE oidUser = @guestOid ORDER BY createdAt ASC`,
+      { guestOid }
+    );
+    return cleanIp(row.recordset[0]?.ip);
+  } catch (error) {
+    console.warn('[REFERRAL] WebRegistrations', error.message);
+    return '';
+  }
+}
+
+/**
+ * Block if this connection, registration IP, guest IP history, or any
+ * household account that shared an IP already redeemed.
+ * Stops VPN-at-claim → later home-IP farming.
+ */
+async function householdAlreadyRedeemed(guestOid, currentIp, registrationIp) {
+  const ips = [...new Set([currentIp, registrationIp].map(cleanIp).filter(Boolean))];
+
+  for (const ip of ips) {
+    const direct = await queryWeb(
+      `SELECT TOP 1 id FROM ReferralRedemptions WHERE referredIp = @ip`,
+      { ip }
+    );
+    if (direct.recordset[0]) return { blocked: true, reason: 'ip' };
+  }
+
+  if (registrationIp) {
+    const regUsed = await queryWeb(
+      `SELECT TOP 1 r.id
+       FROM ReferralRedemptions r
+       INNER JOIN WebRegistrations w ON w.oidUser = r.referredOid
+       WHERE w.ip = @registrationIp`,
+      { registrationIp }
+    ).catch(() => ({ recordset: [] }));
+    if (regUsed.recordset[0]) return { blocked: true, reason: 'reg-ip' };
+  }
+
+  const history = await queryWeb(
+    `SELECT TOP 1 r.id
+     FROM ReferralRedemptions r
+     WHERE r.referredIp IN (
+       SELECT ip FROM ReferralIps WHERE oidUser = @guestOid
+       UNION
+       SELECT ip FROM WebRegistrations WHERE oidUser = @guestOid
+     )`,
+    { guestOid }
+  ).catch(() => ({ recordset: [] }));
+  if (history.recordset[0]) return { blocked: true, reason: 'history' };
+
+  const household = await queryWeb(
+    `SELECT TOP 1 r.id
+     FROM ReferralIps guest
+     INNER JOIN ReferralIps other
+       ON other.ip = guest.ip AND other.oidUser <> guest.oidUser
+     INNER JOIN ReferralRedemptions r
+       ON r.referredOid = other.oidUser OR r.referredIp = guest.ip
+     WHERE guest.oidUser = @guestOid`,
+    { guestOid }
+  );
+  if (household.recordset[0]) return { blocked: true, reason: 'household' };
+
+  try {
+    const regHousehold = await queryWeb(
+      `SELECT TOP 1 r.id
+       FROM WebRegistrations guest
+       INNER JOIN WebRegistrations other
+         ON other.ip = guest.ip AND other.oidUser <> guest.oidUser
+       INNER JOIN ReferralRedemptions r
+         ON r.referredOid = other.oidUser OR r.referredIp = guest.ip
+       WHERE guest.oidUser = @guestOid`,
+      { guestOid }
+    );
+    if (regHousehold.recordset[0]) return { blocked: true, reason: 'household' };
+  } catch (error) {
+    console.warn('[REFERRAL] household WebRegistrations', error.message);
+  }
+
+  // Anyone who later shared the guest's current/home IPs already claimed.
+  if (ips.length) {
+    const sharedClaim = await queryWeb(
+      `SELECT TOP 1 r.id
+       FROM ReferralIps shared
+       INNER JOIN ReferralRedemptions r ON r.referredOid = shared.oidUser
+       WHERE shared.ip IN (${ips.map((_, i) => `@ip${i}`).join(', ')})
+         AND shared.oidUser <> @guestOid`,
+      Object.fromEntries([['guestOid', guestOid], ...ips.map((ip, i) => [`ip${i}`, ip])])
+    );
+    if (sharedClaim.recordset[0]) return { blocked: true, reason: 'shared-claim' };
+  }
+
+  return { blocked: false };
 }
 
 function userFromRequest(req) {
@@ -263,22 +414,38 @@ router.post('/redeem', async (req, res) => {
       return res.status(400).json({ error: 'Esta cuenta ya canjeó un código. Solo se puede usar una vez.' });
     }
 
+    const registrationIp = await getRegistrationIp(user.oidUser);
+    if (!registrationIp) {
+      return res.status(400).json({
+        error: 'Solo cuentas creadas desde la web pueden canjear un código de invitación.',
+      });
+    }
+
     const sameIp = await accountsShareIp(referrer.oidUser, user.oidUser, ip);
-    if (sameIp) {
+    if (sameIp || registrationIp && await accountsShareIp(referrer.oidUser, user.oidUser, registrationIp)) {
       return res.status(400).json({
         error: 'No puedes canjear un código entre cuentas de la misma IP, aunque el correo sea distinto.',
       });
     }
 
-    const ipUsed = await queryWeb(
-      `SELECT TOP 1 id FROM ReferralRedemptions WHERE referredIp = @ip`,
-      { ip }
-    );
-    if (ipUsed.recordset[0]) {
+    const household = await householdAlreadyRedeemed(user.oidUser, ip, registrationIp);
+    if (household.blocked) {
+      console.warn('[REFERRAL] redeem blocked', {
+        guest: user.oidUser,
+        ip,
+        registrationIp,
+        reason: household.reason,
+        xff: req.headers['x-forwarded-for'] || null,
+        realIp: req.headers['x-real-ip'] || null,
+        reqIp: req.ip || null,
+      });
       return res.status(400).json({
-        error: 'Esta IP ya recibió el premio de invitación. Cada conexión solo puede canjear una vez.',
+        error: 'Esta conexión o una cuenta de la misma red ya recibió el premio de invitación. Solo una vez por IP/hogar.',
       });
     }
+
+    // Prefer storing the stable registration IP so VPN hops cannot mint unique referredIp rows.
+    const redeemIp = registrationIp || ip;
 
     let inserted = false;
     try {
@@ -286,13 +453,19 @@ router.post('/redeem', async (req, res) => {
         `INSERT INTO ReferralRedemptions (referrerOid, referredOid, referredUsername, code, referredIp, nxEach)
          SELECT @referrerOid, @referredOid, @referredUsername, @code, @ip, @nx
          WHERE NOT EXISTS (SELECT 1 FROM ReferralRedemptions WHERE referredOid = @referredOid)
-           AND NOT EXISTS (SELECT 1 FROM ReferralRedemptions WHERE referredIp = @ip)`,
+           AND NOT EXISTS (SELECT 1 FROM ReferralRedemptions WHERE referredIp = @ip)
+           AND NOT EXISTS (
+             SELECT 1 FROM ReferralRedemptions r
+             INNER JOIN WebRegistrations w ON w.oidUser = r.referredOid
+             WHERE w.ip = @registrationIp
+           )`,
         {
           referrerOid: referrer.oidUser,
           referredOid: user.oidUser,
           referredUsername: user.username,
           code,
-          ip,
+          ip: redeemIp,
+          registrationIp,
           nx: NX_REWARD,
         }
       );
