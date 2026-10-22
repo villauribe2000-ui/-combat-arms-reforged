@@ -1,6 +1,10 @@
-﻿import type { PageId } from '@/components/Layout';
+﻿import { useState } from 'react';
+import type { PageId } from '@/components/Layout';
+import EvolutionGuard from '@/components/EvolutionGuard';
 
 export default function HomePage({ onNavigate }: { onNavigate: (page: PageId) => void }) {
+  const [guardOpen, setGuardOpen] = useState(false);
+
   return (
     <div className="bg-[#0a0a0a] pb-12">
       <section className="relative isolate flex min-h-[646px] items-center overflow-hidden bg-[#222]">
@@ -30,12 +34,16 @@ export default function HomePage({ onNavigate }: { onNavigate: (page: PageId) =>
             your squad in the Caevo community.
           </p>
           <div className="mt-8 flex flex-wrap items-center gap-3.5">
-            <button onClick={() => onNavigate('download')} className="btn-evo btn-evo-primary">
-              <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M7 10l5 5 5-5M12 15V3" /></svg>
-              Play for free
+            <button type="button" onClick={() => setGuardOpen(true)} className="btn-evo btn-evo-primary">
+              <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+              START GAME
               <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 17L17 7M7 7h10v10" /></svg>
             </button>
-            <button onClick={() => onNavigate('guide')} className="btn-evo btn-evo-outline">
+            <button type="button" onClick={() => onNavigate('download')} className="btn-evo btn-evo-outline">
+              Download client
+              <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M7 10l5 5 5-5M12 15V3" /></svg>
+            </button>
+            <button type="button" onClick={() => onNavigate('guide')} className="btn-evo btn-evo-outline">
               Explore the game
               <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
             </button>
@@ -198,6 +206,8 @@ export default function HomePage({ onNavigate }: { onNavigate: (page: PageId) =>
           <span>COMBAT ARMS EVOLUTION / CA EVO</span>
         </div>
       </footer>
+
+      <EvolutionGuard open={guardOpen} onClose={() => setGuardOpen(false)} />
     </div>
   );
 }

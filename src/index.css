@@ -12,6 +12,7 @@
 @import './support-caevo.css';
 @import './birthday-caevo.css';
 @import './referral-caevo.css';
+@import './evolution-guard.css';
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
